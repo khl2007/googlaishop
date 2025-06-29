@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useCart } from "@/hooks/use-cart";
@@ -5,30 +6,123 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import Image from "next/image";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
+import type { Address } from "@/lib/types";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { Separator } from "@/components/ui/separator";
+
+const addressFormSchema = z.object({
+  fullName: z.string().min(2, "Full name is required."),
+  street: z.string().min(3, "Street address is required."),
+  apartment: z.string().optional(),
+  city: z.string().min(2, "City is required."),
+  state: z.string().optional(),
+  zip: z.string().min(3, "ZIP/Postal code is required."),
+  country: z.string().min(2, "Country is required."),
+});
+
+type AddressFormValues = z.infer<typeof addressFormSchema>;
 
 export default function CheckoutPage() {
   const { cartItems, cartTotal, clearCart } = useCart();
   const router = useRouter();
   const { toast } = useToast();
 
+  const [addresses, setAddresses] = useState<Address[]>([]);
+  const [loadingAddresses, setLoadingAddresses] = useState(true);
+  const [selectedAddressId, setSelectedAddressId] = useState<string>('');
+  const [isAddingNewAddress, setIsAddingNewAddress] = useState(false);
+
+  const form = useForm<AddressFormValues>({
+    resolver: zodResolver(addressFormSchema),
+    defaultValues: {
+      fullName: "",
+      street: "",
+      apartment: "",
+      city: "",
+      state: "",
+      zip: "",
+      country: "",
+    },
+  });
+
+  const fetchAddresses = async () => {
+    setLoadingAddresses(true);
+    try {
+      const res = await fetch('/api/user/addresses');
+      if (!res.ok) throw new Error("Failed to fetch addresses");
+      const data = await res.json();
+      setAddresses(data);
+      if (data.length > 0) {
+        // Pre-select the first (primary) address
+        setSelectedAddressId(String(data[0].id));
+        setIsAddingNewAddress(false);
+      } else {
+        // If no addresses, show the new address form
+        setIsAddingNewAddress(true);
+        setSelectedAddressId('new');
+      }
+    } catch (error: any) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    } finally {
+      setLoadingAddresses(false);
+    }
+  };
+
   useEffect(() => {
-    // If the component mounts and the cart is empty, redirect.
-    // This prevents users from accessing checkout directly without items.
-    if (cartItems.length === 0) {
-      router.push("/");
+    if (cartItems.length > 0) {
+        fetchAddresses();
+    }
+  }, [cartItems.length]);
+
+  useEffect(() => {
+    // Redirect if cart is empty, but only after initial check.
+    // This prevents redirecting before the cart is loaded from localStorage.
+    if (cartItems.length === 0 && !useCart.length) {
+      const timeoutId = setTimeout(() => {
+        if (useCart.length === 0) {
+           router.push("/");
+        }
+      }, 500);
+      return () => clearTimeout(timeoutId);
     }
   }, [cartItems.length, router]);
   
+  const handleAddNewAddress: React.FormEventHandler<HTMLFormElement> = async (e) => {
+    e.preventDefault();
+    await form.handleSubmit(async (data) => {
+        try {
+            const res = await fetch('/api/user/addresses', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data),
+            });
+            if (!res.ok) throw new Error("Failed to save address");
+            toast({ title: "Success", description: "Address saved successfully." });
+            form.reset();
+            await fetchAddresses(); // Refetch to get the new address and select it
+        } catch (error: any) {
+            toast({ title: "Error", description: error.message, variant: "destructive" });
+        }
+    })(e);
+  };
+  
   const handlePlaceOrder = (e: React.FormEvent) => {
     e.preventDefault();
-    // In a real app, this would submit the order to the backend
-    console.log("Placing order...");
+
+    if (!selectedAddressId || selectedAddressId === 'new') {
+        toast({ title: "Error", description: "Please select or add a shipping address.", variant: "destructive" });
+        return;
+    }
+    
     toast({
       title: "Order Placed!",
       description: "Thank you for your purchase. Your order is being processed.",
@@ -37,55 +131,85 @@ export default function CheckoutPage() {
     router.push("/");
   }
 
-  // While redirecting or if cart is empty, show a loading state.
-  if (cartItems.length === 0) {
+  if (cartItems.length === 0 || loadingAddresses) {
     return (
       <div className="flex min-h-[calc(100vh-10rem)] items-center justify-center">
         <div className="flex items-center gap-2">
           <Loader2 className="h-8 w-8 animate-spin" />
-          <p className="text-muted-foreground">Redirecting...</p>
+          <p className="text-muted-foreground">{cartItems.length === 0 ? "Redirecting..." : "Loading addresses..."}</p>
         </div>
       </div>
     );
   }
 
+  const renderAddress = (address: Address) => (
+    <div>
+        <p className="font-semibold">{address.fullName}</p>
+        <p className="text-sm text-muted-foreground">{address.street}{address.apartment ? `, ${address.apartment}` : ''}</p>
+        <p className="text-sm text-muted-foreground">{address.city}, {address.zip}</p>
+        <p className="text-sm text-muted-foreground">{address.country}</p>
+    </div>
+  );
+
   return (
     <div className="container mx-auto my-12 px-4">
       <h1 className="mb-8 text-center text-4xl font-extrabold font-headline tracking-tight lg:text-5xl">Checkout</h1>
       <form onSubmit={handlePlaceOrder} className="grid grid-cols-1 gap-12 lg:grid-cols-2">
-        <Card className="lg:col-span-1">
+        <Card className="lg:col-span-1 self-start">
           <CardHeader>
             <CardTitle>Shipping Information</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="first-name">First Name</Label>
-                <Input id="first-name" placeholder="John" required />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="last-name">Last Name</Label>
-                <Input id="last-name" placeholder="Doe" required />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" placeholder="you@example.com" required />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="address">Address</Label>
-              <Input id="address" placeholder="123 Main St" required />
-            </div>
-             <div className="grid grid-cols-3 gap-4">
-                <div className="space-y-2 col-span-2">
-                    <Label htmlFor="city">City</Label>
-                    <Input id="city" placeholder="Anytown" required />
+          <CardContent className="space-y-6">
+            <RadioGroup value={selectedAddressId} onValueChange={(value) => {
+                setSelectedAddressId(value);
+                setIsAddingNewAddress(value === 'new');
+            }}>
+                {addresses.map((address) => (
+                    <Label key={address.id} htmlFor={String(address.id)} className="flex items-start gap-4 rounded-md border p-4 cursor-pointer hover:bg-accent has-[[data-state=checked]]:bg-accent">
+                         <RadioGroupItem value={String(address.id)} id={String(address.id)} className="mt-1" />
+                         {renderAddress(address)}
+                    </Label>
+                ))}
+                <Label htmlFor="new" className="flex items-start gap-4 rounded-md border p-4 cursor-pointer hover:bg-accent has-[[data-state=checked]]:bg-accent">
+                    <RadioGroupItem value="new" id="new" className="mt-1" />
+                    <div>
+                        <p className="font-semibold">Add a new address</p>
+                    </div>
+                </Label>
+            </RadioGroup>
+
+            {isAddingNewAddress && (
+                <div className="pt-6 border-t">
+                    <Form {...form}>
+                        <form onSubmit={handleAddNewAddress} className="space-y-4">
+                            <FormField control={form.control} name="fullName" render={({ field }) => (
+                                <FormItem><FormLabel>Full Name</FormLabel><FormControl><Input placeholder="John Doe" {...field} /></FormControl><FormMessage /></FormItem>
+                            )}/>
+                            <FormField control={form.control} name="street" render={({ field }) => (
+                                <FormItem><FormLabel>Street Address</FormLabel><FormControl><Input placeholder="123 Main St" {...field} /></FormControl><FormMessage /></FormItem>
+                            )}/>
+                            <FormField control={form.control} name="apartment" render={({ field }) => (
+                                <FormItem><FormLabel>Apartment, suite, etc. (optional)</FormLabel><FormControl><Input placeholder="Apt 4B" {...field} /></FormControl><FormMessage /></FormItem>
+                            )}/>
+                            <div className="grid grid-cols-3 gap-4">
+                                <FormField control={form.control} name="city" render={({ field }) => (
+                                    <FormItem className="col-span-2"><FormLabel>City</FormLabel><FormControl><Input placeholder="Anytown" {...field} /></FormControl><FormMessage /></FormItem>
+                                )}/>
+                                <FormField control={form.control} name="zip" render={({ field }) => (
+                                    <FormItem><FormLabel>ZIP</FormLabel><FormControl><Input placeholder="12345" {...field} /></FormControl><FormMessage /></FormItem>
+                                )}/>
+                            </div>
+                            <FormField control={form.control} name="country" render={({ field }) => (
+                                <FormItem><FormLabel>Country</FormLabel><FormControl><Input placeholder="United States" {...field} /></FormControl><FormMessage /></FormItem>
+                            )}/>
+                            <Button type="submit" disabled={form.formState.isSubmitting}>
+                                {form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                Save Address
+                            </Button>
+                        </form>
+                    </Form>
                 </div>
-                <div className="space-y-2">
-                    <Label htmlFor="zip">ZIP Code</Label>
-                    <Input id="zip" placeholder="12345" required />
-                </div>
-            </div>
+            )}
           </CardContent>
         </Card>
         
@@ -116,7 +240,8 @@ export default function CheckoutPage() {
                   </div>
                 ))}
               </div>
-              <div className="mt-6 border-t pt-6 space-y-2">
+              <Separator className="my-6" />
+              <div className="space-y-2">
                 <div className="flex justify-between">
                   <span>Subtotal</span>
                   <span>${cartTotal.toFixed(2)}</span>

@@ -49,6 +49,12 @@ export function middleware(request: NextRequest) {
     }
   }
 
+  if (pathname.startsWith('/checkout')) {
+    if (!user) {
+      return redirectToLogin();
+    }
+  }
+
   return NextResponse.next({
     request: {
       headers: requestHeaders,

@@ -223,3 +223,39 @@ export async function upsertPrimaryAddress(userId, addressData) {
         }
     });
 }
+
+export async function getAddressesByUserId(userId) {
+    const db = getDatabase();
+    return new Promise((resolve, reject) => {
+        db.all('SELECT * FROM addresses WHERE user_id = ? ORDER BY isPrimary DESC, id DESC', [userId], (err, rows) => {
+            if (err) {
+                console.error('Database error in getAddressesByUserId:', err);
+                return reject(new Error('Failed to fetch addresses.'));
+            }
+            resolve(rows);
+        });
+    });
+}
+
+export async function addUserAddress(userId, addressData) {
+    const db = getDatabase();
+    const { fullName, street, apartment, city, state, zip, country } = addressData;
+
+    const existingAddresses = await getAddressesByUserId(userId);
+    const isFirstAddress = existingAddresses.length === 0;
+
+    const isPrimary = isFirstAddress ? 1 : 0;
+
+    return new Promise((resolve, reject) => {
+        const sql = `INSERT INTO addresses (user_id, fullName, street, apartment, city, state, zip, country, isPrimary) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+        db.run(sql, [userId, fullName, street, apartment, city, state, zip, country, isPrimary], function(err) {
+            if (err) return reject(err);
+            
+            const newAddressId = this.lastID;
+            db.get('SELECT * FROM addresses WHERE id = ?', [newAddressId], (err, row) => {
+                if (err) reject(err);
+                resolve(row);
+            });
+        });
+    });
+}

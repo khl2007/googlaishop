@@ -10,6 +10,7 @@ db.serialize(() => {
   db.run("DROP TABLE IF EXISTS products");
   db.run("DROP TABLE IF EXISTS users");
   db.run("DROP TABLE IF EXISTS roles");
+  db.run("DROP TABLE IF EXISTS categories");
 
 
   // Create roles table
