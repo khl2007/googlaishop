@@ -4,17 +4,20 @@ import bcrypt from 'bcrypt';
 
 export async function POST(request) {
   try {
-    const { email, password, fullName } = await request.json();
+    const { email, password, fullName, role } = await request.json();
 
-    if (!email || !password) {
-      return NextResponse.json({ message: 'Email and password are required' }, { status: 400 });
+    if (!email || !password || !fullName || !role) {
+      return NextResponse.json({ message: 'All fields are required' }, { status: 400 });
     }
     
-    // The UI uses 'email', so we'll use that as the username for consistency.
+    const validRoles = ['customer', 'vendor', 'admin', 'delivery_boy'];
+    if (!validRoles.includes(role)) {
+      return NextResponse.json({ message: 'Invalid role specified' }, { status: 400 });
+    }
+
     const username = email;
     const db = getDatabase();
 
-    // Check if user already exists
     const existingUser = await new Promise((resolve, reject) => {
       db.get('SELECT id FROM users WHERE username = ?', [username], (err, row) => {
         if (err) {
@@ -31,10 +34,8 @@ export async function POST(request) {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Insert new user
     await new Promise((resolve, reject) => {
-      // The 'users' table only has username and password columns. 'fullName' from the form is ignored.
-      db.run('INSERT INTO users (username, password) VALUES (?, ?)', [username, hashedPassword], function (err) {
+      db.run('INSERT INTO users (username, password, fullName, role) VALUES (?, ?, ?, ?)', [username, hashedPassword, fullName, role], function (err) {
         if (err) {
           reject(new Error('Database error during user insertion.'));
         } else {

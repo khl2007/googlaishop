@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 
@@ -16,6 +17,7 @@ export default function RegisterPage() {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [role, setRole] = useState("customer");
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -26,7 +28,7 @@ export default function RegisterPage() {
       const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fullName, email, password }),
+        body: JSON.stringify({ fullName, email, password, role }),
       });
 
       const data = await res.json();
@@ -100,6 +102,20 @@ export default function RegisterPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 disabled={isLoading}
               />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="role">Account Type</Label>
+              <Select value={role} onValueChange={setRole} disabled={isLoading}>
+                <SelectTrigger id="role">
+                    <SelectValue placeholder="Select a role" />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="customer">Customer</SelectItem>
+                    <SelectItem value="vendor">Vendor</SelectItem>
+                    <SelectItem value="delivery_boy">Delivery Boy</SelectItem>
+                    <SelectItem value="admin">Admin</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <Button type="submit" className="w-full bg-primary text-primary-foreground hover:bg-primary/90" disabled={isLoading}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

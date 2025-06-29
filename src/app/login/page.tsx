@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,7 +12,6 @@ import { Loader2 } from "lucide-react";
 
 export default function LoginPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const { toast } = useToast();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -34,9 +33,19 @@ export default function LoginPage() {
           title: "Success",
           description: "Logged in successfully.",
         });
-        const redirectUrl = searchParams.get("redirect") || "/admin";
+        const { user } = await res.json();
+        
+        let redirectUrl = "/"; // Default for customers
+        if (user.role === 'admin') {
+            redirectUrl = '/admin';
+        } else if (user.role === 'vendor') {
+            redirectUrl = '/vendor';
+        } else if (user.role === 'delivery_boy') {
+            redirectUrl = '/delivery';
+        }
+        
         router.push(redirectUrl);
-        router.refresh(); // Important to re-fetch server components and re-run middleware
+        router.refresh(); 
       } else {
         const data = await res.json();
         toast({

@@ -7,9 +7,7 @@ export async function POST(request) {
     const { email, password } = await request.json();
     const db = getDatabase();
 
-    // Promisify db.get to use with async/await
     const user = await new Promise((resolve, reject) => {
-      // The DB schema uses 'username', but the form uses 'email' for the same field.
       db.get('SELECT * FROM users WHERE username = ?', [email], (err, row) => {
         if (err) {
           console.error('Database error:', err);
@@ -30,13 +28,11 @@ export async function POST(request) {
       return NextResponse.json({ message: 'Invalid credentials' }, { status: 401 });
     }
 
-    // Exclude password hash from the response
     const { password: _, ...userWithoutPassword } = user;
 
     const response = NextResponse.json({ user: userWithoutPassword }, { status: 200 });
 
-    // Set a simple cookie for the middleware to check for authentication
-    response.cookies.set('admin_token', 'true', {
+    response.cookies.set('user_session', JSON.stringify(userWithoutPassword), {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       path: '/',

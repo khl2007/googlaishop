@@ -3,24 +3,50 @@ import type { NextRequest } from 'next/server';
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const sessionCookie = request.cookies.get('user_session');
 
-  if (pathname.startsWith('/admin')) {
-    // This is a mock authentication check. In a real app, you'd verify a JWT or session.
-    const isAdminAuthenticated = request.cookies.get('admin_token')?.value === 'true';
-
-    if (!isAdminAuthenticated) {
-      // If not authenticated, redirect to a login page.
-      // You might want to pass the intended destination as a query param.
-      const loginUrl = new URL('/login', request.url);
-      loginUrl.searchParams.set('redirect', pathname);
-      return NextResponse.redirect(loginUrl);
+  let user = null;
+  if (sessionCookie?.value) {
+    try {
+      user = JSON.parse(sessionCookie.value);
+    } catch (e) {
+      // Corrupted cookie, treat as logged out
+      console.error('Failed to parse session cookie', e);
+      const response = NextResponse.next();
+      response.cookies.delete('user_session'); // Clear the corrupted cookie
+      return response;
     }
   }
+
+  const redirectToLogin = () => {
+    const loginUrl = new URL('/login', request.url);
+    loginUrl.searchParams.set('redirect', pathname);
+    return NextResponse.redirect(loginUrl);
+  };
+
+  if (pathname.startsWith('/admin')) {
+    if (!user || user.role !== 'admin') {
+      return redirectToLogin();
+    }
+  }
+
+  if (pathname.startsWith('/vendor')) {
+    if (!user || user.role !== 'vendor') {
+      return redirectToLogin();
+    }
+  }
+  
+  if (pathname.startsWith('/delivery')) {
+    if (!user || user.role !== 'delivery_boy') {
+      return redirectToLogin();
+    }
+  }
+
 
   return NextResponse.next();
 }
 
 export const config = {
-  // Match all paths starting with `/admin`.
-  matcher: '/admin/:path*',
+  // Match all paths starting with the specified prefixes.
+  matcher: ['/admin/:path*', '/vendor/:path*', '/delivery/:path*'],
 };
