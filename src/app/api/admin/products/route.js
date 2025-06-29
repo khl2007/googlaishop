@@ -1,4 +1,5 @@
 
+
 import { NextResponse } from 'next/server';
 import getDatabase from '@/lib/database';
 import { getAllProducts } from '@/lib/data';
@@ -74,4 +75,47 @@ export async function POST(request) {
         console.error("Product creation error:", error);
         return NextResponse.json({ message: 'Failed to create product', error: error.message }, { status: 500 });
     }
+}
+
+
+// DELETE multiple products
+export async function DELETE(request) {
+  const { ids } = await request.json();
+  const db = getDatabase();
+
+  if (!ids || !Array.isArray(ids) || ids.length === 0) {
+    return NextResponse.json({ message: 'Product IDs must be provided as a non-empty array' }, { status: 400 });
+  }
+
+  const placeholders = ids.map(() => '?').join(',');
+
+  try {
+    await new Promise((resolve, reject) => db.run('BEGIN TRANSACTION', err => err ? reject(err) : resolve()));
+
+    // Delete associated variants first
+    await new Promise((resolve, reject) => {
+      const sql = `DELETE FROM product_variants WHERE productId IN (${placeholders})`;
+      db.run(sql, ids, function(err) {
+        if (err) reject(err);
+        resolve(this);
+      });
+    });
+
+    // Delete products
+    await new Promise((resolve, reject) => {
+      const sql = `DELETE FROM products WHERE id IN (${placeholders})`;
+      db.run(sql, ids, function(err) {
+        if (err) reject(err);
+        if (this.changes === 0) reject(new Error('No products found to delete.'));
+        resolve(this);
+      });
+    });
+
+    await new Promise((resolve, reject) => db.run('COMMIT', err => err ? reject(err) : resolve()));
+
+    return NextResponse.json({ message: `${ids.length} products deleted successfully` });
+  } catch (error) {
+    await new Promise((resolve) => db.run('ROLLBACK', () => resolve()));
+    return NextResponse.json({ message: 'Failed to delete products', error: error.message }, { status: 500 });
+  }
 }
