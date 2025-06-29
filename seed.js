@@ -13,65 +13,112 @@ const db = new sqlite3.Database('./database.sqlite', (err) => {
 });
 
 function seedDatabase() {
+  const roles = ['admin', 'vendor', 'customer', 'delivery'];
+  const permissions = [
+    { action: 'manage', subject: 'all' }, // Admin
+    { action: 'manage', subject: 'products' }, // Vendor
+    { action: 'read', subject: 'orders' }, // Vendor, Delivery
+    { action: 'update', subject: 'orders' }, // Vendor, Delivery
+    { action: 'create', subject: 'orders' }, // Customer
+    { action: 'read', subject: 'products' }, // Customer
+    { action: 'read', subject: 'categories' }, // Customer
+  ];
+
+  const rolePermissions = {
+    admin: ['manage:all'],
+    vendor: ['manage:products', 'read:orders', 'update:orders'],
+    customer: ['create:orders', 'read:products', 'read:categories'],
+    delivery: ['read:orders', 'update:orders'],
+  };
+
   db.serialize(() => {
-    // Seed Admin User
-    const saltRounds = 10;
-    const adminEmail = 'admin@example.com';
-    const adminPassword = 'adminpassword';
-    const adminFullName = 'Admin User';
-    const hashedPassword = bcrypt.hashSync(adminPassword, saltRounds);
+    // Seed roles
+    const insertRoleStmt = db.prepare('INSERT OR IGNORE INTO roles (name) VALUES (?)');
+    roles.forEach(role => insertRoleStmt.run(role));
+    insertRoleStmt.finalize();
+    console.log('Roles seeded.');
 
-    const insertAdminStmt = db.prepare("INSERT OR IGNORE INTO users (username, password, fullName, role) VALUES (?, ?, ?, ?)");
-    insertAdminStmt.run(adminEmail, hashedPassword, adminFullName, 'admin', (err) => {
-      if (err) {
-        console.error('Error inserting admin user:', err.message);
-      }
-    });
-    insertAdminStmt.finalize();
-    console.log('Admin user seeding attempted.');
+    // Seed permissions
+    const insertPermissionStmt = db.prepare('INSERT OR IGNORE INTO permissions (action, subject) VALUES (?, ?)');
+    permissions.forEach(p => insertPermissionStmt.run(p.action, p.subject));
+    insertPermissionStmt.finalize();
+    console.log('Permissions seeded.');
 
+    // Seed role_permissions
+    const insertRolePermissionStmt = db.prepare('INSERT OR IGNORE INTO role_permissions (role_id, permission_id) VALUES (?, ?)');
+    db.all('SELECT * FROM roles', [], (err, dbRoles) => {
+      if (err) throw err;
+      db.all('SELECT * FROM permissions', [], (err, dbPermissions) => {
+        if (err) throw err;
 
-    // Insert categories
-    const insertCategoryStmt = db.prepare('INSERT OR IGNORE INTO categories (id, name, slug) VALUES (?, ?, ?)');
-    allCategories.forEach((category) => {
-      insertCategoryStmt.run(category.id, category.name, category.slug, (err) => {
-        if (err) {
-          console.error(`Error inserting category ${category.name}:`, err.message);
-        }
+        const roleMap = new Map(dbRoles.map(r => [r.name, r.id]));
+        const permissionMap = new Map(dbPermissions.map(p => [`${p.action}:${p.subject}`, p.id]));
+
+        Object.entries(rolePermissions).forEach(([roleName, perms]) => {
+          const roleId = roleMap.get(roleName);
+          perms.forEach(permName => {
+            const permissionId = permissionMap.get(permName);
+            if (roleId && permissionId) {
+              insertRolePermissionStmt.run(roleId, permissionId);
+            }
+          });
+        });
+        insertRolePermissionStmt.finalize();
+        console.log('Role permissions seeded.');
+
+        // Seed Admin User
+        const adminEmail = 'admin@example.com';
+        const adminPassword = 'adminpassword';
+        const adminFullName = 'Admin User';
+        const hashedPassword = bcrypt.hashSync(adminPassword, 10);
+        const adminRoleId = roleMap.get('admin');
+
+        const insertAdminStmt = db.prepare("INSERT OR IGNORE INTO users (username, password, fullName, role_id) VALUES (?, ?, ?, ?)");
+        insertAdminStmt.run(adminEmail, hashedPassword, adminFullName, adminRoleId, (err) => {
+          if (err) console.error('Error inserting admin user:', err.message);
+        });
+        insertAdminStmt.finalize();
+        console.log('Admin user seeding attempted.');
+
+        seedProductsAndCategories();
       });
     });
+  });
+
+  function seedProductsAndCategories() {
+    const insertCategoryStmt = db.prepare('INSERT OR IGNORE INTO categories (id, name, slug) VALUES (?, ?, ?)');
+    allCategories.forEach(category => insertCategoryStmt.run(category.id, category.name, category.slug));
     insertCategoryStmt.finalize();
     console.log('Categories seeded.');
 
-    // Insert products
     const insertProductStmt = db.prepare('INSERT OR IGNORE INTO products (id, name, slug, description, categoryId) VALUES (?, ?, ?, ?, ?)');
-    allProducts.forEach((product) => {
+    const insertVariantStmt = db.prepare('INSERT OR IGNORE INTO product_variants (id, productId, name, price, image, stock) VALUES (?, ?, ?, ?, ?, ?)');
+    
+    allProducts.forEach(product => {
       insertProductStmt.run(product.id, product.name, product.slug, product.description, product.categoryId, (err) => {
         if (err) {
           console.error(`Error inserting product ${product.name}:`, err.message);
         }
       });
-
-      // Insert product variants
-      const insertVariantStmt = db.prepare('INSERT OR IGNORE INTO product_variants (id, productId, name, price, image, stock) VALUES (?, ?, ?, ?, ?, ?)');
-      product.variants.forEach((variant) => {
+      product.variants.forEach(variant => {
         insertVariantStmt.run(variant.id, product.id, variant.name, variant.price, variant.image, variant.stock, (err) => {
           if (err) {
             console.error(`Error inserting variant ${variant.name} for product ${product.name}:`, err.message);
           }
         });
       });
-      insertVariantStmt.finalize();
     });
+    
     insertProductStmt.finalize();
+    insertVariantStmt.finalize();
     console.log('Products and variants seeded.');
 
-    db.close((err) => {
+    db.close(err => {
       if (err) {
         console.error('Error closing the database:', err.message);
       } else {
         console.log('Database connection closed.');
       }
     });
-  });
+  }
 }

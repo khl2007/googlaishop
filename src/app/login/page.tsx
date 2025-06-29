@@ -40,7 +40,7 @@ export default function LoginPage() {
             redirectUrl = '/admin';
         } else if (user.role === 'vendor') {
             redirectUrl = '/vendor';
-        } else if (user.role === 'delivery_boy') {
+        } else if (user.role === 'delivery') {
             redirectUrl = '/delivery';
         }
         

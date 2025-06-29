@@ -2,7 +2,42 @@ const sqlite3 = require('sqlite3').verbose();
 const db = new sqlite3.Database('./database.sqlite');
 
 db.serialize(() => {
-  db.run("CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY, username TEXT UNIQUE, password TEXT, fullName TEXT, role TEXT NOT NULL DEFAULT 'customer')");
+  // Drop existing tables to ensure a clean slate, especially for schema changes.
+  db.run("DROP TABLE IF EXISTS role_permissions");
+  db.run("DROP TABLE IF EXISTS permissions");
+  db.run("DROP TABLE IF EXISTS users");
+  db.run("DROP TABLE IF EXISTS roles");
+
+  // Create roles table
+  db.run("CREATE TABLE roles (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT UNIQUE NOT NULL)");
+
+  // Create users table with a foreign key to roles
+  db.run(`
+    CREATE TABLE users (
+      id INTEGER PRIMARY KEY,
+      username TEXT UNIQUE,
+      password TEXT,
+      fullName TEXT,
+      role_id INTEGER,
+      FOREIGN KEY(role_id) REFERENCES roles(id)
+    )
+  `);
+
+  // Create permissions table
+  db.run("CREATE TABLE permissions (id INTEGER PRIMARY KEY AUTOINCREMENT, action TEXT NOT NULL, subject TEXT NOT NULL, UNIQUE(action, subject))");
+
+  // Create role_permissions join table
+  db.run(`
+    CREATE TABLE role_permissions (
+      role_id INTEGER,
+      permission_id INTEGER,
+      PRIMARY KEY (role_id, permission_id),
+      FOREIGN KEY(role_id) REFERENCES roles(id),
+      FOREIGN KEY(permission_id) REFERENCES permissions(id)
+    )
+  `);
+
+  // Keep other tables
   db.run("CREATE TABLE IF NOT EXISTS categories (id TEXT PRIMARY KEY, name TEXT, slug TEXT UNIQUE)");
   db.run("CREATE TABLE IF NOT EXISTS products (id TEXT PRIMARY KEY, name TEXT, slug TEXT UNIQUE, description TEXT, categoryId TEXT, FOREIGN KEY(categoryId) REFERENCES categories(id))");
   db.run("CREATE TABLE IF NOT EXISTS product_variants (id TEXT PRIMARY KEY, productId TEXT, name TEXT, price INTEGER, image TEXT, stock INTEGER, FOREIGN KEY(productId) REFERENCES products(id))");

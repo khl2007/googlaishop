@@ -37,7 +37,7 @@ export function middleware(request: NextRequest) {
   }
   
   if (pathname.startsWith('/delivery')) {
-    if (!user || user.role !== 'delivery_boy') {
+    if (!user || user.role !== 'delivery') {
       return redirectToLogin();
     }
   }

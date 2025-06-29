@@ -7,8 +7,14 @@ export async function POST(request) {
     const { email, password } = await request.json();
     const db = getDatabase();
 
-    const user = await new Promise((resolve, reject) => {
-      db.get('SELECT * FROM users WHERE username = ?', [email], (err, row) => {
+    const userRow = await new Promise((resolve, reject) => {
+      const sql = `
+        SELECT u.id, u.username, u.password, u.fullName, r.name as role
+        FROM users u
+        JOIN roles r ON u.role_id = r.id
+        WHERE u.username = ?
+      `;
+      db.get(sql, [email], (err, row) => {
         if (err) {
           console.error('Database error:', err);
           reject(new Error('Database error'));
@@ -18,17 +24,17 @@ export async function POST(request) {
       });
     });
 
-    if (!user) {
+    if (!userRow) {
       return NextResponse.json({ message: 'Invalid credentials' }, { status: 401 });
     }
 
-    const passwordMatch = await bcrypt.compare(password, user.password);
+    const passwordMatch = await bcrypt.compare(password, userRow.password);
 
     if (!passwordMatch) {
       return NextResponse.json({ message: 'Invalid credentials' }, { status: 401 });
     }
 
-    const { password: _, ...userWithoutPassword } = user;
+    const { password: _, ...userWithoutPassword } = userRow;
 
     const response = NextResponse.json({ user: userWithoutPassword }, { status: 200 });
 

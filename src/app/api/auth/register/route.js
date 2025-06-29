@@ -10,16 +10,10 @@ export async function POST(request) {
       return NextResponse.json({ message: 'All fields are required' }, { status: 400 });
     }
     
-    const validRoles = ['customer', 'vendor', 'admin', 'delivery_boy'];
-    if (!validRoles.includes(role)) {
-      return NextResponse.json({ message: 'Invalid role specified' }, { status: 400 });
-    }
-
-    const username = email;
     const db = getDatabase();
 
     const existingUser = await new Promise((resolve, reject) => {
-      db.get('SELECT id FROM users WHERE username = ?', [username], (err, row) => {
+      db.get('SELECT id FROM users WHERE username = ?', [email], (err, row) => {
         if (err) {
           reject(new Error('Database error during user check.'));
         } else {
@@ -32,10 +26,21 @@ export async function POST(request) {
       return NextResponse.json({ message: 'An account with this email already exists' }, { status: 409 });
     }
 
+    const roleRecord = await new Promise((resolve, reject) => {
+        db.get('SELECT id FROM roles WHERE name = ?', [role], (err, row) => {
+            if (err) reject(new Error('Database error during role check.'));
+            else resolve(row);
+        });
+    });
+
+    if (!roleRecord) {
+        return NextResponse.json({ message: 'Invalid role specified' }, { status: 400 });
+    }
+
     const hashedPassword = await bcrypt.hash(password, 10);
 
     await new Promise((resolve, reject) => {
-      db.run('INSERT INTO users (username, password, fullName, role) VALUES (?, ?, ?, ?)', [username, hashedPassword, fullName, role], function (err) {
+      db.run('INSERT INTO users (username, password, fullName, role_id) VALUES (?, ?, ?, ?)', [email, hashedPassword, fullName, roleRecord.id], function (err) {
         if (err) {
           reject(new Error('Database error during user insertion.'));
         } else {

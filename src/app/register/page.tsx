@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -11,14 +11,44 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 
+interface Role {
+  id: number;
+  name: string;
+}
+
 export default function RegisterPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState("customer");
+  const [role, setRole] = useState("");
+  const [roles, setRoles] = useState<Role[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchRoles = async () => {
+      try {
+        const res = await fetch('/api/roles');
+        if (res.ok) {
+          const data = await res.json();
+          setRoles(data);
+          if (data.length > 0) {
+            setRole(data[0].name); // Default to the first role
+          }
+        }
+      } catch (error) {
+        toast({
+            title: "Error",
+            description: "Could not load account types. Please try again later.",
+            variant: "destructive",
+        });
+        console.error("Failed to fetch roles", error);
+      }
+    };
+    fetchRoles();
+  }, [toast]);
+
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -105,15 +135,16 @@ export default function RegisterPage() {
             </div>
             <div className="grid gap-2">
               <Label htmlFor="role">Account Type</Label>
-              <Select value={role} onValueChange={setRole} disabled={isLoading}>
+              <Select value={role} onValueChange={setRole} disabled={isLoading || roles.length === 0}>
                 <SelectTrigger id="role">
-                    <SelectValue placeholder="Select a role" />
+                    <SelectValue placeholder="Select an account type" />
                 </SelectTrigger>
                 <SelectContent>
-                    <SelectItem value="customer">Customer</SelectItem>
-                    <SelectItem value="vendor">Vendor</SelectItem>
-                    <SelectItem value="delivery_boy">Delivery Boy</SelectItem>
-                    <SelectItem value="admin">Admin</SelectItem>
+                    {roles.map((r) => (
+                        <SelectItem key={r.id} value={r.name}>
+                            {r.name.charAt(0).toUpperCase() + r.name.slice(1)}
+                        </SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
             </div>
