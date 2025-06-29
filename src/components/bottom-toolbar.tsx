@@ -23,7 +23,7 @@ export function BottomToolbar({ user }: BottomToolbarProps) {
   ];
   
   const accountItem = {
-      href: user ? "/" : "/login", 
+      href: user ? "/account" : "/login", 
       label: user ? "Account" : "Login", 
       icon: UserIcon 
   };
@@ -36,7 +36,7 @@ export function BottomToolbar({ user }: BottomToolbarProps) {
   
   // Custom active check for account link to avoid conflict with home
   const isAccountActive = () => {
-      if (user) return false; // Don't show active for logged in user as it points to '/'
+      if (user) return pathname.startsWith('/account');
       return pathname === '/login' || pathname.startsWith('/register');
   }
 
@@ -57,20 +57,20 @@ export function BottomToolbar({ user }: BottomToolbarProps) {
           </Link>
         ))}
 
-        {isCustomer && (
-          <button
-            onClick={() => setIsCartOpen(true)}
-            className="inline-flex flex-1 flex-col items-center justify-center px-2 hover:bg-muted group text-muted-foreground relative h-full"
-          >
-            <ShoppingCart className="w-5 h-5 mb-1" />
-            <span className="text-xs">Cart</span>
-            {cartCount > 0 && (
-              <span className="absolute top-2 right-1/2 translate-x-[18px] flex h-4 w-4 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold">
-                {cartCount}
-              </span>
-            )}
-          </button>
-        )}
+        
+        <button
+          onClick={() => setIsCartOpen(true)}
+          className="inline-flex flex-1 flex-col items-center justify-center px-2 hover:bg-muted group text-muted-foreground relative h-full"
+        >
+          <ShoppingCart className="w-5 h-5 mb-1" />
+          <span className="text-xs">Cart</span>
+          {cartCount > 0 && (
+            <span className="absolute top-2 right-1/2 translate-x-[18px] flex h-4 w-4 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold">
+              {cartCount}
+            </span>
+          )}
+        </button>
+        
 
         <Link
           href={accountItem.href}

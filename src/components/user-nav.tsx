@@ -70,7 +70,9 @@ export function UserNav({ user }: UserNavProps) {
           <DropdownMenuItem asChild>
             <Link href={getDashboardLink()}>Dashboard</Link>
           </DropdownMenuItem>
-          <DropdownMenuItem disabled>Profile</DropdownMenuItem>
+          <DropdownMenuItem asChild>
+            <Link href="/account">My Account</Link>
+          </DropdownMenuItem>
           <DropdownMenuItem disabled>Settings</DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />

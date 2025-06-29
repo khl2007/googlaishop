@@ -1,3 +1,4 @@
+
 import getDatabase from '@/lib/database';
 
 export async function getProductBySlug(slug) {
@@ -153,6 +154,23 @@ export async function getAdminUserById(id) {
   });
 
   return user;
+}
+
+export async function getUserProfileById(id) {
+  const db = getDatabase();
+  return new Promise((resolve, reject) => {
+    db.get(`
+        SELECT id, fullName, username, phoneNumber, country, city
+        FROM users
+        WHERE id = ?
+    `, [id], (err, row) => {
+      if (err) {
+        console.error('Database error in getUserProfileById:', err);
+        return reject(new Error('Failed to fetch user profile.'));
+      }
+      resolve(row);
+    });
+  });
 }
 
 export async function getRoles() {

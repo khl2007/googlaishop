@@ -1,3 +1,4 @@
+
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
@@ -57,7 +58,7 @@ export function middleware(request: NextRequest) {
     }
   }
 
-  if (pathname.startsWith('/checkout')) {
+  if (pathname.startsWith('/checkout') || pathname.startsWith('/account')) {
     if (!user) {
       return redirectToLogin();
     }
