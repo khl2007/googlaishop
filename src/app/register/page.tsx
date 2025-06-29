@@ -2,19 +2,13 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
-
-interface Role {
-  id: number;
-  name: string;
-}
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -25,37 +19,14 @@ export default function RegisterPage() {
   const [phoneNumber, setPhoneNumber] = useState("");
   const [country, setCountry] = useState("");
   const [city, setCity] = useState("");
-  const [role, setRole] = useState("");
-  const [roles, setRoles] = useState<Role[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-
-  useEffect(() => {
-    const fetchRoles = async () => {
-      try {
-        const res = await fetch('/api/roles');
-        if (res.ok) {
-          const data = await res.json();
-          setRoles(data);
-          if (data.length > 0) {
-            setRole(data[0].name); // Default to the first role
-          }
-        }
-      } catch (error) {
-        toast({
-            title: "Error",
-            description: "Could not load account types. Please try again later.",
-            variant: "destructive",
-        });
-        console.error("Failed to fetch roles", error);
-      }
-    };
-    fetchRoles();
-  }, [toast]);
 
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
+
+    const role = 'customer'; // Hardcode role for this registration form
 
     try {
       const res = await fetch("/api/auth/register", {
@@ -95,7 +66,7 @@ export default function RegisterPage() {
     <div className="flex min-h-[calc(100vh-10rem)] items-center justify-center py-12">
       <Card className="mx-auto max-w-sm">
         <CardHeader>
-          <CardTitle className="text-xl">Sign Up</CardTitle>
+          <CardTitle className="text-xl">Create your Customer Account</CardTitle>
           <CardDescription>
             Enter your information to create an account
           </CardDescription>
@@ -170,21 +141,6 @@ export default function RegisterPage() {
                         disabled={isLoading}
                     />
                 </div>
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="role">Account Type</Label>
-              <Select value={role} onValueChange={setRole} disabled={isLoading || roles.length === 0}>
-                <SelectTrigger id="role">
-                    <SelectValue placeholder="Select an account type" />
-                </SelectTrigger>
-                <SelectContent>
-                    {roles.map((r) => (
-                        <SelectItem key={r.id} value={r.name}>
-                            {r.name.charAt(0).toUpperCase() + r.name.slice(1)}
-                        </SelectItem>
-                    ))}
-                </SelectContent>
-              </Select>
             </div>
             <Button type="submit" className="w-full bg-primary text-primary-foreground hover:bg-primary/90" disabled={isLoading}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
