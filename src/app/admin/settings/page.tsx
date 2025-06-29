@@ -1,5 +1,7 @@
+
 import { getSettings } from "@/lib/data";
 import { SettingsForm } from "@/components/admin/settings-form";
+import { countries } from "@/lib/countries";
 
 export default async function SettingsPage() {
   const settings = await getSettings();
@@ -8,9 +10,6 @@ export default async function SettingsPage() {
   const timezones = [
     "Africa/Abidjan", "America/New_York", "America/Los_Angeles", "Asia/Tokyo", 
     "Australia/Sydney", "Europe/London", "Europe/Paris", "Pacific/Auckland", "UTC"
-  ];
-  const countries = [
-    "USA", "Canada", "United Kingdom", "Australia", "Japan", "Germany", "France"
   ];
 
   return (
