@@ -28,7 +28,7 @@ export default function RootLayout({
       <head />
       <body className={cn('min-h-screen font-body antialiased', inter.variable)}>
         <Providers>
-          <div className="relative flex min-h-dvh flex-col bg-background">
+          <div className="relative flex min-h-dvh flex-col">
             <Header />
             <main className="flex-1">{children}</main>
             <Footer />

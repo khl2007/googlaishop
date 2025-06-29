@@ -8,7 +8,7 @@ body {
 
 @layer base {
   :root {
-    --background: 0 0% 8%;
+    --background: 0 0% 9%;
     --foreground: 0 0% 98%;
     --card: 0 0% 12%;
     --card-foreground: 0 0% 98%;
@@ -43,7 +43,7 @@ body {
     --sidebar-ring: 328 100% 46%;
   }
   .dark {
-    --background: 0 0% 8%;
+    --background: 0 0% 9%;
     --foreground: 0 0% 98%;
     --card: 0 0% 12%;
     --card-foreground: 0 0% 98%;
@@ -83,6 +83,8 @@ body {
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply text-foreground;
+    background-color: hsl(var(--background));
+    background-image: radial-gradient(ellipse at top, hsl(0 0% 12%), hsl(var(--background)) 70%);
   }
 }
