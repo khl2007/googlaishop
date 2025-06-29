@@ -152,7 +152,7 @@ export function Header({ user }: HeaderProps) {
                     <span>${cartTotal.toFixed(2)}</span>
                   </div>
                   <p className="mt-1 text-sm text-muted-foreground">Shipping and taxes calculated at checkout.</p>
-                  <Button asChild size="lg" className={cn("mt-4 w-full bg-primary text-primary-foreground hover:bg-primary/90")}>
+                  <Button asChild size="lg" className={cn("mt-4 w-full bg-primary text-primary-foreground hover:bg-primary/90")} onClick={() => setIsCartOpen(false)}>
                       <Link href="/checkout">Checkout</Link>
                   </Button>
                 </div>
