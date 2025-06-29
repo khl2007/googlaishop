@@ -41,19 +41,19 @@ export function Header({ user }: HeaderProps) {
 
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header className="sticky top-0 z-50 w-full border-b border-transparent bg-[linear-gradient(to_left,#18101a,#431d4f_50%,#2d1d60_60%,#432066)]">
       <div className="container flex h-16 max-w-7xl items-center justify-between">
         <div className="flex items-center gap-6">
           <Link href="/" className="flex items-center gap-2">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6 text-primary"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path></svg>
-            <span className="font-bold font-headline text-lg">Zain</span>
+            <span className="font-bold font-headline text-lg text-primary-foreground">Zain</span>
           </Link>
           <nav className="hidden items-center gap-4 md:flex">
             {navLinks.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
-                className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+                className="text-sm font-medium text-primary-foreground/80 transition-colors hover:text-primary-foreground"
               >
                 {link.label}
               </Link>
@@ -67,7 +67,7 @@ export function Header({ user }: HeaderProps) {
                 <UserNav user={user} />
             ) : (
                 <>
-                    <Link href="/login" className={buttonVariants({ variant: "ghost" })}>
+                    <Link href="/login" className={cn(buttonVariants({ variant: "ghost" }), "text-primary-foreground hover:bg-white/10 hover:text-primary-foreground")}>
                         Log In
                     </Link>
                     <Link href="/register" className={buttonVariants({ variant: "default", className: "bg-primary text-primary-foreground hover:bg-primary/90" })}>
@@ -80,7 +80,7 @@ export function Header({ user }: HeaderProps) {
             <Button
               variant="outline"
               size="icon"
-              className="relative hidden md:inline-flex"
+              className="relative hidden md:inline-flex text-primary-foreground border-primary-foreground/50 hover:bg-white/10 hover:text-primary-foreground"
               onClick={() => setIsCartOpen(true)}
             >
               <ShoppingCart className="h-5 w-5" />
