@@ -1,5 +1,6 @@
 const sqlite3 = require('sqlite3').verbose();
 const fs = require('fs');
+const bcrypt = require('bcrypt');
 const { allCategories, allProducts } = require('/home/user/studio/src/lib/mock-data.js');
 
 const db = new sqlite3.Database('/home/user/studio/database.sqlite', (err) => {
@@ -13,6 +14,23 @@ const db = new sqlite3.Database('/home/user/studio/database.sqlite', (err) => {
 
 function seedDatabase() {
   db.serialize(() => {
+    // Seed Admin User
+    const saltRounds = 10;
+    const adminEmail = 'admin@example.com';
+    const adminPassword = 'adminpassword';
+    const adminFullName = 'Admin User';
+    const hashedPassword = bcrypt.hashSync(adminPassword, saltRounds);
+
+    const insertAdminStmt = db.prepare("INSERT OR IGNORE INTO users (username, password, fullName, role) VALUES (?, ?, ?, ?)");
+    insertAdminStmt.run(adminEmail, hashedPassword, adminFullName, 'admin', (err) => {
+      if (err) {
+        console.error('Error inserting admin user:', err.message);
+      }
+    });
+    insertAdminStmt.finalize();
+    console.log('Admin user seeding attempted.');
+
+
     // Insert categories
     const insertCategoryStmt = db.prepare('INSERT OR IGNORE INTO categories (id, name, slug) VALUES (?, ?, ?)');
     allCategories.forEach((category) => {
