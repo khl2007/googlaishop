@@ -14,6 +14,7 @@ import {
 import {
   ShoppingCart,
   X,
+  ArrowLeft,
 } from "lucide-react";
 import { useState } from "react";
 import { useCart } from "@/hooks/use-cart";
@@ -36,15 +37,24 @@ interface HeaderProps {
 
 export function Header({ user }: HeaderProps) {
   const { cartItems, cartCount, cartTotal, isCartOpen, setIsCartOpen, removeFromCart, updateQuantity } = useCart();
-  
+  const router = useRouter();
   const isCustomer = !user || user.role === 'customer';
 
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-transparent bg-[linear-gradient(to_left,#18101a,#431d4f_50%,#2d1d60_60%,#432066)]">
       <div className="container flex h-16 max-w-7xl items-center justify-between">
-        <div className="flex items-center gap-6">
-          <Link href="/" className="flex items-center gap-2">
+        <div className="flex items-center gap-4">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="md:hidden text-primary-foreground hover:bg-white/10 hover:text-primary-foreground"
+            onClick={() => router.back()}
+          >
+            <ArrowLeft className="h-5 w-5" />
+            <span className="sr-only">Back</span>
+          </Button>
+          <Link href="/" className="hidden items-center gap-2 md:flex">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6 text-primary"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path></svg>
             <span className="font-bold font-headline text-lg text-primary-foreground">Zain</span>
           </Link>
