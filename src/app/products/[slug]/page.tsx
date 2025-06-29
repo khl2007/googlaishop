@@ -8,8 +8,8 @@ import { getProductBySlug } from "@/lib/data";
 export default async function ProductPage({ params }: { params: { slug: string } }) {
   const product: Product | null = await getProductBySlug(params.slug);
 
-  if (!product) {
- notFound();
+  if (!product || !product.variants || product.variants.length === 0) {
+    notFound();
   }
 
   return (

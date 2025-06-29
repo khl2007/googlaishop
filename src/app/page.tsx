@@ -6,7 +6,7 @@ import { ArrowRight } from "lucide-react";
 
 export default async function Home() {
   const allProducts = await getAllProducts();
-  const featuredProducts = allProducts.slice(0, 4);
+  const featuredProducts = allProducts.filter(p => p.isFeatured).slice(0, 4);
 
   return (
     <div className="container mx-auto px-4">

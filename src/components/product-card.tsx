@@ -11,6 +11,11 @@ interface ProductCardProps {
 export function ProductCard({ product }: ProductCardProps) {
   const firstVariant = product.variants[0];
 
+  // If a product has no variants, don't render it. This prevents crashes.
+  if (!firstVariant) {
+    return null;
+  }
+
   return (
     <Card className="flex flex-col overflow-hidden rounded-lg shadow-md transition-shadow hover:shadow-xl">
       <CardHeader className="p-0">
