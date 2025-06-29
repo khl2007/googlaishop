@@ -1,8 +1,15 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useCallback } from "react";
 import type { Product, ProductVariant } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface ProductVariantSelectorsProps {
   product: Product;
@@ -26,7 +33,7 @@ export function ProductVariantSelectors({
     }
   }, [optionGroupsJSON]);
 
-  const getOptionsFromVariant = (variant: ProductVariant) => {
+  const getOptionsFromVariant = useCallback((variant: ProductVariant) => {
     const options: Record<string, string> = {};
     const values = variant.name.split(",").map(v => v.trim());
     optionGroupNames.forEach((groupName, index) => {
@@ -35,13 +42,13 @@ export function ProductVariantSelectors({
       }
     });
     return options;
-  };
+  }, [optionGroupNames]);
 
   const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>(() => getOptionsFromVariant(selectedVariant));
 
   useEffect(() => {
     setSelectedOptions(getOptionsFromVariant(selectedVariant));
-  }, [selectedVariant, optionGroupNames]);
+  }, [selectedVariant, getOptionsFromVariant]);
 
   const allOptions = useMemo(() => {
     if (optionGroupNames.length === 0) return [];
@@ -52,16 +59,16 @@ export function ProductVariantSelectors({
     });
 
     variants.forEach(variant => {
-      const values = variant.name.split(",").map(v => v.trim());
-      optionGroupNames.forEach((groupName, index) => {
-        if (values[index]) {
-          groups.get(groupName)?.values.add(values[index]);
+      const variantOptions = getOptionsFromVariant(variant);
+      optionGroupNames.forEach((groupName) => {
+        if (variantOptions[groupName]) {
+          groups.get(groupName)?.values.add(variantOptions[groupName]);
         }
       });
     });
 
     return Array.from(groups.values()).map(g => ({ ...g, values: Array.from(g.values) }));
-  }, [variants, optionGroupNames]);
+  }, [variants, optionGroupNames, getOptionsFromVariant]);
 
 
   const handleOptionSelect = (groupName: string, value: string) => {
@@ -98,50 +105,67 @@ export function ProductVariantSelectors({
       {allOptions.map((group) => (
         <div key={group.name}>
           <h3 className="text-lg font-semibold">{group.name}</h3>
-          <div className="mt-2 flex flex-wrap gap-2">
-            {group.values.map((value) => {
-              const isSelected = selectedOptions[group.name] === value;
-              
-              if (group.name.toLowerCase() === "color") {
-                const variantForColor = variants.find(
-                  v => getOptionsFromVariant(v)[group.name] === value && v.color_hex
-                );
-                const hex = variantForColor?.color_hex;
+          <div className="mt-2">
+            {group.name.toLowerCase() === 'color' ? (
+              <div className="flex flex-wrap gap-2">
+                {group.values.map((value) => {
+                  const isSelected = selectedOptions[group.name] === value;
+                  const variantForColor = variants.find(
+                    v => getOptionsFromVariant(v)[group.name] === value && v.color_hex
+                  );
+                  const hex = variantForColor?.color_hex;
 
-                if (hex) {
+                  if (hex) {
+                    return (
+                      <button
+                        key={value}
+                        onClick={() => handleOptionSelect(group.name, value)}
+                        title={value}
+                        className={cn(
+                          "h-8 w-8 rounded-full border-2 transition-transform duration-100 ease-in-out hover:scale-110 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+                          isSelected
+                            ? "border-primary scale-110"
+                            : "border-border"
+                        )}
+                        style={{ backgroundColor: hex }}
+                      />
+                    );
+                  }
+
+                  // Default button for other option types
                   return (
                     <button
                       key={value}
                       onClick={() => handleOptionSelect(group.name, value)}
-                      title={value}
                       className={cn(
-                        "h-8 w-8 rounded-full border-2 transition-transform duration-100 ease-in-out hover:scale-110 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+                        "rounded-md border px-4 py-2 text-sm font-medium transition-colors",
                         isSelected
-                          ? "border-primary scale-110"
-                          : "border-border"
+                          ? "border-primary bg-primary text-primary-foreground"
+                          : "bg-transparent hover:bg-accent hover:text-accent-foreground"
                       )}
-                      style={{ backgroundColor: hex }}
-                    />
+                    >
+                      {value}
+                    </button>
                   );
-                }
-              }
-
-              // Default button for other option types
-              return (
-                <button
-                  key={value}
-                  onClick={() => handleOptionSelect(group.name, value)}
-                  className={cn(
-                    "rounded-md border px-4 py-2 text-sm font-medium transition-colors",
-                    isSelected
-                      ? "border-primary bg-primary text-primary-foreground"
-                      : "bg-transparent hover:bg-accent hover:text-accent-foreground"
-                  )}
-                >
-                  {value}
-                </button>
-              );
-            })}
+                })}
+              </div>
+            ) : (
+              <Select
+                onValueChange={(value) => handleOptionSelect(group.name, value)}
+                value={selectedOptions[group.name]}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={`Select a ${group.name.toLowerCase()}`} />
+                </SelectTrigger>
+                <SelectContent>
+                  {group.values.map((value) => (
+                    <SelectItem key={value} value={value}>
+                      {value}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
           </div>
         </div>
       ))}
