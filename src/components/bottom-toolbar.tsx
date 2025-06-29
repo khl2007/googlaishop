@@ -7,6 +7,7 @@ import { Home, LayoutGrid, ShoppingCart, User as UserIcon } from "lucide-react";
 import { useCart } from "@/hooks/use-cart";
 import { cn } from "@/lib/utils";
 import type { User } from "@/lib/types";
+import { useEffect, useState } from "react";
 
 interface BottomToolbarProps {
   user: User | null;
@@ -16,6 +17,11 @@ export function BottomToolbar({ user }: BottomToolbarProps) {
   const pathname = usePathname();
   const { cartCount, setIsCartOpen } = useCart();
   const isCustomer = !user || user.role === 'customer';
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const navItems = [
     { href: "/", label: "Home", icon: Home },
@@ -65,7 +71,7 @@ export function BottomToolbar({ user }: BottomToolbarProps) {
           >
             <ShoppingCart className="w-5 h-5 mb-1" />
             <span className="text-xs">Cart</span>
-            {cartCount > 0 && (
+            {isMounted && cartCount > 0 && (
               <span className="absolute top-2 right-1/2 translate-x-[18px] flex h-4 w-4 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold">
                 {cartCount}
               </span>
