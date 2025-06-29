@@ -3,6 +3,7 @@ const db = new sqlite3.Database('./database.sqlite');
 
 db.serialize(() => {
   // Drop existing tables to ensure a clean slate, especially for schema changes.
+  db.run("DROP TABLE IF EXISTS addresses");
   db.run("DROP TABLE IF EXISTS role_permissions");
   db.run("DROP TABLE IF EXISTS permissions");
   db.run("DROP TABLE IF EXISTS users");
@@ -37,6 +38,23 @@ db.serialize(() => {
       PRIMARY KEY (role_id, permission_id),
       FOREIGN KEY(role_id) REFERENCES roles(id),
       FOREIGN KEY(permission_id) REFERENCES permissions(id)
+    )
+  `);
+
+  // Create addresses table
+  db.run(`
+    CREATE TABLE addresses (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      fullName TEXT,
+      street TEXT NOT NULL,
+      apartment TEXT,
+      city TEXT NOT NULL,
+      state TEXT,
+      zip TEXT NOT NULL,
+      country TEXT NOT NULL,
+      isPrimary BOOLEAN DEFAULT 0,
+      FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
     )
   `);
 
