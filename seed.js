@@ -1,9 +1,9 @@
 const sqlite3 = require('sqlite3').verbose();
 const fs = require('fs');
 const bcrypt = require('bcrypt');
-const { allCategories, allProducts } = require('/home/user/studio/src/lib/mock-data.js');
+const { allCategories, allProducts } = require('./src/lib/mock-data.js');
 
-const db = new sqlite3.Database('/home/user/studio/database.sqlite', (err) => {
+const db = new sqlite3.Database('./database.sqlite', (err) => {
   if (err) {
     console.error('Error connecting to the database:', err.message);
   } else {
