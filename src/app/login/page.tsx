@@ -44,8 +44,9 @@ export default function LoginPage() {
             redirectUrl = '/delivery';
         }
         
-        router.push(redirectUrl);
-        router.refresh(); 
+        // Use a full page reload for redirection after login to ensure
+        // all server components and session data are correctly refreshed.
+        window.location.href = redirectUrl;
       } else {
         const data = await res.json();
         toast({
