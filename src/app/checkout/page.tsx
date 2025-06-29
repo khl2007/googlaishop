@@ -9,20 +9,21 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
+import { useEffect } from "react";
+import { Loader2 } from "lucide-react";
 
 export default function CheckoutPage() {
   const { cartItems, cartTotal, clearCart } = useCart();
   const router = useRouter();
   const { toast } = useToast();
 
-  if (cartItems.length === 0) {
-    // Redirect to home if cart is empty, maybe show a message first
-    // For now, simple redirect
-    if (typeof window !== "undefined") {
+  useEffect(() => {
+    // If the component mounts and the cart is empty, redirect.
+    // This prevents users from accessing checkout directly without items.
+    if (cartItems.length === 0) {
       router.push("/");
     }
-    return null;
-  }
+  }, [cartItems.length, router]);
   
   const handlePlaceOrder = (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,6 +35,18 @@ export default function CheckoutPage() {
     });
     clearCart();
     router.push("/");
+  }
+
+  // While redirecting or if cart is empty, show a loading state.
+  if (cartItems.length === 0) {
+    return (
+      <div className="flex min-h-[calc(100vh-10rem)] items-center justify-center">
+        <div className="flex items-center gap-2">
+          <Loader2 className="h-8 w-8 animate-spin" />
+          <p className="text-muted-foreground">Redirecting...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
