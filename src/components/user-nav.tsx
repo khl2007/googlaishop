@@ -29,23 +29,12 @@ export function UserNav({ user }: UserNavProps) {
     });
 
     if (res.ok) {
-      router.push("/login");
-      router.refresh();
+      window.location.href = '/login';
     }
   };
 
-  const getDashboardLink = () => {
-    switch (user.role) {
-      case 'admin':
-        return '/admin';
-      case 'vendor':
-        return '/vendor';
-      case 'delivery':
-        return '/delivery';
-      default:
-        return '/';
-    }
-  };
+  const isCustomer = user.role === 'customer';
+  const dashboardLink = isCustomer ? '/account' : `/${user.role}`;
 
   return (
     <DropdownMenu>
@@ -68,11 +57,13 @@ export function UserNav({ user }: UserNavProps) {
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
           <DropdownMenuItem asChild>
-            <Link href={getDashboardLink()}>Dashboard</Link>
+            <Link href={dashboardLink}>Dashboard</Link>
           </DropdownMenuItem>
-          <DropdownMenuItem asChild>
-            <Link href="/account">My Account</Link>
-          </DropdownMenuItem>
+          {!isCustomer && (
+            <DropdownMenuItem asChild>
+              <Link href="/account">My Account</Link>
+            </DropdownMenuItem>
+          )}
           <DropdownMenuItem disabled>Settings</DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />

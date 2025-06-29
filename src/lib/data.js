@@ -277,3 +277,28 @@ export async function addUserAddress(userId, addressData) {
         });
     });
 }
+
+export async function updateUserAddress(addressId, userId, addressData) {
+    const db = getDatabase();
+    const { fullName, street, apartment, city, state, zip, country } = addressData;
+    return new Promise((resolve, reject) => {
+        const sql = `UPDATE addresses SET fullName = ?, street = ?, apartment = ?, city = ?, state = ?, zip = ?, country = ? WHERE id = ? AND user_id = ?`;
+        db.run(sql, [fullName, street, apartment, city, state, zip, country, addressId, userId], function(err) {
+            if (err) return reject(err);
+            if (this.changes === 0) return reject(new Error("Address not found or permission denied."));
+            resolve(this);
+        });
+    });
+}
+
+export async function deleteUserAddress(addressId, userId) {
+    const db = getDatabase();
+    return new Promise((resolve, reject) => {
+        const sql = 'DELETE FROM addresses WHERE id = ? AND user_id = ?';
+        db.run(sql, [addressId, userId], function(err) {
+            if (err) return reject(err);
+            if (this.changes === 0) return reject(new Error("Address not found or permission denied."));
+            resolve(this);
+        });
+    });
+}
