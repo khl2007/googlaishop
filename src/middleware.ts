@@ -30,6 +30,14 @@ export function middleware(request: NextRequest) {
     loginUrl.searchParams.set('redirect', pathname);
     return NextResponse.redirect(loginUrl);
   };
+  
+  const isPrivilegedUser = user && ['admin', 'vendor', 'delivery'].includes(user.role);
+
+  // Prevent admin, vendor, or delivery from accessing cart and checkout
+  if (isPrivilegedUser && (pathname.startsWith('/cart') || pathname.startsWith('/checkout'))) {
+      return NextResponse.redirect(new URL('/', request.url));
+  }
+
 
   if (pathname.startsWith('/admin')) {
     if (!user || user.role !== 'admin') {

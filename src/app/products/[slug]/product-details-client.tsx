@@ -2,22 +2,25 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import type { Product, ProductVariant } from "@/lib/types";
+import type { Product, ProductVariant, User } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/hooks/use-cart";
 import { ProductVariantSelectors } from "@/components/product-variant-selectors";
 
 interface ProductDetailsClientProps {
   product: Product;
+  user: User | null;
 }
 
-export function ProductDetailsClient({ product }: ProductDetailsClientProps) {
+export function ProductDetailsClient({ product, user }: ProductDetailsClientProps) {
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant>(product.variants[0]);
   const { addToCart } = useCart();
 
   const handleAddToCart = () => {
     addToCart(product, selectedVariant, 1);
   };
+
+  const isCustomer = !user || user.role === 'customer';
 
   return (
     <div className="grid gap-12 md:grid-cols-2">
@@ -50,14 +53,16 @@ export function ProductDetailsClient({ product }: ProductDetailsClientProps) {
         </div>
 
         <div className="mt-auto pt-8">
-          <Button
-            size="lg"
-            className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
-            onClick={handleAddToCart}
-            disabled={selectedVariant.stock <= 0}
-          >
-            {selectedVariant.stock > 0 ? "Add to Cart" : "Out of Stock"}
-          </Button>
+          {isCustomer && (
+            <Button
+              size="lg"
+              className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
+              onClick={handleAddToCart}
+              disabled={selectedVariant.stock <= 0}
+            >
+              {selectedVariant.stock > 0 ? "Add to Cart" : "Out of Stock"}
+            </Button>
+          )}
         </div>
       </div>
     </div>

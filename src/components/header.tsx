@@ -52,6 +52,8 @@ export function Header({ user }: HeaderProps) {
     }
   };
 
+  const isCustomer = !user || user.role === 'customer';
+
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -89,19 +91,21 @@ export function Header({ user }: HeaderProps) {
                 </>
             )}
           </div>
-          <Button
-            variant="outline"
-            size="icon"
-            className="relative"
-            onClick={() => setIsCartOpen(true)}
-          >
-            <ShoppingCart className="h-5 w-5" />
-            {cartCount > 0 && (
-              <span className="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-accent text-accent-foreground text-xs font-bold">
-                {cartCount}
-              </span>
-            )}
-          </Button>
+          {isCustomer && (
+            <Button
+              variant="outline"
+              size="icon"
+              className="relative"
+              onClick={() => setIsCartOpen(true)}
+            >
+              <ShoppingCart className="h-5 w-5" />
+              {cartCount > 0 && (
+                <span className="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-accent text-accent-foreground text-xs font-bold">
+                  {cartCount}
+                </span>
+              )}
+            </Button>
+          )}
 
           <Button
             variant="ghost"
@@ -152,61 +156,63 @@ export function Header({ user }: HeaderProps) {
         </SheetContent>
       </Sheet>
 
-      <Sheet open={isCartOpen} onOpenChange={setIsCartOpen}>
-        <SheetContent className="flex w-full flex-col sm:max-w-md">
-          <SheetHeader>
-            <SheetTitle>Shopping Cart ({cartCount})</SheetTitle>
-          </SheetHeader>
-          {cartItems.length > 0 ? (
-            <>
-              <div className="flex-1 overflow-y-auto pr-4">
-                <div className="flex flex-col gap-4">
-                  {cartItems.map(item => (
-                    <div key={item.variantId} className="flex items-center gap-4">
-                      <Image src={item.image} alt={item.name} width={80} height={80} className="rounded-md" data-ai-hint="product image" />
-                      <div className="flex-1">
-                        <h3 className="font-semibold">{item.name}</h3>
-                        <p className="text-sm text-muted-foreground">{item.variantName}</p>
-                        <p className="text-sm font-medium">${item.price.toFixed(2)}</p>
-                        <div className="mt-2 flex items-center gap-2">
-                           <Input
-                              type="number"
-                              min="1"
-                              value={item.quantity}
-                              onChange={(e) => updateQuantity(item.variantId, parseInt(e.target.value))}
-                              className="h-8 w-16"
-                            />
+      {isCustomer && (
+        <Sheet open={isCartOpen} onOpenChange={setIsCartOpen}>
+          <SheetContent className="flex w-full flex-col sm:max-w-md">
+            <SheetHeader>
+              <SheetTitle>Shopping Cart ({cartCount})</SheetTitle>
+            </SheetHeader>
+            {cartItems.length > 0 ? (
+              <>
+                <div className="flex-1 overflow-y-auto pr-4">
+                  <div className="flex flex-col gap-4">
+                    {cartItems.map(item => (
+                      <div key={item.variantId} className="flex items-center gap-4">
+                        <Image src={item.image} alt={item.name} width={80} height={80} className="rounded-md" data-ai-hint="product image" />
+                        <div className="flex-1">
+                          <h3 className="font-semibold">{item.name}</h3>
+                          <p className="text-sm text-muted-foreground">{item.variantName}</p>
+                          <p className="text-sm font-medium">${item.price.toFixed(2)}</p>
+                          <div className="mt-2 flex items-center gap-2">
+                             <Input
+                                type="number"
+                                min="1"
+                                value={item.quantity}
+                                onChange={(e) => updateQuantity(item.variantId, parseInt(e.target.value))}
+                                className="h-8 w-16"
+                              />
+                          </div>
                         </div>
+                        <Button variant="ghost" size="icon" onClick={() => removeFromCart(item.variantId)}>
+                          <X className="h-4 w-4" />
+                        </Button>
                       </div>
-                      <Button variant="ghost" size="icon" onClick={() => removeFromCart(item.variantId)}>
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
-              </div>
-              <div className="border-t pt-4">
-                <div className="flex justify-between font-bold">
-                  <span>Subtotal</span>
-                  <span>${cartTotal.toFixed(2)}</span>
+                <div className="border-t pt-4">
+                  <div className="flex justify-between font-bold">
+                    <span>Subtotal</span>
+                    <span>${cartTotal.toFixed(2)}</span>
+                  </div>
+                  <p className="mt-1 text-sm text-muted-foreground">Shipping and taxes calculated at checkout.</p>
+                  <Button asChild size="lg" className={cn("mt-4 w-full bg-primary text-primary-foreground hover:bg-primary/90")}>
+                      <Link href="/checkout">Checkout</Link>
+                  </Button>
                 </div>
-                <p className="mt-1 text-sm text-muted-foreground">Shipping and taxes calculated at checkout.</p>
-                <Button asChild size="lg" className={cn("mt-4 w-full bg-primary text-primary-foreground hover:bg-primary/90")}>
-                    <Link href="/checkout">Checkout</Link>
-                </Button>
+              </>
+            ) : (
+              <div className="flex flex-1 flex-col items-center justify-center gap-4">
+                  <ShoppingCart className="h-24 w-24 text-muted-foreground/30" />
+                  <p className="text-lg text-muted-foreground">Your cart is empty.</p>
+                  <Button asChild onClick={() => setIsCartOpen(false)}>
+                      <Link href="/products">Start Shopping</Link>
+                  </Button>
               </div>
-            </>
-          ) : (
-            <div className="flex flex-1 flex-col items-center justify-center gap-4">
-                <ShoppingCart className="h-24 w-24 text-muted-foreground/30" />
-                <p className="text-lg text-muted-foreground">Your cart is empty.</p>
-                <Button asChild onClick={() => setIsCartOpen(false)}>
-                    <Link href="/products">Start Shopping</Link>
-                </Button>
-            </div>
-          )}
-        </SheetContent>
-      </Sheet>
+            )}
+          </SheetContent>
+        </Sheet>
+      )}
     </header>
   );
 }

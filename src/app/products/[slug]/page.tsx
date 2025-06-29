@@ -4,9 +4,13 @@ import { AiRecommendations } from "@/components/ai-recommendations";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 import type { Product } from "@/lib/types";
 import { getProductBySlug } from "@/lib/data";
+import { getUser } from "@/lib/session";
 
 export default async function ProductPage({ params }: { params: { slug: string } }) {
-  const product: Product | null = await getProductBySlug(params.slug);
+  const [product, user] = await Promise.all([
+    getProductBySlug(params.slug),
+    getUser(),
+  ]);
 
   if (!product || !product.variants || product.variants.length === 0) {
     notFound();
@@ -30,7 +34,7 @@ export default async function ProductPage({ params }: { params: { slug: string }
             </BreadcrumbList>
         </Breadcrumb>
 
-        <ProductDetailsClient product={product} />
+        <ProductDetailsClient product={product} user={user} />
         <AiRecommendations productId={product.id} />
     </div>
   );
