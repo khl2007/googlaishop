@@ -27,7 +27,7 @@ export async function GET(request, { params }) {
 // UPDATE a product
 export async function PUT(request, { params }) {
   const { id } = params;
-  const { name, slug, description, categoryId, optionGroups } = await request.json();
+   const { name, slug, description, categoryId, variants, optionGroups } = await request.json();
   const db = getDatabase();
 
   if (!name || !slug || !description || !categoryId) {
@@ -36,12 +36,15 @@ export async function PUT(request, { params }) {
 
   try {
     await new Promise((resolve, reject) => {
-      db.run('UPDATE products SET name = ?, slug = ?, description = ?, categoryId = ?, optionGroups = ? WHERE id = ?', [name, slug, description, categoryId, optionGroups, id], function (err) {
+      db.run('UPDATE products SET name = ?, slug = ?, description = ?, categoryId = ?, optionGroups = ? WHERE id = ?', 
+      [name, slug, description, categoryId, optionGroups, id], function (err) {
         if (err) reject(err);
         if (this.changes === 0) reject(new Error('Product not found'));
         resolve(this);
       });
     });
+    // In edit mode, we are not updating variants for simplicity now.
+    // A more complex implementation could handle variant updates.
     return NextResponse.json({ message: 'Product updated successfully' });
   } catch (error) {
     return NextResponse.json({ message: 'Failed to update product', error: error.message }, { status: 500 });

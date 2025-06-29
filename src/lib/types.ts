@@ -11,6 +11,7 @@ export type ProductVariant = {
   image: string;
   stock: number;
   color_hex: string | null;
+  options: string | { [key: string]: string }; // JSON string from DB, object in app
 };
 
 export type Product = {
@@ -19,7 +20,7 @@ export type Product = {
   slug: string;
   description: string;
   categoryId: string;
-  optionGroups?: string | null;
+  optionGroups?: string | null; // JSON string
   variants: ProductVariant[];
 };
 

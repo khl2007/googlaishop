@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useMemo, useState, useEffect, useCallback } from "react";
@@ -17,6 +18,15 @@ interface ProductVariantSelectorsProps {
   onVariantChange: (variant: ProductVariant) => void;
 }
 
+interface OptionGroup {
+  name: string;
+  options: {
+    value: string;
+    image?: string;
+    color_hex?: string;
+  }[];
+}
+
 export function ProductVariantSelectors({
   product,
   selectedVariant,
@@ -24,7 +34,7 @@ export function ProductVariantSelectors({
 }: ProductVariantSelectorsProps) {
 
   const { variants, optionGroups: optionGroupsJSON } = product;
-  const optionGroupNames: string[] = useMemo(() => {
+  const optionGroups: OptionGroup[] = useMemo(() => {
     try {
       return optionGroupsJSON ? JSON.parse(optionGroupsJSON) : [];
     } catch (e) {
@@ -34,42 +44,21 @@ export function ProductVariantSelectors({
   }, [optionGroupsJSON]);
 
   const getOptionsFromVariant = useCallback((variant: ProductVariant) => {
-    const options: Record<string, string> = {};
-    const values = variant.name.split(",").map(v => v.trim());
-    optionGroupNames.forEach((groupName, index) => {
-      if (values[index]) {
-        options[groupName] = values[index];
+    try {
+      if (typeof variant.options === 'string') {
+        return JSON.parse(variant.options);
       }
-    });
-    return options;
-  }, [optionGroupNames]);
+      return variant.options || {};
+    } catch {
+      return {};
+    }
+  }, []);
 
   const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>(() => getOptionsFromVariant(selectedVariant));
 
   useEffect(() => {
     setSelectedOptions(getOptionsFromVariant(selectedVariant));
   }, [selectedVariant, getOptionsFromVariant]);
-
-  const allOptions = useMemo(() => {
-    if (optionGroupNames.length === 0) return [];
-    
-    const groups = new Map<string, { name: string; values: Set<string> }>();
-    optionGroupNames.forEach(groupName => {
-      groups.set(groupName, { name: groupName, values: new Set() });
-    });
-
-    variants.forEach(variant => {
-      const variantOptions = getOptionsFromVariant(variant);
-      optionGroupNames.forEach((groupName) => {
-        if (variantOptions[groupName]) {
-          groups.get(groupName)?.values.add(variantOptions[groupName]);
-        }
-      });
-    });
-
-    return Array.from(groups.values()).map(g => ({ ...g, values: Array.from(g.values) }));
-  }, [variants, optionGroupNames, getOptionsFromVariant]);
-
 
   const handleOptionSelect = (groupName: string, value: string) => {
     const newSelectedOptions = { ...selectedOptions, [groupName]: value };
@@ -81,8 +70,9 @@ export function ProductVariantSelectors({
     for (const variant of variants) {
         const variantOptions = getOptionsFromVariant(variant);
         let currentMatchCount = 0;
-        for (const group of optionGroupNames) {
-            if (variantOptions[group] === newSelectedOptions[group]) {
+        
+        for (const group of optionGroups) {
+            if (variantOptions[group.name] === newSelectedOptions[group.name]) {
                 currentMatchCount++;
             }
         }
@@ -98,29 +88,26 @@ export function ProductVariantSelectors({
     }
   };
   
-  if (variants.length <= 1 || allOptions.length === 0) return null;
+  if (variants.length <= 1 || optionGroups.length === 0) return null;
 
   return (
     <>
-      {allOptions.map((group) => (
+      {optionGroups.map((group) => (
         <div key={group.name}>
           <h3 className="text-lg font-semibold">{group.name}</h3>
           <div className="mt-2">
             {group.name.toLowerCase() === 'color' ? (
               <div className="flex flex-wrap gap-2">
-                {group.values.map((value) => {
-                  const isSelected = selectedOptions[group.name] === value;
-                  const variantForColor = variants.find(
-                    v => getOptionsFromVariant(v)[group.name] === value && v.color_hex
-                  );
-                  const hex = variantForColor?.color_hex;
+                {group.options.map((option) => {
+                  const isSelected = selectedOptions[group.name] === option.value;
+                  const hex = option.color_hex;
 
                   if (hex) {
                     return (
                       <button
-                        key={value}
-                        onClick={() => handleOptionSelect(group.name, value)}
-                        title={value}
+                        key={option.value}
+                        onClick={() => handleOptionSelect(group.name, option.value)}
+                        title={option.value}
                         className={cn(
                           "h-8 w-8 rounded-full border-2 transition-transform duration-100 ease-in-out hover:scale-110 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
                           isSelected
@@ -132,11 +119,11 @@ export function ProductVariantSelectors({
                     );
                   }
 
-                  // Default button for other option types
+                  // Fallback for non-hex colors
                   return (
                     <button
-                      key={value}
-                      onClick={() => handleOptionSelect(group.name, value)}
+                      key={option.value}
+                      onClick={() => handleOptionSelect(group.name, option.value)}
                       className={cn(
                         "rounded-md border px-4 py-2 text-sm font-medium transition-colors",
                         isSelected
@@ -144,7 +131,7 @@ export function ProductVariantSelectors({
                           : "bg-transparent hover:bg-accent hover:text-accent-foreground"
                       )}
                     >
-                      {value}
+                      {option.value}
                     </button>
                   );
                 })}
@@ -158,9 +145,9 @@ export function ProductVariantSelectors({
                   <SelectValue placeholder={`Select a ${group.name.toLowerCase()}`} />
                 </SelectTrigger>
                 <SelectContent>
-                  {group.values.map((value) => (
-                    <SelectItem key={value} value={value}>
-                      {value}
+                  {group.options.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.value}
                     </SelectItem>
                   ))}
                 </SelectContent>
