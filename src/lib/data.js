@@ -167,3 +167,39 @@ export async function getRoles() {
         });
     });
 }
+
+export async function getPrimaryAddressByUserId(userId) {
+    const db = getDatabase();
+    return new Promise((resolve, reject) => {
+        db.get('SELECT * FROM addresses WHERE user_id = ? AND isPrimary = 1', [userId], (err, row) => {
+            if (err) {
+                console.error('Database error in getPrimaryAddressByUserId:', err);
+                return reject(new Error('Failed to fetch address.'));
+            }
+            resolve(row);
+        });
+    });
+}
+
+export async function upsertPrimaryAddress(userId, addressData) {
+    const db = getDatabase();
+    const { fullName, street, apartment, city, state, zip, country } = addressData;
+
+    const existingAddress = await getPrimaryAddressByUserId(userId);
+
+    return new Promise((resolve, reject) => {
+        if (existingAddress) {
+            const sql = `UPDATE addresses SET fullName = ?, street = ?, apartment = ?, city = ?, state = ?, zip = ?, country = ? WHERE id = ?`;
+            db.run(sql, [fullName, street, apartment, city, state, zip, country, existingAddress.id], function(err) {
+                if (err) reject(err);
+                resolve(this);
+            });
+        } else {
+            const sql = `INSERT INTO addresses (user_id, fullName, street, apartment, city, state, zip, country, isPrimary) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)`;
+            db.run(sql, [userId, fullName, street, apartment, city, state, zip, country], function(err) {
+                if (err) reject(err);
+                resolve(this);
+            });
+        }
+    });
+}

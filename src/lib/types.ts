@@ -40,3 +40,21 @@ export type User = {
   fullName: string;
   role: 'admin' | 'vendor' | 'customer' | 'delivery';
 };
+
+export type Role = {
+  id: number;
+  name: string;
+};
+
+export type Address = {
+  id: number;
+  user_id: number;
+  fullName: string;
+  street: string;
+  apartment?: string;
+  city: string;
+  state?: string;
+  zip: string;
+  country: string;
+  isPrimary: boolean;
+};
