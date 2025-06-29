@@ -168,6 +168,26 @@ export async function getRoles() {
     });
 }
 
+export async function getVendors() {
+    const db = getDatabase();
+    return new Promise((resolve, reject) => {
+        db.all(`
+            SELECT u.id, u.fullName 
+            FROM users u
+            JOIN roles r ON u.role_id = r.id
+            WHERE r.name = 'vendor'
+            ORDER BY u.fullName
+        `, (err, rows) => {
+            if (err) {
+                console.error('Database error in getVendors:', err);
+                return reject(new Error('Failed to fetch vendors.'));
+            }
+            resolve(rows);
+        });
+    });
+}
+
+
 export async function getPrimaryAddressByUserId(userId) {
     const db = getDatabase();
     return new Promise((resolve, reject) => {

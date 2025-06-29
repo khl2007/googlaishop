@@ -45,18 +45,25 @@ const formSchema = z.object({
   slug: z.string().min(2, "Slug must be at least 2 characters.").regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Slug must be lowercase and contain only letters, numbers, and hyphens."),
   description: z.string().min(10, "Description must be at least 10 characters."),
   categoryId: z.string().min(1, "Please select a category."),
+  vendorId: z.string().min(1, "Please select a vendor."),
   optionGroups: z.array(optionGroupSchema).optional(),
   variants: z.array(variantSchema).min(1, "At least one product variant is required."),
 });
 
 type ProductFormValues = z.infer<typeof formSchema>;
 
+interface Vendor {
+    id: number;
+    fullName: string;
+}
+
 interface ProductFormProps {
   product?: Product;
   categories: Category[];
+  vendors: Vendor[];
 }
 
-export function ProductForm({ product, categories }: ProductFormProps) {
+export function ProductForm({ product, categories, vendors }: ProductFormProps) {
   const router = useRouter();
   const { toast } = useToast();
   const isEditMode = !!product;
@@ -68,6 +75,7 @@ export function ProductForm({ product, categories }: ProductFormProps) {
       slug: product?.slug || "",
       description: product?.description || "",
       categoryId: product?.categoryId || "",
+      vendorId: product?.vendorId?.toString() || "",
       optionGroups: product?.optionGroups ? JSON.parse(product.optionGroups) : [],
       variants: product?.variants.map(v => ({
           id: v.id,
@@ -112,6 +120,7 @@ export function ProductForm({ product, categories }: ProductFormProps) {
 
     const transformedData = {
         ...data,
+        vendorId: parseInt(data.vendorId),
         optionGroups: data.optionGroups ? JSON.stringify(data.optionGroups) : "[]",
         variants: data.variants.map(v => {
             const optionValues = v.options ? Object.values(v.options) : [];
@@ -173,15 +182,26 @@ export function ProductForm({ product, categories }: ProductFormProps) {
                 <FormField control={form.control} name="description" render={({ field }) => (
                     <FormItem><FormLabel>Description</FormLabel><FormControl><Textarea placeholder="Describe the product..." {...field} /></FormControl><FormMessage /></FormItem>
                 )} />
-                <FormField control={form.control} name="categoryId" render={({ field }) => (
-                    <FormItem><FormLabel>Category</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl><SelectTrigger><SelectValue placeholder="Select a category" /></SelectTrigger></FormControl>
-                        <SelectContent>{categories.map((c) => (<SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>))}</SelectContent>
-                    </Select>
-                    <FormMessage />
-                    </FormItem>
-                )} />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField control={form.control} name="categoryId" render={({ field }) => (
+                      <FormItem><FormLabel>Category</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl><SelectTrigger><SelectValue placeholder="Select a category" /></SelectTrigger></FormControl>
+                          <SelectContent>{categories.map((c) => (<SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>))}</SelectContent>
+                      </Select>
+                      <FormMessage />
+                      </FormItem>
+                  )} />
+                   <FormField control={form.control} name="vendorId" render={({ field }) => (
+                      <FormItem><FormLabel>Vendor</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl><SelectTrigger><SelectValue placeholder="Select a vendor" /></SelectTrigger></FormControl>
+                          <SelectContent>{vendors.map((v) => (<SelectItem key={v.id} value={String(v.id)}>{v.fullName}</SelectItem>))}</SelectContent>
+                      </Select>
+                      <FormMessage />
+                      </FormItem>
+                  )} />
+                </div>
             </CardContent>
         </Card>
 

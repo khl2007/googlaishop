@@ -104,53 +104,85 @@ function seedDatabase() {
         const hashedPassword = bcrypt.hashSync(adminPassword, 10);
         const adminRoleId = roleMap.get('admin');
 
-        const insertAdminStmt = db.prepare("INSERT OR IGNORE INTO users (username, password, fullName, role_id, phoneNumber, country, city) VALUES (?, ?, ?, ?, ?, ?, ?)");
-        insertAdminStmt.run(adminEmail, hashedPassword, adminFullName, adminRoleId, '555-0100', 'Adminland', 'Admin City', (err) => {
+        const insertUserStmt = db.prepare("INSERT OR IGNORE INTO users (username, password, fullName, role_id, phoneNumber, country, city) VALUES (?, ?, ?, ?, ?, ?, ?)");
+        insertUserStmt.run(adminEmail, hashedPassword, adminFullName, adminRoleId, '555-0100', 'Adminland', 'Admin City', (err) => {
           if (err) console.error('Error inserting admin user:', err.message);
         });
-        insertAdminStmt.finalize();
-        console.log('Admin user seeding attempted.');
+        
+        // Seed Vendor User
+        const vendorEmail = 'vendor@example.com';
+        const vendorPassword = 'vendorpassword';
+        const vendorFullName = 'Awesome Gadgets Inc.';
+        const hashedVendorPassword = bcrypt.hashSync(vendorPassword, 10);
+        const vendorRoleId = roleMap.get('vendor');
+        
+        insertUserStmt.run(vendorEmail, hashedVendorPassword, vendorFullName, vendorRoleId, '555-0101', 'Vendoria', 'Vendor City', function(err) {
+            if (err) {
+                console.error('Error inserting vendor user:', err.message);
+                seedProductsAndCategories(null); // Proceed without a vendor if insertion fails
+            } else {
+                const vendorId = this.lastID;
+                console.log('Vendor user seeding attempted.');
+                // We need to find the ID of the vendor we just inserted.
+                db.get("SELECT id FROM users WHERE username = ?", [vendorEmail], (err, row) => {
+                    if (err || !row) {
+                        console.error('Could not find vendor ID after insertion.');
+                        seedProductsAndCategories(null);
+                    } else {
+                        seedProductsAndCategories(row.id);
+                    }
+                });
+            }
+        });
+        insertUserStmt.finalize();
 
-        seedProductsAndCategories();
       });
     });
   });
 
-  function seedProductsAndCategories() {
+  function seedProductsAndCategories(vendorId) {
+    if (!vendorId) {
+      console.warn("No vendor ID provided, products will not be associated with a vendor.");
+    }
+
     // Create categories, products, and product_variants tables if they don't exist
- db.run(`CREATE TABLE IF NOT EXISTS categories (
- id TEXT PRIMARY KEY,
- name TEXT,
- slug TEXT UNIQUE
- )`);
- db.run(`CREATE TABLE IF NOT EXISTS products (
- id TEXT PRIMARY KEY,
- name TEXT,
- slug TEXT UNIQUE,
- description TEXT,
- categoryId TEXT,
- optionGroups TEXT,
- FOREIGN KEY(categoryId) REFERENCES categories(id)
- )`);
+    db.run(`CREATE TABLE IF NOT EXISTS categories (
+    id TEXT PRIMARY KEY,
+    name TEXT,
+    slug TEXT UNIQUE
+    )`);
+    db.run(`CREATE TABLE IF NOT EXISTS products (
+    id TEXT PRIMARY KEY,
+    name TEXT,
+    slug TEXT UNIQUE,
+    description TEXT,
+    categoryId TEXT,
+    vendorId INTEGER,
+    optionGroups TEXT,
+    FOREIGN KEY(categoryId) REFERENCES categories(id),
+    FOREIGN KEY(vendorId) REFERENCES users(id)
+    )`);
+    db.run(`CREATE TABLE IF NOT EXISTS product_variants (
+    id TEXT PRIMARY KEY,
+        productId TEXT,
+        name TEXT,
+    price REAL,
+    image TEXT,
+    stock INTEGER,
+    options TEXT,
+    FOREIGN KEY(productId) REFERENCES products(id)
+    )`);
+
     const insertCategoryStmt = db.prepare('INSERT OR IGNORE INTO categories (id, name, slug) VALUES (?, ?, ?)');
     allCategories.forEach(category => insertCategoryStmt.run(category.id, category.name, category.slug));
     insertCategoryStmt.finalize();
     console.log('Categories seeded.');
 
-    const insertProductStmt = db.prepare('INSERT OR IGNORE INTO products (id, name, slug, description, categoryId, optionGroups) VALUES (?, ?, ?, ?, ?, ?)');
+    const insertProductStmt = db.prepare('INSERT OR IGNORE INTO products (id, name, slug, description, categoryId, vendorId, optionGroups) VALUES (?, ?, ?, ?, ?, ?, ?)');
     const insertVariantStmt = db.prepare('INSERT OR IGNORE INTO product_variants (id, productId, name, price, image, stock, options) VALUES (?, ?, ?, ?, ?, ?, ?)');
- db.run(`CREATE TABLE IF NOT EXISTS product_variants (
- id TEXT PRIMARY KEY,
-      productId TEXT,
-      name TEXT,
- price REAL,
- image TEXT,
- stock INTEGER,
- options TEXT,
- FOREIGN KEY(productId) REFERENCES products(id)
- )`);
+
     allProducts.forEach(product => {
-      insertProductStmt.run(product.id, product.name, product.slug, product.description, product.categoryId, product.optionGroups, (err) => {
+      insertProductStmt.run(product.id, product.name, product.slug, product.description, product.categoryId, vendorId, product.optionGroups, (err) => {
         if (err) {
           console.error(`Error inserting product ${product.name}:`, err.message);
         }

@@ -31,10 +31,10 @@ export async function GET(request, { params }) {
 // UPDATE a product
 export async function PUT(request, { params }) {
   const { id } = params;
-   const { name, slug, description, categoryId, variants, optionGroups } = await request.json();
+   const { name, slug, description, categoryId, vendorId, variants, optionGroups } = await request.json();
   const db = getDatabase();
 
-  if (!name || !slug || !description || !categoryId) {
+  if (!name || !slug || !description || !categoryId || !vendorId) {
     return NextResponse.json({ message: 'All fields are required' }, { status: 400 });
   }
 
@@ -42,8 +42,8 @@ export async function PUT(request, { params }) {
     await new Promise((resolve, reject) => db.run('BEGIN TRANSACTION', err => err ? reject(err) : resolve()));
 
     await new Promise((resolve, reject) => {
-      db.run('UPDATE products SET name = ?, slug = ?, description = ?, categoryId = ?, optionGroups = ? WHERE id = ?', 
-      [name, slug, description, categoryId, optionGroups, id], function (err) {
+      db.run('UPDATE products SET name = ?, slug = ?, description = ?, categoryId = ?, vendorId = ?, optionGroups = ? WHERE id = ?', 
+      [name, slug, description, categoryId, vendorId, optionGroups, id], function (err) {
         if (err) reject(err);
         if (this.changes === 0) reject(new Error('Product not found'));
         resolve(this);

@@ -7,10 +7,9 @@ db.serialize(() => {
   db.run("DROP TABLE IF EXISTS role_permissions");
   db.run("DROP TABLE IF EXISTS permissions");
   db.run("DROP TABLE IF EXISTS product_variants");
+  db.run("DROP TABLE IF EXISTS products");
   db.run("DROP TABLE IF EXISTS users");
   db.run("DROP TABLE IF EXISTS roles");
-  db.run("DROP TABLE IF EXISTS products");
-  db.run("DROP TABLE IF EXISTS categories");
 
 
   // Create roles table
@@ -63,9 +62,9 @@ db.serialize(() => {
   `);
 
   // Keep other tables
-  db.run("CREATE TABLE IF NOT EXISTS categories (id TEXT PRIMARY KEY, name TEXT, slug TEXT UNIQUE)");
-  db.run("CREATE TABLE IF NOT EXISTS products (id TEXT PRIMARY KEY, name TEXT, slug TEXT UNIQUE, description TEXT, categoryId TEXT, optionGroups TEXT, FOREIGN KEY(categoryId) REFERENCES categories(id))");
-  db.run("CREATE TABLE IF NOT EXISTS product_variants (id TEXT PRIMARY KEY, productId TEXT, name TEXT, price INTEGER, image TEXT, stock INTEGER, options TEXT, FOREIGN KEY(productId) REFERENCES products(id))");
+  db.run("CREATE TABLE categories (id TEXT PRIMARY KEY, name TEXT, slug TEXT UNIQUE)");
+  db.run("CREATE TABLE products (id TEXT PRIMARY KEY, name TEXT, slug TEXT UNIQUE, description TEXT, categoryId TEXT, vendorId INTEGER, optionGroups TEXT, FOREIGN KEY(categoryId) REFERENCES categories(id), FOREIGN KEY(vendorId) REFERENCES users(id))");
+  db.run("CREATE TABLE product_variants (id TEXT PRIMARY KEY, productId TEXT, name TEXT, price INTEGER, image TEXT, stock INTEGER, options TEXT, FOREIGN KEY(productId) REFERENCES products(id))");
 });
 
 db.close();

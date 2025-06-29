@@ -20,6 +20,7 @@ export type Product = {
   slug: string;
   description: string;
   categoryId: string;
+  vendorId: number;
   optionGroups?: string | null; // JSON string
   variants: ProductVariant[];
 };

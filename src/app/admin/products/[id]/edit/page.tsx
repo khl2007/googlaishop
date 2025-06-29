@@ -1,10 +1,13 @@
-import { getProductById, getAllCategories } from "@/lib/data";
+import { getProductById, getAllCategories, getVendors } from "@/lib/data";
 import { ProductForm } from "@/components/admin/product-form";
 import { notFound } from "next/navigation";
 
 export default async function EditProductPage({ params }: { params: { id: string } }) {
-  const product = await getProductById(params.id);
-  const categories = await getAllCategories();
+  const [product, categories, vendors] = await Promise.all([
+    getProductById(params.id),
+    getAllCategories(),
+    getVendors()
+  ]);
 
   if (!product) {
     notFound();
@@ -13,7 +16,7 @@ export default async function EditProductPage({ params }: { params: { id: string
   return (
     <div>
       <h1 className="text-2xl font-bold mb-4">Edit Product</h1>
-      <ProductForm product={product} categories={categories} />
+      <ProductForm product={product} categories={categories} vendors={vendors} />
     </div>
   );
 }
