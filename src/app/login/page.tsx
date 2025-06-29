@@ -113,11 +113,18 @@ export default function LoginPage() {
               Login with Google
             </Button>
           </form>
-          <div className="mt-4 text-center text-sm">
-            Don&apos;t have an account?{" "}
-            <Link href="/register" className="underline">
-              Sign up
-            </Link>
+          <div className="mt-4 grid gap-2 text-center text-sm">
+            <div>
+              Don&apos;t have an account?{" "}
+              <Link href="/register" className="underline">
+                Sign up
+              </Link>
+            </div>
+            <div>
+              <Link href="/register/vendor" className="underline">
+                Become a vendor
+              </Link>
+            </div>
           </div>
         </CardContent>
       </Card>
