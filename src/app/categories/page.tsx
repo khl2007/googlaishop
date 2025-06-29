@@ -2,34 +2,11 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
-import { Card, CardContent, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Search } from 'lucide-react';
 import type { Category } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
-
-function CategoryCard({ category }: { category: Category }) {
-  return (
-    <Link href={`/categories/${category.slug}`}>
-      <Card className="group overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
-        <div className="aspect-video overflow-hidden">
-          <Image
-            src={category.image || 'https://placehold.co/400x300.png'}
-            alt={category.name}
-            width={400}
-            height={300}
-            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-            data-ai-hint={`${category.slug} abstract`}
-          />
-        </div>
-        <CardContent className="p-4">
-          <CardTitle className="text-lg font-semibold group-hover:text-primary">{category.name}</CardTitle>
-        </CardContent>
-      </Card>
-    </Link>
-  );
-}
+import { CategoryCard } from '@/components/category-card';
 
 function CategorySkeleton() {
     return (
@@ -52,8 +29,10 @@ export default function CategoriesPage() {
         setLoading(true);
         const res = await fetch('/api/categories');
         const data = await res.json();
-        setAllCategories(data);
-        setFilteredCategories(data);
+        // Only show top-level categories on this page
+        const topLevelCategories = data.filter((c: Category) => !c.parentId);
+        setAllCategories(topLevelCategories);
+        setFilteredCategories(topLevelCategories);
       } catch (error) {
         console.error('Failed to fetch categories:', error);
       } finally {

@@ -132,6 +132,18 @@ export async function getCategoryBySlug(slug) {
     });
 }
 
+export async function getSubCategories(parentId) {
+    const db = getDatabase();
+    return new Promise((resolve, reject) => {
+        db.all('SELECT * FROM categories WHERE parentId = ?', [parentId], (err, rows) => {
+            if (err) {
+                return reject(new Error('Failed to fetch sub-categories.'));
+            }
+            resolve(rows);
+        });
+    });
+}
+
 
 export async function getProductsByCategoryId(categoryId) {
     const db = getDatabase();

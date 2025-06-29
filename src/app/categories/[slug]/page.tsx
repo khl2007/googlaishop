@@ -1,7 +1,8 @@
 import { notFound } from "next/navigation";
-import { getCategoryBySlug, getProductsByCategoryId } from "@/lib/data";
+import { getCategoryBySlug, getProductsByCategoryId, getSubCategories, getCategoryById } from "@/lib/data";
 import { ProductCard } from "@/components/product-card";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
+import { CategoryCard } from "@/components/category-card";
 
 export default async function CategoryProductsPage({ params }: { params: { slug: string } }) {
   const category = await getCategoryBySlug(params.slug);
@@ -9,7 +10,12 @@ export default async function CategoryProductsPage({ params }: { params: { slug:
     notFound();
   }
 
-  const products = await getProductsByCategoryId(category.id);
+  const [products, subCategories] = await Promise.all([
+    getProductsByCategoryId(category.id),
+    getSubCategories(category.id)
+  ]);
+  
+  const parentCategory = category.parentId ? await getCategoryById(category.parentId) : null;
 
   return (
     <div className="container mx-auto my-12 px-4">
@@ -22,6 +28,14 @@ export default async function CategoryProductsPage({ params }: { params: { slug:
           <BreadcrumbItem>
             <BreadcrumbLink href="/categories">Categories</BreadcrumbLink>
           </BreadcrumbItem>
+          {parentCategory && (
+            <>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <BreadcrumbLink href={`/categories/${parentCategory.slug}`}>{parentCategory.name}</BreadcrumbLink>
+              </BreadcrumbItem>
+            </>
+          )}
           <BreadcrumbSeparator />
           <BreadcrumbItem>
             <BreadcrumbPage>{category.name}</BreadcrumbPage>
@@ -31,22 +45,35 @@ export default async function CategoryProductsPage({ params }: { params: { slug:
       
       <div className="text-center mb-12">
         <h1 className="text-4xl font-extrabold font-headline tracking-tight lg:text-5xl">{category.name}</h1>
-        <p className="mt-4 max-w-2xl mx-auto text-lg text-muted-foreground">
-          Browse our collection of {category.name.toLowerCase()}.
-        </p>
       </div>
 
-      {products.length > 0 ? (
-        <div className="grid grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-4 xl:gap-x-8">
-          {products.map((product) => (
-            <ProductCard key={product.id} product={product} />
-          ))}
-        </div>
-      ) : (
-        <p className="text-center text-muted-foreground py-16">
-          There are no products in this category yet.
-        </p>
+      {subCategories.length > 0 && (
+        <section className="mb-16">
+          <h2 className="text-3xl font-bold tracking-tight mb-8">Sub-categories</h2>
+          <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
+            {subCategories.map((subCat) => (
+              <CategoryCard key={subCat.id} category={subCat} />
+            ))}
+          </div>
+        </section>
       )}
+
+      <section>
+        <h2 className="text-3xl font-bold tracking-tight mb-8">Products in {category.name}</h2>
+        {products.length > 0 ? (
+          <div className="grid grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-4 xl:gap-x-8">
+            {products.map((product) => (
+              <ProductCard key={product.id} product={product} />
+            ))}
+          </div>
+        ) : (
+          subCategories.length === 0 && (
+            <p className="text-center text-muted-foreground py-16">
+              There are no products in this category yet.
+            </p>
+          )
+        )}
+      </section>
     </div>
   );
 }
