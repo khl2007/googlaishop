@@ -15,9 +15,6 @@ import { useToast } from "@/hooks/use-toast";
 import type { Product, Category } from "@/lib/types";
 import { Loader2, PlusCircle, Trash } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../ui/table";
-import { getCrossProduct } from "@/lib/utils";
-
 
 const optionValueSchema = z.object({
   id: z.string().optional(),
@@ -32,9 +29,11 @@ const optionGroupSchema = z.object({
   options: z.array(optionValueSchema).min(1, "At least one option is required."),
 });
 
-const generatedVariantSchema = z.object({
-  options: z.record(z.string()),
-  price: z.preprocess((a) => parseInt(z.string().parse(a), 10), z.number().positive("Price must be positive.")),
+const variantSchema = z.object({
+  options: z.record(z.string()).refine(val => Object.keys(val).length > 0, {
+    message: "At least one option must be selected for the variant.",
+  }).optional(),
+  price: z.preprocess((a) => parseFloat(z.string().parse(a)), z.number().positive("Price must be positive.")),
   stock: z.preprocess((a) => parseInt(z.string().parse(a), 10), z.number().int().min(0, "Stock can't be negative.")),
   image: z.string().url("Image URL is required.").optional(),
 });
@@ -46,7 +45,7 @@ const formSchema = z.object({
   description: z.string().min(10, "Description must be at least 10 characters."),
   categoryId: z.string().min(1, "Please select a category."),
   optionGroups: z.array(optionGroupSchema).optional(),
-  variants: z.array(generatedVariantSchema).min(1, "At least one product variant is required."),
+  variants: z.array(variantSchema).min(1, "At least one product variant is required."),
 });
 
 type ProductFormValues = z.infer<typeof formSchema>;
@@ -72,7 +71,7 @@ export function ProductForm({ product, categories }: ProductFormProps) {
       variants: product?.variants.map(v => ({
           ...v,
           options: typeof v.options === 'string' ? JSON.parse(v.options) : v.options,
-      })) || [],
+      })) || [{ options: {}, price: 0, stock: 0 }],
     },
   });
 
@@ -81,53 +80,44 @@ export function ProductForm({ product, categories }: ProductFormProps) {
     name: "optionGroups",
   });
   
+  const { fields: variantFields, append: appendVariant, remove: removeVariant } = useFieldArray({
+    control: form.control,
+    name: "variants",
+  });
+  
   const watchedGroups = form.watch('optionGroups');
-
-  React.useEffect(() => {
-    if (isEditMode) return;
-
-    const groupArrays = watchedGroups?.map(g => 
-        g.options.map(o => ({ [g.name]: o.value }))
-    ) || [];
-
-    if (groupArrays.length === 0) {
-        if(form.getValues('variants').length === 0) {
-            form.setValue('variants', [{ options: { default: 'Standard' }, price: 0, stock: 0 }]);
-        }
-        return;
-    }
-    
-    const combinations = getCrossProduct(...groupArrays);
-    const newVariants = combinations.map(combo => {
-        const options = combo.reduce((acc, item) => ({ ...acc, ...item }), {});
-        // Try to find an existing variant to preserve price/stock
-        const existingVariant = form.getValues('variants').find(v => 
-            JSON.stringify(v.options) === JSON.stringify(options)
-        );
-        return {
-            options,
-            price: existingVariant?.price || 0,
-            stock: existingVariant?.stock || 0,
-            image: existingVariant?.image || ''
-        };
-    });
-
-    form.setValue('variants', newVariants);
-
-  }, [watchedGroups, form, isEditMode]);
 
 
   const isSubmitting = form.formState.isSubmitting;
 
   const onSubmit: SubmitHandler<ProductFormValues> = async (data) => {
+    // Manually check if any variant has empty options
+    if (data.optionGroups && data.optionGroups.length > 0) {
+        for (const variant of data.variants) {
+            if (!variant.options || Object.keys(variant.options).length !== data.optionGroups.length) {
+                toast({
+                    title: "Incomplete Variant",
+                    description: "Please select an option for each group in all variants.",
+                    variant: "destructive",
+                });
+                return;
+            }
+        }
+    }
+
+
     const transformedData = {
         ...data,
         optionGroups: data.optionGroups ? JSON.stringify(data.optionGroups) : "[]",
-        variants: data.variants.map(v => ({
-            ...v,
-            name: Object.values(v.options).join(', '),
-            options: JSON.stringify(v.options)
-        }))
+        variants: data.variants.map(v => {
+            const optionValues = v.options ? Object.values(v.options) : [];
+            const variantName = optionValues.length > 0 ? optionValues.join(' / ') : data.name;
+            return {
+                ...v,
+                name: variantName,
+                options: JSON.stringify(v.options || {})
+            }
+        })
     };
     
     try {
@@ -161,7 +151,7 @@ export function ProductForm({ product, categories }: ProductFormProps) {
     }
   };
   
-  const groupNames = watchedGroups?.map(g => g.name).filter(Boolean) || [];
+  const hasOptionGroups = watchedGroups && watchedGroups.length > 0;
 
   return (
     <Form {...form}>
@@ -194,19 +184,27 @@ export function ProductForm({ product, categories }: ProductFormProps) {
           <CardHeader>
             <CardTitle>Product Options</CardTitle>
             <FormDescription>
-              Define option groups for your variants, like 'Color' or 'Size'. This will generate all possible product combinations.
+             Define groups of options for your product, like 'Color' or 'Size'. If your product has no options, you can skip this.
             </FormDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             {groupFields.map((groupField, groupIndex) => (
               <Card key={groupField.id}>
-                <CardHeader className="flex flex-row items-center justify-between">
-                  <FormField
+                <CardHeader className="flex flex-row items-center justify-between py-4">
+                   <h3 className="font-semibold">Option Group</h3>
+                   {!isEditMode && (
+                      <Button type="button" variant="ghost" size="icon" onClick={() => removeGroup(groupIndex)}>
+                        <Trash className="h-4 w-4 text-destructive" />
+                      </Button>
+                   )}
+                </CardHeader>
+                <CardContent className="space-y-4">
+                 <FormField
                     control={form.control}
                     name={`optionGroups.${groupIndex}.name`}
                     render={({ field }) => (
-                      <FormItem className="flex-1 mr-4">
-                        <FormLabel>Option Group Name</FormLabel>
+                      <FormItem>
+                        <FormLabel>Group Name</FormLabel>
                         <FormControl>
                           <Input placeholder="e.g., Color" {...field} disabled={isEditMode} />
                         </FormControl>
@@ -214,13 +212,6 @@ export function ProductForm({ product, categories }: ProductFormProps) {
                       </FormItem>
                     )}
                   />
-                   {!isEditMode && (
-                      <Button type="button" variant="destructive" onClick={() => removeGroup(groupIndex)}>
-                        <Trash className="mr-2 h-4 w-4" /> Remove Group
-                      </Button>
-                   )}
-                </CardHeader>
-                <CardContent>
                   <OptionValuesArray groupIndex={groupIndex} isEditMode={isEditMode} />
                 </CardContent>
               </Card>
@@ -230,46 +221,77 @@ export function ProductForm({ product, categories }: ProductFormProps) {
                   <PlusCircle className="mr-2 h-4 w-4" /> Add Option Group
                 </Button>
              )}
-             {isEditMode && <p className="text-sm text-muted-foreground">Option groups cannot be changed after creation.</p>}
+             {isEditMode && <p className="text-sm text-muted-foreground">Option groups cannot be changed after creation to maintain variant consistency.</p>}
           </CardContent>
         </Card>
         
         <Card>
-            <CardHeader><CardTitle>Generated Variants</CardTitle></CardHeader>
-            <CardContent>
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                           {groupNames.map(name => <TableHead key={name}>{name}</TableHead>)}
-                            <TableHead>Price</TableHead>
-                            <TableHead>Stock</TableHead>
-                            <TableHead>Image URL</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {form.watch('variants').map((variant, index) => (
-                            <TableRow key={index}>
-                               {groupNames.map(name => <TableCell key={name}>{variant.options[name]}</TableCell>)}
-                                <TableCell>
-                                    <FormField control={form.control} name={`variants.${index}.price`} render={({ field }) => (
-                                        <Input type="number" {...field} disabled={isEditMode} />
-                                    )} />
-                                </TableCell>
-                                <TableCell>
-                                    <FormField control={form.control} name={`variants.${index}.stock`} render={({ field }) => (
-                                        <Input type="number" {...field} disabled={isEditMode} />
-                                    )} />
-                                </TableCell>
-                                <TableCell>
-                                    <FormField control={form.control} name={`variants.${index}.image`} render={({ field }) => (
-                                        <Input placeholder="https://..." {...field} disabled={isEditMode} />
-                                    )} />
-                                </TableCell>
-                            </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
-                 {isEditMode && <p className="text-sm text-muted-foreground mt-4">Variant editing is not supported. To change variants, please delete and recreate the product.</p>}
+            <CardHeader><CardTitle>Variants</CardTitle>
+             <FormDescription>
+              {hasOptionGroups 
+                ? "Add and configure each product variant based on the option groups you created."
+                : "Configure the details for your standard product."
+              }
+            </FormDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+                 {isEditMode ? (
+                     <p className="text-sm text-muted-foreground">Variant editing is not supported. To change variants, please delete and recreate the product.</p>
+                 ) : (
+                    <>
+                    {variantFields.map((variantField, index) => (
+                        <Card key={variantField.id} className="p-4 space-y-4 relative">
+                           <div className="absolute top-2 right-2">
+                            {variantFields.length > 1 && (
+                                <Button type="button" variant="ghost" size="icon" onClick={() => removeVariant(index)}>
+                                    <Trash className="h-4 w-4 text-destructive" />
+                                </Button>
+                            )}
+                           </div>
+                           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                                {hasOptionGroups && watchedGroups.map((group) => (
+                                    <FormField
+                                        key={`${variantField.id}-${group.name}`}
+                                        control={form.control}
+                                        name={`variants.${index}.options.${group.name}`}
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>{group.name}</FormLabel>
+                                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                                    <FormControl><SelectTrigger><SelectValue placeholder={`Select ${group.name.toLowerCase()}`} /></SelectTrigger></FormControl>
+                                                    <SelectContent>
+                                                        {group.options.map((option) => (
+                                                            <SelectItem key={option.value} value={option.value}>{option.value}</SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                ))}
+
+                                <FormField control={form.control} name={`variants.${index}.price`} render={({ field }) => (
+                                    <FormItem><FormLabel>Price</FormLabel><FormControl><Input type="number" step="0.01" placeholder="99.99" {...field} /></FormControl><FormMessage /></FormItem>
+                                )}/>
+                                <FormField control={form.control} name={`variants.${index}.stock`} render={({ field }) => (
+                                    <FormItem><FormLabel>Stock</FormLabel><FormControl><Input type="number" placeholder="100" {...field} /></FormControl><FormMessage /></FormItem>
+                                )}/>
+                                <FormField control={form.control} name={`variants.${index}.image`} render={({ field }) => (
+                                    <FormItem className={hasOptionGroups ? "md:col-span-2" : ""}>
+                                      <FormLabel>Image URL (Optional)</FormLabel>
+                                      <FormControl><Input placeholder="https://..." {...field} /></FormControl>
+                                      <FormMessage />
+                                    </FormItem>
+                                )}/>
+                           </div>
+                        </Card>
+                    ))}
+                    <Button type="button" variant="outline" onClick={() => appendVariant({ options: {}, price: 0, stock: 0, image: '' })}>
+                        <PlusCircle className="mr-2 h-4 w-4" /> Add Variant
+                    </Button>
+                    </>
+                 )}
             </CardContent>
         </Card>
 
@@ -283,7 +305,7 @@ export function ProductForm({ product, categories }: ProductFormProps) {
 }
 
 function OptionValuesArray({ groupIndex, isEditMode }: { groupIndex: number, isEditMode: boolean }) {
-  const { control } = useForm<ProductFormValues>();
+  const { control } = useFormContext<ProductFormValues>();
   const { fields, append, remove } = useFieldArray({
     control: control,
     name: `optionGroups.${groupIndex}.options`,
@@ -291,58 +313,59 @@ function OptionValuesArray({ groupIndex, isEditMode }: { groupIndex: number, isE
 
   return (
     <div className="space-y-4">
-      {fields.map((field, optionIndex) => (
-        <div key={field.id} className="grid grid-cols-1 md:grid-cols-3 gap-4 border p-4 rounded-md relative">
-          <FormField
-            control={control}
-            name={`optionGroups.${groupIndex}.options.${optionIndex}.value`}
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Option Value</FormLabel>
-                <FormControl>
-                  <Input placeholder="e.g., Red" {...field} disabled={isEditMode} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-           <FormField
-            control={control}
-            name={`optionGroups.${groupIndex}.options.${optionIndex}.image`}
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Image URL (Optional)</FormLabel>
-                <FormControl>
-                  <Input placeholder="https://..." {...field} disabled={isEditMode} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={control}
-            name={`optionGroups.${groupIndex}.options.${optionIndex}.color_hex`}
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Color (Optional)</FormLabel>
-                <FormControl>
-                  <div className="flex items-center gap-2">
-                    <Input type="color" {...field} value={field.value ?? ''} className="w-12 h-10 p-1" disabled={isEditMode} />
-                    <Input type="text" placeholder="#RRGGBB" {...field} value={field.value ?? ''} disabled={isEditMode} />
-                  </div>
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+        <FormLabel>Options</FormLabel>
+        {fields.map((field, optionIndex) => (
+            <div key={field.id} className="grid grid-cols-1 md:grid-cols-3 gap-4 border p-4 rounded-md relative">
+            <FormField
+                control={control}
+                name={`optionGroups.${groupIndex}.options.${optionIndex}.value`}
+                render={({ field }) => (
+                <FormItem>
+                    <FormLabel className="text-xs">Option Value</FormLabel>
+                    <FormControl>
+                    <Input placeholder="e.g., Red" {...field} disabled={isEditMode} />
+                    </FormControl>
+                    <FormMessage />
+                </FormItem>
+                )}
+            />
+            <FormField
+                control={control}
+                name={`optionGroups.${groupIndex}.options.${optionIndex}.image`}
+                render={({ field }) => (
+                <FormItem>
+                    <FormLabel className="text-xs">Image URL (Optional)</FormLabel>
+                    <FormControl>
+                    <Input placeholder="https://..." {...field} disabled={isEditMode} />
+                    </FormControl>
+                    <FormMessage />
+                </FormItem>
+                )}
+            />
+            <FormField
+                control={control}
+                name={`optionGroups.${groupIndex}.options.${optionIndex}.color_hex`}
+                render={({ field }) => (
+                <FormItem>
+                    <FormLabel className="text-xs">Color (Optional)</FormLabel>
+                    <FormControl>
+                    <div className="flex items-center gap-2">
+                        <Input type="color" {...field} value={field.value ?? ''} className="w-12 h-10 p-1" disabled={isEditMode} />
+                        <Input type="text" placeholder="#RRGGBB" {...field} value={field.value ?? ''} disabled={isEditMode} />
+                    </div>
+                    </FormControl>
+                    <FormMessage />
+                </FormItem>
+                )}
+            />
 
-          {!isEditMode && (
-            <Button type="button" variant="ghost" size="icon" className="absolute top-2 right-2" onClick={() => remove(optionIndex)}>
-              <Trash className="h-4 w-4 text-destructive" />
-            </Button>
-          )}
-        </div>
-      ))}
+            {!isEditMode && (
+                <Button type="button" variant="ghost" size="icon" className="absolute top-2 right-2" onClick={() => remove(optionIndex)}>
+                <Trash className="h-4 w-4 text-destructive" />
+                </Button>
+            )}
+            </div>
+        ))}
        {!isEditMode && (
         <Button type="button" variant="outline" size="sm" onClick={() => append({ value: '' })}>
           <PlusCircle className="mr-2 h-4 w-4" /> Add Option
