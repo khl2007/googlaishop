@@ -3,7 +3,7 @@ import { Github, Twitter, Linkedin } from "lucide-react";
 
 export function Footer() {
   return (
-    <footer className="w-full border-t border-transparent bg-sidebar text-sidebar-foreground">
+    <footer className="hidden w-full border-t border-transparent bg-sidebar text-sidebar-foreground md:block">
       <div className="container mx-auto grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-8 py-12">
         <div className="col-span-2 lg:col-span-1">
           <Link href="/" className="flex items-center gap-2">
