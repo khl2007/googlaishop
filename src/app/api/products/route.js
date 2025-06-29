@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getDatabase } from '@/lib/database';
+import getDatabase from '@/lib/database';
 
 export async function GET() {
   try {
@@ -28,7 +28,6 @@ export async function GET() {
       return { ...product, variants };
     }));
 
-    db.close();
     return NextResponse.json(productsWithVariants);
   } catch (error) {
     console.error('Error fetching products:', error);

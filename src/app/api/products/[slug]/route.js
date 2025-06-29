@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getDatabase } from '../../../../lib/database';
+import getDatabase from '@/lib/database';
 
 export async function GET(request, { params }) {
   const slug = params.slug;
@@ -17,7 +17,6 @@ export async function GET(request, { params }) {
     });
 
     if (!product) {
-      db.close();
       return NextResponse.json({ message: 'Product not found' }, { status: 404 });
     }
 
@@ -33,11 +32,9 @@ export async function GET(request, { params }) {
 
     product.variants = variants;
 
-    db.close();
     return NextResponse.json(product);
   } catch (error) {
     console.error('Database error:', error);
-    db.close();
     return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
   }
 }
