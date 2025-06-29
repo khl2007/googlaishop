@@ -1,13 +1,14 @@
 import { getProductRecommendations } from "@/ai/flows/product-recommendations";
-import { getProductById, getProductBySlug } from "@/lib/mock-data";
+import { getProductById } from "@/lib/data";
 import { ProductCard } from "./product-card";
+import type { Product } from "@/lib/types";
 
 interface AiRecommendationsProps {
   productId: string;
 }
 
 export async function AiRecommendations({ productId }: AiRecommendationsProps) {
-  const currentProduct = getProductById(productId);
+  const currentProduct = await getProductById(productId);
 
   if (!currentProduct) return null;
 
@@ -28,9 +29,9 @@ export async function AiRecommendations({ productId }: AiRecommendationsProps) {
     return null;
   }
 
-  const recommendedProducts = recommendedProductIds
-    .map(id => getProductById(id))
-    .filter(Boolean);
+  const recommendedProducts = (
+    await Promise.all(recommendedProductIds.map((id) => getProductById(id)))
+  ).filter(Boolean);
 
   if (recommendedProducts.length === 0) {
     return null;

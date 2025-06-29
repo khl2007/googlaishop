@@ -1,14 +1,15 @@
-import { getProductBySlug } from "@/lib/mock-data";
 import { notFound } from "next/navigation";
 import { ProductDetailsClient } from "./product-details-client";
 import { AiRecommendations } from "@/components/ai-recommendations";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
+import type { Product } from "@/lib/types";
+import { getProductBySlug } from "@/lib/data";
 
-export default function ProductPage({ params }: { params: { slug: string } }) {
-  const product = getProductBySlug(params.slug);
+export default async function ProductPage({ params }: { params: { slug: string } }) {
+  const product: Product | null = await getProductBySlug(params.slug);
 
   if (!product) {
-    notFound();
+ notFound();
   }
 
   return (

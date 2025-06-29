@@ -1,10 +1,11 @@
 import { Button } from "@/components/ui/button";
 import { ProductCard } from "@/components/product-card";
-import { allProducts } from "@/lib/mock-data";
+import { getAllProducts } from "@/lib/data";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 
-export default function Home() {
+export default async function Home() {
+  const allProducts = await getAllProducts();
   const featuredProducts = allProducts.slice(0, 4);
 
   return (
