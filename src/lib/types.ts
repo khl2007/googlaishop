@@ -19,6 +19,7 @@ export type Product = {
   slug: string;
   description: string;
   categoryId: string;
+  optionGroups?: string | null;
   variants: ProductVariant[];
 };
 

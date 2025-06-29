@@ -43,7 +43,7 @@ export function ProductDetailsClient({ product }: ProductDetailsClientProps) {
         
         <div className="mt-8 space-y-6">
           <ProductVariantSelectors 
-            variants={product.variants}
+            product={product}
             selectedVariant={selectedVariant}
             onVariantChange={setSelectedVariant}
           />

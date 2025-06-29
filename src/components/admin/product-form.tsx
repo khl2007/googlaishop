@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
 import type { Product, Category } from "@/lib/types";
 import { Loader2, Trash } from "lucide-react";
@@ -27,6 +27,7 @@ const formSchema = z.object({
   slug: z.string().min(2, "Slug must be at least 2 characters.").regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Slug must be lowercase and contain only letters, numbers, and hyphens."),
   description: z.string().min(10, "Description must be at least 10 characters."),
   categoryId: z.string().min(1, "Please select a category."),
+  optionGroups: z.string().optional(),
   variants: z.array(variantSchema).min(1, "At least one product variant is required."),
 });
 
@@ -47,6 +48,7 @@ export function ProductForm({ product, categories }: ProductFormProps) {
       slug: product?.slug || "",
       description: product?.description || "",
       categoryId: product?.categoryId || "",
+      optionGroups: product?.optionGroups ? JSON.parse(product.optionGroups).join(', ') : "",
       variants: product?.variants.map(v => ({...v, color_hex: v.color_hex || ''})) || [{ name: "", price: 0, stock: 0, image: "", color_hex: "" }],
     },
   });
@@ -60,9 +62,13 @@ export function ProductForm({ product, categories }: ProductFormProps) {
   const isEditMode = !!product;
 
   const onSubmit: SubmitHandler<ProductFormValues> = async (data) => {
+    const optionGroupsJSON = data.optionGroups ? JSON.stringify(data.optionGroups.split(',').map(s => s.trim())) : null;
+    
     // In edit mode, we can't easily update variants, so we don't send them.
     // This is a simplification for this example. A real app would handle variant updates.
-    const payload = isEditMode ? { ...data, variants: undefined } : data;
+    const payload = isEditMode 
+      ? { ...data, variants: undefined, optionGroups: optionGroupsJSON } 
+      : { ...data, optionGroups: optionGroupsJSON };
 
     try {
       const response = await fetch(
@@ -162,6 +168,22 @@ export function ProductForm({ product, categories }: ProductFormProps) {
                     </FormItem>
                 )}
                 />
+                <FormField
+                  control={form.control}
+                  name="optionGroups"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Option Groups</FormLabel>
+                      <FormControl>
+                        <Input placeholder="e.g., Color, Size, Storage" {...field} />
+                      </FormControl>
+                      <FormDescription>
+                        Comma-separated list of variant group names. The order must match the variant names.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
             </CardContent>
         </Card>
 
@@ -171,7 +193,12 @@ export function ProductForm({ product, categories }: ProductFormProps) {
                 {fields.map((field, index) => (
                     <div key={field.id} className="space-y-4 border p-4 rounded-lg relative">
                         <FormField control={form.control} name={`variants.${index}.name`} render={({ field }) => (
-                            <FormItem><FormLabel>Variant Name</FormLabel><FormControl><Input placeholder="e.g., Starlight, 128GB" {...field} disabled={isEditMode} /></FormControl><FormMessage /></FormItem>
+                            <FormItem>
+                              <FormLabel>Variant Name</FormLabel>
+                              <FormControl><Input placeholder="e.g., Starlight, 128GB" {...field} disabled={isEditMode} /></FormControl>
+                              <FormDescription>Comma-separated values, in the same order as Option Groups.</FormDescription>
+                              <FormMessage />
+                            </FormItem>
                         )} />
                         <div className="grid grid-cols-2 gap-4">
                             <FormField control={form.control} name={`variants.${index}.price`} render={({ field }) => (

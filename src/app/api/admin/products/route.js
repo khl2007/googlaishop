@@ -15,7 +15,7 @@ export async function GET() {
 
 // CREATE a new product
 export async function POST(request) {
-    const { name, slug, description, categoryId, variants } = await request.json();
+    const { name, slug, description, categoryId, variants, optionGroups } = await request.json();
     const db = getDatabase();
 
     if (!name || !slug || !description || !categoryId || !variants || !variants.length) {
@@ -26,8 +26,8 @@ export async function POST(request) {
 
     try {
         await new Promise((resolve, reject) => {
-            db.run('INSERT INTO products (id, name, slug, description, categoryId) VALUES (?, ?, ?, ?, ?)', 
-            [productId, name, slug, description, categoryId], 
+            db.run('INSERT INTO products (id, name, slug, description, categoryId, optionGroups) VALUES (?, ?, ?, ?, ?, ?)', 
+            [productId, name, slug, description, categoryId, optionGroups], 
             function (err) {
                 if (err) return reject(err);
                 resolve(this);

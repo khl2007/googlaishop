@@ -129,6 +129,7 @@ function seedDatabase() {
  slug TEXT UNIQUE,
  description TEXT,
  categoryId TEXT,
+ optionGroups TEXT,
  FOREIGN KEY(categoryId) REFERENCES categories(id)
  )`);
     const insertCategoryStmt = db.prepare('INSERT OR IGNORE INTO categories (id, name, slug) VALUES (?, ?, ?)');
@@ -136,7 +137,7 @@ function seedDatabase() {
     insertCategoryStmt.finalize();
     console.log('Categories seeded.');
 
-    const insertProductStmt = db.prepare('INSERT OR IGNORE INTO products (id, name, slug, description, categoryId) VALUES (?, ?, ?, ?, ?)');
+    const insertProductStmt = db.prepare('INSERT OR IGNORE INTO products (id, name, slug, description, categoryId, optionGroups) VALUES (?, ?, ?, ?, ?, ?)');
     const insertVariantStmt = db.prepare('INSERT OR IGNORE INTO product_variants (id, productId, name, price, image, stock, color_hex) VALUES (?, ?, ?, ?, ?, ?, ?)');
  db.run(`CREATE TABLE IF NOT EXISTS product_variants (
  id TEXT PRIMARY KEY,
@@ -149,7 +150,7 @@ function seedDatabase() {
  FOREIGN KEY(productId) REFERENCES products(id)
  )`);
     allProducts.forEach(product => {
-      insertProductStmt.run(product.id, product.name, product.slug, product.description, product.categoryId, (err) => {
+      insertProductStmt.run(product.id, product.name, product.slug, product.description, product.categoryId, product.optionGroups, (err) => {
         if (err) {
           console.error(`Error inserting product ${product.name}:`, err.message);
         }

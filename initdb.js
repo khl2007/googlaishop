@@ -64,7 +64,7 @@ db.serialize(() => {
 
   // Keep other tables
   db.run("CREATE TABLE IF NOT EXISTS categories (id TEXT PRIMARY KEY, name TEXT, slug TEXT UNIQUE)");
-  db.run("CREATE TABLE IF NOT EXISTS products (id TEXT PRIMARY KEY, name TEXT, slug TEXT UNIQUE, description TEXT, categoryId TEXT, FOREIGN KEY(categoryId) REFERENCES categories(id))");
+  db.run("CREATE TABLE IF NOT EXISTS products (id TEXT PRIMARY KEY, name TEXT, slug TEXT UNIQUE, description TEXT, categoryId TEXT, optionGroups TEXT, FOREIGN KEY(categoryId) REFERENCES categories(id))");
   db.run("CREATE TABLE IF NOT EXISTS product_variants (id TEXT PRIMARY KEY, productId TEXT, name TEXT, price INTEGER, image TEXT, stock INTEGER, color_hex TEXT, FOREIGN KEY(productId) REFERENCES products(id))");
 });
 

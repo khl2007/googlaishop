@@ -1,134 +1,150 @@
 "use client";
 
 import { useMemo, useState, useEffect } from "react";
-import type { ProductVariant } from "@/lib/types";
+import type { Product, ProductVariant } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 interface ProductVariantSelectorsProps {
-  variants: ProductVariant[];
+  product: Product;
   selectedVariant: ProductVariant;
   onVariantChange: (variant: ProductVariant) => void;
 }
 
-// Heuristic to parse variant names like "Starlight, 128GB"
-const parseVariantName = (name: string) => {
-  const parts = name.split(",").map((p) => p.trim());
-  return {
-    colorName: parts[0],
-    otherOption: parts[1] || null,
-  };
-};
-
 export function ProductVariantSelectors({
-  variants,
+  product,
   selectedVariant,
   onVariantChange,
 }: ProductVariantSelectorsProps) {
-  const { colorName: selectedColorName, otherOption: selectedOtherOptionName } =
-    parseVariantName(selectedVariant.name);
 
-  const colorOptions = useMemo(() => {
-    const colors = new Map<string, { name: string; hex: string }>();
-    variants.forEach((v) => {
-      if (v.color_hex) {
-        const { colorName } = parseVariantName(v.name);
-        if (!colors.has(colorName)) {
-          colors.set(colorName, { name: colorName, hex: v.color_hex });
+  const { variants, optionGroups: optionGroupsJSON } = product;
+  const optionGroupNames: string[] = useMemo(() => {
+    try {
+      return optionGroupsJSON ? JSON.parse(optionGroupsJSON) : [];
+    } catch (e) {
+      console.error("Failed to parse optionGroups JSON:", optionGroupsJSON);
+      return [];
+    }
+  }, [optionGroupsJSON]);
+
+  const getOptionsFromVariant = (variant: ProductVariant) => {
+    const options: Record<string, string> = {};
+    const values = variant.name.split(",").map(v => v.trim());
+    optionGroupNames.forEach((groupName, index) => {
+      if (values[index]) {
+        options[groupName] = values[index];
+      }
+    });
+    return options;
+  };
+
+  const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>(() => getOptionsFromVariant(selectedVariant));
+
+  useEffect(() => {
+    setSelectedOptions(getOptionsFromVariant(selectedVariant));
+  }, [selectedVariant, optionGroupNames]);
+
+  const allOptions = useMemo(() => {
+    if (optionGroupNames.length === 0) return [];
+    
+    const groups = new Map<string, { name: string; values: Set<string> }>();
+    optionGroupNames.forEach(groupName => {
+      groups.set(groupName, { name: groupName, values: new Set() });
+    });
+
+    variants.forEach(variant => {
+      const values = variant.name.split(",").map(v => v.trim());
+      optionGroupNames.forEach((groupName, index) => {
+        if (values[index]) {
+          groups.get(groupName)?.values.add(values[index]);
         }
-      }
+      });
     });
-    return Array.from(colors.values());
-  }, [variants]);
 
-  const otherOptions = useMemo(() => {
-    const options = new Set<string>();
-    variants.forEach((v) => {
-      const { otherOption } = parseVariantName(v.name);
-      if (otherOption) {
-        options.add(otherOption);
-      }
-    });
-    return Array.from(options.values());
-  }, [variants]);
+    return Array.from(groups.values()).map(g => ({ ...g, values: Array.from(g.values) }));
+  }, [variants, optionGroupNames]);
 
-  const handleColorSelect = (colorName: string) => {
-    // Find the first variant that matches the new color and the current other option
-    const newVariant = variants.find((v) => {
-      const {
-        colorName: vColor,
-        otherOption: vOther,
-      } = parseVariantName(v.name);
-      return vColor === colorName && vOther === selectedOtherOptionName;
-    });
-    // If no direct match, find the first variant with the new color
-    if (newVariant) {
-      onVariantChange(newVariant);
-    } else {
-      const firstAvailable = variants.find(v => parseVariantName(v.name).colorName === colorName);
-      if (firstAvailable) onVariantChange(firstAvailable);
+
+  const handleOptionSelect = (groupName: string, value: string) => {
+    const newSelectedOptions = { ...selectedOptions, [groupName]: value };
+    
+    // Find a variant that is the best match for the new selection
+    let bestMatch: ProductVariant | undefined;
+    let maxMatchCount = -1;
+
+    for (const variant of variants) {
+        const variantOptions = getOptionsFromVariant(variant);
+        let currentMatchCount = 0;
+        for (const group of optionGroupNames) {
+            if (variantOptions[group] === newSelectedOptions[group]) {
+                currentMatchCount++;
+            }
+        }
+
+        if (currentMatchCount > maxMatchCount) {
+            maxMatchCount = currentMatchCount;
+            bestMatch = variant;
+        }
+    }
+
+    if (bestMatch) {
+      onVariantChange(bestMatch);
     }
   };
-
-  const handleOtherOptionSelect = (otherOption: string) => {
-    const newVariant = variants.find((v) => {
-       const {
-        colorName: vColor,
-        otherOption: vOther,
-      } = parseVariantName(v.name);
-      return vColor === selectedColorName && vOther === otherOption;
-    });
-    if (newVariant) {
-      onVariantChange(newVariant);
-    }
-  };
-
-  if (variants.length <= 1) return null;
+  
+  if (variants.length <= 1 || allOptions.length === 0) return null;
 
   return (
     <>
-      {colorOptions.length > 0 && (
-        <div>
-          <h3 className="text-lg font-semibold">Color</h3>
+      {allOptions.map((group) => (
+        <div key={group.name}>
+          <h3 className="text-lg font-semibold">{group.name}</h3>
           <div className="mt-2 flex flex-wrap gap-2">
-            {colorOptions.map(({ name, hex }) => (
-              <button
-                key={name}
-                onClick={() => handleColorSelect(name)}
-                title={name}
-                className={cn(
-                  "h-8 w-8 rounded-full border-2 transition-transform duration-100 ease-in-out hover:scale-110 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
-                  name === selectedColorName
-                    ? "border-primary scale-110"
-                    : "border-border"
-                )}
-                style={{ backgroundColor: hex }}
-              />
-            ))}
-          </div>
-        </div>
-      )}
+            {group.values.map((value) => {
+              const isSelected = selectedOptions[group.name] === value;
+              
+              if (group.name.toLowerCase() === "color") {
+                const variantForColor = variants.find(
+                  v => getOptionsFromVariant(v)[group.name] === value && v.color_hex
+                );
+                const hex = variantForColor?.color_hex;
 
-      {otherOptions.length > 0 && (
-        <div>
-          <h3 className="text-lg font-semibold">{otherOptions.some(o => o.includes('GB')) ? 'Storage' : 'Size'}</h3>
-          <div className="mt-2 flex flex-wrap gap-2">
-            {otherOptions.map((option) => (
-              <button
-                key={option}
-                onClick={() => handleOtherOptionSelect(option)}
-                className={cn(
+                if (hex) {
+                  return (
+                    <button
+                      key={value}
+                      onClick={() => handleOptionSelect(group.name, value)}
+                      title={value}
+                      className={cn(
+                        "h-8 w-8 rounded-full border-2 transition-transform duration-100 ease-in-out hover:scale-110 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+                        isSelected
+                          ? "border-primary scale-110"
+                          : "border-border"
+                      )}
+                      style={{ backgroundColor: hex }}
+                    />
+                  );
+                }
+              }
+
+              // Default button for other option types
+              return (
+                <button
+                  key={value}
+                  onClick={() => handleOptionSelect(group.name, value)}
+                  className={cn(
                     "rounded-md border px-4 py-2 text-sm font-medium transition-colors",
-                    option === selectedOtherOptionName
+                    isSelected
                       ? "border-primary bg-primary text-primary-foreground"
                       : "bg-transparent hover:bg-accent hover:text-accent-foreground"
-                )}
-              >
-                {option}
-              </button>
-            ))}
+                  )}
+                >
+                  {value}
+                </button>
+              );
+            })}
           </div>
         </div>
-      )}
+      ))}
     </>
   );
 }
