@@ -339,3 +339,16 @@ export async function deleteUserAddress(addressId, userId) {
         });
     });
 }
+
+export async function getSettings() {
+    const db = getDatabase();
+    return new Promise((resolve, reject) => {
+        db.get('SELECT * FROM settings WHERE id = 1', (err, row) => {
+            if (err) {
+                console.error('Database error in getSettings:', err);
+                return reject(new Error('Failed to fetch settings.'));
+            }
+            resolve(row);
+        });
+    });
+}

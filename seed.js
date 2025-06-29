@@ -33,41 +33,25 @@ function seedDatabase() {
 
   db.serialize(() => {
     // Create tables if they don't exist
- db.run(`CREATE TABLE IF NOT EXISTS roles (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
- name TEXT UNIQUE
- )`);
- db.run(`CREATE TABLE IF NOT EXISTS permissions (
- id INTEGER PRIMARY KEY AUTOINCREMENT,
-      action TEXT,
- subject TEXT,
- UNIQUE(action, subject)
- )`);
- db.run(`CREATE TABLE IF NOT EXISTS role_permissions (
- role_id INTEGER,
- permission_id INTEGER,
- FOREIGN KEY(role_id) REFERENCES roles(id),
- FOREIGN KEY(permission_id) REFERENCES permissions(id),
- UNIQUE(role_id, permission_id)
- )`);
- db.run(`CREATE TABLE IF NOT EXISTS users (
- id INTEGER PRIMARY KEY AUTOINCREMENT,
-      username TEXT UNIQUE,
-      password TEXT,
-      fullName TEXT,
-      role_id INTEGER,
- phoneNumber TEXT,
- country TEXT,
- city TEXT,
- FOREIGN KEY(role_id) REFERENCES roles(id)
- )`);
-
+    db.run(`CREATE TABLE IF NOT EXISTS roles (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT UNIQUE)`);
+    db.run(`CREATE TABLE IF NOT EXISTS permissions (id INTEGER PRIMARY KEY AUTOINCREMENT, action TEXT, subject TEXT, UNIQUE(action, subject))`);
+    db.run(`CREATE TABLE IF NOT EXISTS role_permissions (role_id INTEGER, permission_id INTEGER, FOREIGN KEY(role_id) REFERENCES roles(id), FOREIGN KEY(permission_id) REFERENCES permissions(id), UNIQUE(role_id, permission_id))`);
+    db.run(`CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT UNIQUE, password TEXT, fullName TEXT, role_id INTEGER, phoneNumber TEXT, country TEXT, city TEXT, FOREIGN KEY(role_id) REFERENCES roles(id))`);
+    db.run(`CREATE TABLE IF NOT EXISTS settings (id INTEGER PRIMARY KEY DEFAULT 1, websiteTitle TEXT, websiteLogo TEXT, timeZone TEXT, country TEXT)`);
 
     // Seed roles
     const insertRoleStmt = db.prepare('INSERT OR IGNORE INTO roles (name) VALUES (?)');
     roles.forEach(role => insertRoleStmt.run(role));
     insertRoleStmt.finalize();
     console.log('Roles seeded.');
+    
+    // Seed Settings
+    const insertSettingsStmt = db.prepare('INSERT OR IGNORE INTO settings (id, websiteTitle, websiteLogo, timeZone, country) VALUES (?, ?, ?, ?, ?)');
+    insertSettingsStmt.run(1, 'Zain Inspired E-Shop', 'https://placehold.co/100x40.png', 'UTC', 'USA', (err) => {
+      if (err) console.error('Error inserting settings:', err.message);
+    });
+    insertSettingsStmt.finalize();
+    console.log('Settings seeded.');
 
     // Seed permissions
     const insertPermissionStmt = db.prepare('INSERT OR IGNORE INTO permissions (action, subject) VALUES (?, ?)');
