@@ -10,23 +10,18 @@ export default async function Home() {
 
   return (
     <div className="container mx-auto px-4">
-      <section className="relative my-12 text-center md:my-24">
-        <div className="mx-auto max-w-4xl">
+      <section className="relative my-12 overflow-hidden rounded-xl bg-gradient-to-r from-cyan-300 to-teal-400 p-8 text-center text-white md:my-16">
+        <div className="relative z-10 mx-auto max-w-4xl">
           <h1 className="mb-4 font-headline text-4xl font-extrabold tracking-tight md:text-5xl lg:text-6xl">
-            Discover the Future of Tech
+            Everything You Need For Your Smart Device
           </h1>
-          <p className="mb-8 text-lg text-muted-foreground md:text-xl">
-            Explore our curated selection of cutting-edge electronics. Built for performance, designed for life.
+          <p className="mb-8 text-lg text-white/90 md:text-xl">
+            With <span className="font-bold">Zain</span>, explore our curated selection of cutting-edge electronics.
           </p>
           <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
             <Button asChild size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90">
               <Link href="/products">
-                Shop Now <ArrowRight className="ml-2 h-5 w-5" />
-              </Link>
-            </Button>
-            <Button asChild size="lg" variant="outline">
-              <Link href="/admin">
-                Admin Panel
+                Shop The Collection <ArrowRight className="ml-2 h-5 w-5" />
               </Link>
             </Button>
           </div>
