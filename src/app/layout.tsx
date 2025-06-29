@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
+import { headers } from 'next/headers';
 import './globals.css';
 import { cn } from '@/lib/utils';
 import { Header } from '@/components/header';
@@ -25,16 +26,29 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const user = await getUser();
+  const headersList = headers();
+  const pathname = headersList.get('x-next-pathname') || '';
+
+  const isAdminRoute = pathname.startsWith('/admin');
+  const isVendorRoute = pathname.startsWith('/vendor');
+  const isDeliveryRoute = pathname.startsWith('/delivery');
+  
+  const showHeaderAndFooter = !isAdminRoute && !isVendorRoute && !isDeliveryRoute;
+
   return (
     <html lang="en" suppressHydrationWarning>
       <head />
       <body className={cn('min-h-screen font-body antialiased', inter.variable)}>
         <Providers>
-          <div className="relative flex min-h-dvh flex-col">
-            <Header user={user} />
-            <main className="flex-1">{children}</main>
-            <Footer />
-          </div>
+          {showHeaderAndFooter ? (
+            <div className="relative flex min-h-dvh flex-col">
+              <Header user={user} />
+              <main className="flex-1">{children}</main>
+              <Footer />
+            </div>
+          ) : (
+            <>{children}</>
+          )}
           <Toaster />
         </Providers>
       </body>

@@ -3,6 +3,9 @@ import type { NextRequest } from 'next/server';
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set('x-next-pathname', pathname);
+
   const sessionCookie = request.cookies.get('user_session');
 
   let user = null;
@@ -12,7 +15,11 @@ export function middleware(request: NextRequest) {
     } catch (e) {
       // Corrupted cookie, treat as logged out
       console.error('Failed to parse session cookie', e);
-      const response = NextResponse.next();
+      const response = NextResponse.next({
+        request: {
+          headers: requestHeaders,
+        },
+      });
       response.cookies.delete('user_session'); // Clear the corrupted cookie
       return response;
     }
@@ -42,11 +49,15 @@ export function middleware(request: NextRequest) {
     }
   }
 
-
-  return NextResponse.next();
+  return NextResponse.next({
+    request: {
+      headers: requestHeaders,
+    },
+  });
 }
 
 export const config = {
-  // Match all paths starting with the specified prefixes.
-  matcher: ['/admin/:path*', '/vendor/:path*', '/delivery/:path*'],
+  // We need to match all paths to make the pathname available everywhere,
+  // but we should exclude static assets and API routes to avoid unnecessary processing.
+  matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)'],
 };
