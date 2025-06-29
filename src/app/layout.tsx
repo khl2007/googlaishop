@@ -8,6 +8,7 @@ import { Footer } from '@/components/footer';
 import { Toaster } from '@/components/ui/toaster';
 import { Providers } from '@/components/providers';
 import { getUser } from '@/lib/session';
+import { BottomToolbar } from '@/components/bottom-toolbar';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -43,8 +44,9 @@ export default async function RootLayout({
           {showHeaderAndFooter ? (
             <div className="relative flex min-h-dvh flex-col">
               <Header user={user} />
-              <main className="flex-1">{children}</main>
+              <main className="flex-1 pb-16 md:pb-0">{children}</main>
               <Footer />
+              <BottomToolbar user={user} />
             </div>
           ) : (
             <>{children}</>

@@ -12,7 +12,6 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import {
-  Menu,
   ShoppingCart,
   X,
 } from "lucide-react";
@@ -36,22 +35,8 @@ interface HeaderProps {
 }
 
 export function Header({ user }: HeaderProps) {
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { cartItems, cartCount, cartTotal, isCartOpen, setIsCartOpen, removeFromCart, updateQuantity } = useCart();
-  const router = useRouter();
   
-  const handleLogout = async () => {
-    const res = await fetch("/api/auth/logout", {
-      method: "POST",
-    });
-
-    if (res.ok) {
-      setIsMobileMenuOpen(false);
-      router.push("/login");
-      router.refresh();
-    }
-  };
-
   const isCustomer = !user || user.role === 'customer';
 
 
@@ -95,7 +80,7 @@ export function Header({ user }: HeaderProps) {
             <Button
               variant="outline"
               size="icon"
-              className="relative"
+              className="relative hidden md:inline-flex"
               onClick={() => setIsCartOpen(true)}
             >
               <ShoppingCart className="h-5 w-5" />
@@ -106,55 +91,8 @@ export function Header({ user }: HeaderProps) {
               )}
             </Button>
           )}
-
-          <Button
-            variant="ghost"
-            size="icon"
-            className="md:hidden"
-            onClick={() => setIsMobileMenuOpen(true)}
-          >
-            <Menu className="h-6 w-6" />
-          </Button>
         </div>
       </div>
-
-      <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
-        <SheetContent side="left" className="w-full max-w-xs">
-          <SheetHeader>
-            <SheetTitle>
-              <Link href="/" className="flex items-center gap-2" onClick={() => setIsMobileMenuOpen(false)}>
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6 text-primary"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path></svg>
-                <span className="font-bold font-headline">Zain</span>
-              </Link>
-            </SheetTitle>
-          </SheetHeader>
-          <div className="mt-8 flex flex-col gap-4">
-            {navLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className="text-lg font-medium"
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                {link.label}
-              </Link>
-            ))}
-            <hr />
-            {user ? (
-                 <Button onClick={handleLogout} variant="ghost" size="lg" className="justify-start text-lg font-medium">Log out</Button>
-            ) : (
-              <>
-                <Link href="/login" className={cn(buttonVariants({ variant: "ghost", size: "lg" }), "justify-start text-lg font-medium")}>
-                    Log In
-                </Link>
-                <Link href="/register" className={cn(buttonVariants({ variant: "default", size: "lg" }), "text-lg font-medium bg-primary text-primary-foreground hover:bg-primary/90")}>
-                    Sign Up
-                </Link>
-              </>
-            )}
-          </div>
-        </SheetContent>
-      </Sheet>
 
       {isCustomer && (
         <Sheet open={isCartOpen} onOpenChange={setIsCartOpen}>
