@@ -30,3 +30,10 @@ export type CartItem = {
   image: string;
   quantity: number;
 };
+
+export type User = {
+  id: number;
+  username: string;
+  fullName: string;
+  role: 'admin' | 'vendor' | 'customer' | 'delivery';
+};

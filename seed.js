@@ -32,6 +32,37 @@ function seedDatabase() {
   };
 
   db.serialize(() => {
+    // Create tables if they don't exist
+ db.run(`CREATE TABLE IF NOT EXISTS roles (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+ name TEXT UNIQUE
+ )`);
+ db.run(`CREATE TABLE IF NOT EXISTS permissions (
+ id INTEGER PRIMARY KEY AUTOINCREMENT,
+      action TEXT,
+ subject TEXT,
+ UNIQUE(action, subject)
+ )`);
+ db.run(`CREATE TABLE IF NOT EXISTS role_permissions (
+ role_id INTEGER,
+ permission_id INTEGER,
+ FOREIGN KEY(role_id) REFERENCES roles(id),
+ FOREIGN KEY(permission_id) REFERENCES permissions(id),
+ UNIQUE(role_id, permission_id)
+ )`);
+ db.run(`CREATE TABLE IF NOT EXISTS users (
+ id INTEGER PRIMARY KEY AUTOINCREMENT,
+      username TEXT UNIQUE,
+      password TEXT,
+      fullName TEXT,
+      role_id INTEGER,
+ phoneNumber TEXT,
+ country TEXT,
+ city TEXT,
+ FOREIGN KEY(role_id) REFERENCES roles(id)
+ )`);
+
+
     // Seed roles
     const insertRoleStmt = db.prepare('INSERT OR IGNORE INTO roles (name) VALUES (?)');
     roles.forEach(role => insertRoleStmt.run(role));
@@ -86,6 +117,20 @@ function seedDatabase() {
   });
 
   function seedProductsAndCategories() {
+    // Create categories, products, and product_variants tables if they don't exist
+ db.run(`CREATE TABLE IF NOT EXISTS categories (
+ id TEXT PRIMARY KEY,
+ name TEXT,
+ slug TEXT UNIQUE
+ )`);
+ db.run(`CREATE TABLE IF NOT EXISTS products (
+ id TEXT PRIMARY KEY,
+ name TEXT,
+ slug TEXT UNIQUE,
+ description TEXT,
+ categoryId TEXT,
+ FOREIGN KEY(categoryId) REFERENCES categories(id)
+ )`);
     const insertCategoryStmt = db.prepare('INSERT OR IGNORE INTO categories (id, name, slug) VALUES (?, ?, ?)');
     allCategories.forEach(category => insertCategoryStmt.run(category.id, category.name, category.slug));
     insertCategoryStmt.finalize();
@@ -93,7 +138,15 @@ function seedDatabase() {
 
     const insertProductStmt = db.prepare('INSERT OR IGNORE INTO products (id, name, slug, description, categoryId) VALUES (?, ?, ?, ?, ?)');
     const insertVariantStmt = db.prepare('INSERT OR IGNORE INTO product_variants (id, productId, name, price, image, stock) VALUES (?, ?, ?, ?, ?, ?)');
-    
+ db.run(`CREATE TABLE IF NOT EXISTS product_variants (
+ id TEXT PRIMARY KEY,
+      productId TEXT,
+      name TEXT,
+ price REAL,
+ image TEXT,
+ stock INTEGER,
+ FOREIGN KEY(productId) REFERENCES products(id)
+ )`);
     allProducts.forEach(product => {
       insertProductStmt.run(product.id, product.name, product.slug, product.description, product.categoryId, (err) => {
         if (err) {

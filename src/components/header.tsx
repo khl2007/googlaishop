@@ -21,6 +21,9 @@ import { useCart } from "@/hooks/use-cart";
 import Image from "next/image";
 import { Input } from "./ui/input";
 import { cn } from "@/lib/utils";
+import type { User } from "@/lib/types";
+import { UserNav } from "./user-nav";
+import { useRouter } from "next/navigation";
 
 const navLinks = [
   { href: "/products", label: "All Products" },
@@ -28,9 +31,27 @@ const navLinks = [
   { href: "/#about", label: "About Us" },
 ];
 
-export function Header() {
+interface HeaderProps {
+  user: User | null;
+}
+
+export function Header({ user }: HeaderProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { cartItems, cartCount, cartTotal, isCartOpen, setIsCartOpen, removeFromCart, updateQuantity } = useCart();
+  const router = useRouter();
+  
+  const handleLogout = async () => {
+    const res = await fetch("/api/auth/logout", {
+      method: "POST",
+    });
+
+    if (res.ok) {
+      setIsMobileMenuOpen(false);
+      router.push("/login");
+      router.refresh();
+    }
+  };
+
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -55,12 +76,18 @@ export function Header() {
 
         <div className="flex items-center gap-2">
           <div className="hidden items-center gap-2 md:flex">
-            <Link href="/login" className={buttonVariants({ variant: "ghost" })}>
-              Log In
-            </Link>
-            <Link href="/register" className={buttonVariants({ variant: "default", className: "bg-primary text-primary-foreground hover:bg-primary/90" })}>
-              Sign Up
-            </Link>
+            {user ? (
+                <UserNav user={user} />
+            ) : (
+                <>
+                    <Link href="/login" className={buttonVariants({ variant: "ghost" })}>
+                        Log In
+                    </Link>
+                    <Link href="/register" className={buttonVariants({ variant: "default", className: "bg-primary text-primary-foreground hover:bg-primary/90" })}>
+                        Sign Up
+                    </Link>
+                </>
+            )}
           </div>
           <Button
             variant="outline"
@@ -109,12 +136,18 @@ export function Header() {
               </Link>
             ))}
             <hr />
-            <Link href="/login" className={buttonVariants({ variant: "ghost", size: "lg" })}>
-              Log In
-            </Link>
-            <Link href="/register" className={buttonVariants({ variant: "default", size: "lg", className: "bg-primary text-primary-foreground hover:bg-primary/90" })}>
-              Sign Up
-            </Link>
+            {user ? (
+                 <Button onClick={handleLogout} variant="ghost" size="lg" className="justify-start text-lg font-medium">Log out</Button>
+            ) : (
+              <>
+                <Link href="/login" className={cn(buttonVariants({ variant: "ghost", size: "lg" }), "justify-start text-lg font-medium")}>
+                    Log In
+                </Link>
+                <Link href="/register" className={cn(buttonVariants({ variant: "default", size: "lg" }), "text-lg font-medium bg-primary text-primary-foreground hover:bg-primary/90")}>
+                    Sign Up
+                </Link>
+              </>
+            )}
           </div>
         </SheetContent>
       </Sheet>
