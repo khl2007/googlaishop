@@ -119,6 +119,43 @@ export async function getCategoryById(id) {
     });
 }
 
+export async function getCategoryBySlug(slug) {
+    const db = getDatabase();
+    return new Promise((resolve, reject) => {
+        db.get('SELECT * FROM categories WHERE slug = ?', [slug], (err, row) => {
+            if (err) {
+                console.error('Database error in getCategoryBySlug:', err);
+                return reject(new Error('Failed to fetch category.'));
+            }
+            resolve(row);
+        });
+    });
+}
+
+
+export async function getProductsByCategoryId(categoryId) {
+    const db = getDatabase();
+    const products = await new Promise((resolve, reject) => {
+        db.all('SELECT * FROM products WHERE categoryId = ?', [categoryId], (err, rows) => {
+            if (err) reject(new Error('Failed to fetch products for the category.'));
+            else resolve(rows);
+        });
+    });
+
+    const productsWithVariants = await Promise.all(products.map(async (product) => {
+        const variants = await new Promise((resolve, reject) => {
+            db.all('SELECT * FROM product_variants WHERE productId = ?', [product.id], (err, rows) => {
+                if (err) reject(new Error('Failed to fetch variants for a product.'));
+                else resolve(rows);
+            });
+        });
+        return { ...product, variants };
+    }));
+
+    return productsWithVariants;
+}
+
+
 export async function getUsers() {
     const db = getDatabase();
     return new Promise((resolve, reject) => {

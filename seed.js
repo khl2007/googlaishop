@@ -149,7 +149,8 @@ function seedDatabase() {
     db.run(`CREATE TABLE IF NOT EXISTS categories (
     id TEXT PRIMARY KEY,
     name TEXT,
-    slug TEXT UNIQUE
+    slug TEXT UNIQUE,
+    image TEXT
     )`);
     db.run(`CREATE TABLE IF NOT EXISTS products (
     id TEXT PRIMARY KEY,
@@ -178,8 +179,8 @@ function seedDatabase() {
     FOREIGN KEY(productId) REFERENCES products(id)
     )`);
 
-    const insertCategoryStmt = db.prepare('INSERT OR IGNORE INTO categories (id, name, slug) VALUES (?, ?, ?)');
-    allCategories.forEach(category => insertCategoryStmt.run(category.id, category.name, category.slug));
+    const insertCategoryStmt = db.prepare('INSERT OR IGNORE INTO categories (id, name, slug, image) VALUES (?, ?, ?, ?)');
+    allCategories.forEach(category => insertCategoryStmt.run(category.id, category.name, category.slug, category.image));
     insertCategoryStmt.finalize();
     console.log('Categories seeded.');
 

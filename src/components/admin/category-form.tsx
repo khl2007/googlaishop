@@ -6,7 +6,7 @@ import { z } from "zod";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
 import type { Category } from "@/lib/types";
 import { Loader2 } from "lucide-react";
@@ -14,6 +14,7 @@ import { Loader2 } from "lucide-react";
 const formSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters."),
   slug: z.string().min(2, "Slug must be at least 2 characters.").regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Slug must be lowercase and contain only letters, numbers, and hyphens."),
+  image: z.string().url("Must be a valid URL.").optional().or(z.literal('')),
 });
 
 type CategoryFormValues = z.infer<typeof formSchema>;
@@ -30,6 +31,7 @@ export function CategoryForm({ category }: CategoryFormProps) {
     defaultValues: {
       name: category?.name || "",
       slug: category?.slug || "",
+      image: category?.image || "",
     },
   });
   
@@ -92,6 +94,22 @@ export function CategoryForm({ category }: CategoryFormProps) {
               <FormControl>
                 <Input placeholder="e.g., smartphones" {...field} />
               </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="image"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Image URL</FormLabel>
+              <FormControl>
+                <Input placeholder="https://..." {...field} />
+              </FormControl>
+              <FormDescription>
+                Provide a URL for the category image.
+              </FormDescription>
               <FormMessage />
             </FormItem>
           )}

@@ -24,7 +24,7 @@ export async function GET(request, { params }) {
 // UPDATE a category
 export async function PUT(request, { params }) {
   const { id } = params;
-  const { name, slug } = await request.json();
+  const { name, slug, image } = await request.json();
   const db = getDatabase();
 
   if (!name || !slug) {
@@ -33,7 +33,7 @@ export async function PUT(request, { params }) {
 
   try {
     await new Promise((resolve, reject) => {
-      db.run('UPDATE categories SET name = ?, slug = ? WHERE id = ?', [name, slug, id], function (err) {
+      db.run('UPDATE categories SET name = ?, slug = ?, image = ? WHERE id = ?', [name, slug, image, id], function (err) {
         if (err) reject(err);
         if (this.changes === 0) reject(new Error('Category not found'));
         resolve(this);

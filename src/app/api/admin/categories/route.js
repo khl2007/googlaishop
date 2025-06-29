@@ -20,7 +20,7 @@ export async function GET() {
 
 // CREATE a new category
 export async function POST(request) {
-  const { name, slug } = await request.json();
+  const { name, slug, image } = await request.json();
   const db = getDatabase();
 
   if (!name || !slug) {
@@ -31,7 +31,7 @@ export async function POST(request) {
 
   try {
     await new Promise((resolve, reject) => {
-      db.run('INSERT INTO categories (id, name, slug) VALUES (?, ?, ?)', [id, name, slug], function (err) {
+      db.run('INSERT INTO categories (id, name, slug, image) VALUES (?, ?, ?, ?)', [id, name, slug, image], function (err) {
         if (err) {
             if (err.code === 'SQLITE_CONSTRAINT') {
                 return reject(new Error('A category with this slug already exists.'));

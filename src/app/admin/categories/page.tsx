@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -75,6 +76,7 @@ export default function CategoriesPage() {
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-[80px]">Image</TableHead>
               <TableHead>Name</TableHead>
               <TableHead>Slug</TableHead>
               <TableHead><span className="sr-only">Actions</span></TableHead>
@@ -83,6 +85,16 @@ export default function CategoriesPage() {
           <TableBody>
             {categories.map((category) => (
               <TableRow key={category.id}>
+                <TableCell>
+                  <Image 
+                    src={category.image || "https://placehold.co/64x64.png"} 
+                    alt={category.name}
+                    width={64}
+                    height={64}
+                    className="rounded-md"
+                    data-ai-hint="category image"
+                  />
+                </TableCell>
                 <TableCell className="font-medium">{category.name}</TableCell>
                 <TableCell>{category.slug}</TableCell>
                 <TableCell>

@@ -1,8 +1,8 @@
 export const allCategories = [
-  { id: 'cat1', name: 'Smartphones', slug: 'smartphones' },
-  { id: 'cat2', name: 'Laptops', slug: 'laptops' },
-  { id: 'cat3', name: 'Audio', slug: 'audio' },
-  { id: 'cat4', name: 'Accessories', slug: 'accessories' },
+  { id: 'cat1', name: 'Smartphones', slug: 'smartphones', image: 'https://placehold.co/400x300.png' },
+  { id: 'cat2', name: 'Laptops', slug: 'laptops', image: 'https://placehold.co/400x300.png' },
+  { id: 'cat3', name: 'Audio', slug: 'audio', image: 'https://placehold.co/400x300.png' },
+  { id: 'cat4', name: 'Accessories', slug: 'accessories', image: 'https://placehold.co/400x300.png' },
 ];
 
 export const allProducts = [
