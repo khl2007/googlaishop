@@ -4,10 +4,8 @@ import { useState } from "react";
 import Image from "next/image";
 import type { Product, ProductVariant } from "@/lib/types";
 import { Button } from "@/components/ui/button";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Label } from "@/components/ui/label";
 import { useCart } from "@/hooks/use-cart";
-import { cn } from "@/lib/utils";
+import { ProductVariantSelectors } from "@/components/product-variant-selectors";
 
 interface ProductDetailsClientProps {
   product: Product;
@@ -16,10 +14,9 @@ interface ProductDetailsClientProps {
 export function ProductDetailsClient({ product }: ProductDetailsClientProps) {
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant>(product.variants[0]);
   const { addToCart } = useCart();
-  const [quantity, setQuantity] = useState(1);
 
   const handleAddToCart = () => {
-    addToCart(product, selectedVariant, quantity);
+    addToCart(product, selectedVariant, 1);
   };
 
   return (
@@ -30,11 +27,12 @@ export function ProductDetailsClient({ product }: ProductDetailsClientProps) {
           alt={selectedVariant.name}
           width={600}
           height={600}
-          className="w-full rounded-lg object-cover shadow-lg"
+          className="w-full rounded-lg object-cover shadow-lg aspect-square"
           data-ai-hint="product image"
+          key={selectedVariant.id} 
         />
       </div>
-      <div>
+      <div className="flex flex-col">
         <h1 className="text-4xl font-extrabold font-headline tracking-tight lg:text-5xl">
           {product.name}
         </h1>
@@ -42,35 +40,16 @@ export function ProductDetailsClient({ product }: ProductDetailsClientProps) {
           ${selectedVariant.price.toFixed(2)}
         </p>
         <p className="mt-6 text-base text-muted-foreground">{product.description}</p>
-
-        <div className="mt-8">
-          <h2 className="text-lg font-semibold">Select Variant</h2>
-          <RadioGroup
-            value={selectedVariant.id}
-            onValueChange={(variantId) => {
-              const variant = product.variants.find((v) => v.id === variantId);
-              if (variant) setSelectedVariant(variant);
-            }}
-            className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2"
-          >
-            {product.variants.map((variant) => (
-              <Label
-                key={variant.id}
-                htmlFor={variant.id}
-                className={cn(
-                  "flex cursor-pointer flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground",
-                  { "border-primary": selectedVariant.id === variant.id }
-                )}
-              >
-                <RadioGroupItem value={variant.id} id={variant.id} className="sr-only" />
-                <span className="font-semibold">{variant.name}</span>
-                <span className="text-sm text-muted-foreground">${variant.price.toFixed(2)}</span>
-              </Label>
-            ))}
-          </RadioGroup>
+        
+        <div className="mt-8 space-y-6">
+          <ProductVariantSelectors 
+            variants={product.variants}
+            selectedVariant={selectedVariant}
+            onVariantChange={setSelectedVariant}
+          />
         </div>
 
-        <div className="mt-8">
+        <div className="mt-auto pt-8">
           <Button
             size="lg"
             className="w-full bg-primary text-primary-foreground hover:bg-primary/90"

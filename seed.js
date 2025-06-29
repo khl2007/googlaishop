@@ -137,7 +137,7 @@ function seedDatabase() {
     console.log('Categories seeded.');
 
     const insertProductStmt = db.prepare('INSERT OR IGNORE INTO products (id, name, slug, description, categoryId) VALUES (?, ?, ?, ?, ?)');
-    const insertVariantStmt = db.prepare('INSERT OR IGNORE INTO product_variants (id, productId, name, price, image, stock) VALUES (?, ?, ?, ?, ?, ?)');
+    const insertVariantStmt = db.prepare('INSERT OR IGNORE INTO product_variants (id, productId, name, price, image, stock, color_hex) VALUES (?, ?, ?, ?, ?, ?, ?)');
  db.run(`CREATE TABLE IF NOT EXISTS product_variants (
  id TEXT PRIMARY KEY,
       productId TEXT,
@@ -145,6 +145,7 @@ function seedDatabase() {
  price REAL,
  image TEXT,
  stock INTEGER,
+ color_hex TEXT,
  FOREIGN KEY(productId) REFERENCES products(id)
  )`);
     allProducts.forEach(product => {
@@ -154,7 +155,7 @@ function seedDatabase() {
         }
       });
       product.variants.forEach(variant => {
-        insertVariantStmt.run(variant.id, product.id, variant.name, variant.price, variant.image, variant.stock, (err) => {
+        insertVariantStmt.run(variant.id, product.id, variant.name, variant.price, variant.image, variant.stock, variant.color_hex, (err) => {
           if (err) {
             console.error(`Error inserting variant ${variant.name} for product ${product.name}:`, err.message);
           }

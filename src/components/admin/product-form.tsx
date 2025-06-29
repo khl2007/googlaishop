@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
-import type { Product, Category, ProductVariant } from "@/lib/types";
+import type { Product, Category } from "@/lib/types";
 import { Loader2, Trash } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 
@@ -19,6 +19,7 @@ const variantSchema = z.object({
     price: z.preprocess((a) => parseInt(z.string().parse(a), 10), z.number().positive("Price must be positive.")),
     stock: z.preprocess((a) => parseInt(z.string().parse(a), 10), z.number().int().min(0, "Stock can't be negative.")),
     image: z.string().url("Must be a valid URL.").min(1, "Image URL is required."),
+    color_hex: z.string().optional(),
 });
 
 const formSchema = z.object({
@@ -46,7 +47,7 @@ export function ProductForm({ product, categories }: ProductFormProps) {
       slug: product?.slug || "",
       description: product?.description || "",
       categoryId: product?.categoryId || "",
-      variants: product?.variants || [{ name: "", price: 0, stock: 0, image: "" }],
+      variants: product?.variants.map(v => ({...v, color_hex: v.color_hex || ''})) || [{ name: "", price: 0, stock: 0, image: "", color_hex: "" }],
     },
   });
 
@@ -183,6 +184,19 @@ export function ProductForm({ product, categories }: ProductFormProps) {
                         <FormField control={form.control} name={`variants.${index}.image`} render={({ field }) => (
                             <FormItem><FormLabel>Image URL</FormLabel><FormControl><Input placeholder="https://placehold.co/600x600" {...field} disabled={isEditMode}/></FormControl><FormMessage /></FormItem>
                         )} />
+                        <FormField control={form.control} name={`variants.${index}.color_hex`} render={({ field }) => (
+                           <FormItem>
+                             <FormLabel>Color</FormLabel>
+                             <FormControl>
+                               <div className="flex items-center gap-2">
+                                 <Input type="color" {...field} className="w-12 h-10 p-1" disabled={isEditMode} />
+                                 <Input type="text" placeholder="#RRGGBB" {...field} disabled={isEditMode} />
+                               </div>
+                             </FormControl>
+                             <FormMessage />
+                           </FormItem>
+                         )} />
+
                          {!isEditMode && (
                             <Button type="button" variant="destructive" size="icon" className="absolute top-4 right-4" onClick={() => remove(index)}>
                                 <Trash className="h-4 w-4" />
@@ -191,7 +205,7 @@ export function ProductForm({ product, categories }: ProductFormProps) {
                     </div>
                 ))}
                  {!isEditMode && (
-                    <Button type="button" variant="outline" onClick={() => append({ name: '', price: 0, stock: 0, image: '' })}>
+                    <Button type="button" variant="outline" onClick={() => append({ name: '', price: 0, stock: 0, image: '', color_hex: '' })}>
                         Add Variant
                     </Button>
                  )}

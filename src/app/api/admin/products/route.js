@@ -34,11 +34,11 @@ export async function POST(request) {
             });
         });
 
-        const insertVariantStmt = db.prepare('INSERT INTO product_variants (id, productId, name, price, image, stock) VALUES (?, ?, ?, ?, ?, ?)');
+        const insertVariantStmt = db.prepare('INSERT INTO product_variants (id, productId, name, price, image, stock, color_hex) VALUES (?, ?, ?, ?, ?, ?, ?)');
         for (const variant of variants) {
             const variantId = `var-${randomUUID().slice(0, 8)}`;
             await new Promise((resolve, reject) => {
-                insertVariantStmt.run(variantId, productId, variant.name, variant.price, variant.image, variant.stock, function(err) {
+                insertVariantStmt.run(variantId, productId, variant.name, variant.price, variant.image, variant.stock, variant.color_hex, function(err) {
                     if (err) return reject(err);
                     resolve(this);
                 });
