@@ -17,11 +17,11 @@ import { Loader2, Trash } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 
 const variantSchema = z.object({
-    optionValues: z.array(z.string().min(1, "Option value cannot be empty.")).min(1),
-    price: z.preprocess((a) => parseInt(z.string().parse(a), 10), z.number().positive("Price must be positive.")),
-    stock: z.preprocess((a) => parseInt(z.string().parse(a), 10), z.number().int().min(0, "Stock can't be negative.")),
-    image: z.string().url("Must be a valid URL.").min(1, "Image URL is required."),
-    color_hex: z.string().optional(),
+  name: z.string().min(1, "Variant name is required."),
+  price: z.preprocess((a) => parseInt(z.string().parse(a), 10), z.number().positive("Price must be positive.")),
+  stock: z.preprocess((a) => parseInt(z.string().parse(a), 10), z.number().int().min(0, "Stock can't be negative.")),
+  image: z.string().url("Must be a valid URL.").min(1, "Image URL is required."),
+  color_hex: z.string().optional(),
 });
 
 const formSchema = z.object({
@@ -54,12 +54,8 @@ export function ProductForm({ product, categories }: ProductFormProps) {
       categoryId: product?.categoryId || "",
       optionGroups: product?.optionGroups ? JSON.parse(product.optionGroups).join(', ') : "",
       variants: product?.variants.map(v => ({
-          optionValues: v.name.split(',').map(s => s.trim()),
-          price: v.price,
-          stock: v.stock,
-          image: v.image,
-          color_hex: v.color_hex || '',
-      })) || [{ optionValues: [''], price: 0, stock: 0, image: "", color_hex: "" }],
+          ...v,
+      })) || [{ name: "", price: 0, stock: 0, image: "", color_hex: "" }],
     },
   });
 
@@ -69,22 +65,11 @@ export function ProductForm({ product, categories }: ProductFormProps) {
   });
   
   const isSubmitting = form.formState.isSubmitting;
-  
-  const optionGroupsValue = form.watch('optionGroups');
-  const optionGroupNames = React.useMemo(() => optionGroupsValue?.split(',').map(s => s.trim()).filter(Boolean) || [], [optionGroupsValue]);
-
 
   const onSubmit: SubmitHandler<ProductFormValues> = async (data) => {
     const transformedData = {
         ...data,
-        variants: data.variants.map(v => {
-            const { optionValues, ...rest } = v;
-            return {
-                ...rest,
-                name: optionValues.join(', '),
-            };
-        }),
-        optionGroups: data.optionGroups ? JSON.stringify(data.optionGroups.split(',').map(s => s.trim())) : null,
+        optionGroups: data.optionGroups ? JSON.stringify(data.optionGroups.split(',').map(s => s.trim())) : null
     };
 
     const payload = isEditMode 
@@ -123,8 +108,7 @@ export function ProductForm({ product, categories }: ProductFormProps) {
   };
 
   const handleAddNewVariant = () => {
-    const newVariantOptionValues = Array(optionGroupNames.length > 0 ? optionGroupNames.length : 1).fill('');
-    append({ optionValues: newVariantOptionValues, price: 0, stock: 0, image: '', color_hex: '' });
+    append({ name: '', price: 0, stock: 0, image: '', color_hex: '' });
   };
 
 
@@ -219,38 +203,22 @@ export function ProductForm({ product, categories }: ProductFormProps) {
             <CardContent className="space-y-6">
                 {fields.map((field, index) => (
                     <div key={field.id} className="space-y-4 border p-4 rounded-lg relative">
-                        {optionGroupNames.length > 0 ? (
-                            <div className="grid grid-cols-2 gap-4">
-                                {optionGroupNames.map((groupName, groupIndex) => (
-                                    <FormField
-                                        key={`${field.id}-option-${groupIndex}`}
-                                        control={form.control}
-                                        name={`variants.${index}.optionValues.${groupIndex}`}
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>{groupName}</FormLabel>
-                                                <FormControl>
-                                                    <Input placeholder={`Value for ${groupName}`} {...field} disabled={isEditMode} />
-                                                </FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-                                ))}
-                            </div>
-                        ) : (
-                            <FormField
-                                control={form.control}
-                                name={`variants.${index}.optionValues.0`}
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Variant Name</FormLabel>
-                                        <FormControl><Input placeholder="Default" {...field} disabled={isEditMode} /></FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                        )}
+                        <FormField
+                            control={form.control}
+                            name={`variants.${index}.name`}
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Variant Name</FormLabel>
+                                    <FormControl>
+                                        <Input placeholder="e.g., Starlight, 128GB" {...field} disabled={isEditMode} />
+                                    </FormControl>
+                                    <FormDescription>
+                                        Comma-separated values corresponding to Option Groups.
+                                    </FormDescription>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
 
                         <div className="grid grid-cols-2 gap-4">
                             <FormField control={form.control} name={`variants.${index}.price`} render={({ field }) => (
