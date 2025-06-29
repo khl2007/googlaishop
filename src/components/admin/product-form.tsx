@@ -19,7 +19,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 const optionValueSchema = z.object({
   id: z.string().optional(),
   value: z.string().min(1, "Option value is required."),
-  image: z.string().url("Must be a valid URL.").optional(),
+  image: z.string().url("Must be a valid URL.").optional().or(z.literal('')),
   color_hex: z.string().optional(),
 });
 
@@ -30,12 +30,13 @@ const optionGroupSchema = z.object({
 });
 
 const variantSchema = z.object({
+  id: z.string().optional(),
   options: z.record(z.string()).refine(val => Object.keys(val).length > 0, {
     message: "At least one option must be selected for the variant.",
   }).optional(),
   price: z.preprocess((a) => parseFloat(z.string().parse(a)), z.number().positive("Price must be positive.")),
   stock: z.preprocess((a) => parseInt(z.string().parse(a), 10), z.number().int().min(0, "Stock can't be negative.")),
-  image: z.string().url("Image URL is required.").optional(),
+  image: z.string().url("Must be a valid URL.").optional().or(z.literal('')),
 });
 
 
@@ -69,8 +70,11 @@ export function ProductForm({ product, categories }: ProductFormProps) {
       categoryId: product?.categoryId || "",
       optionGroups: product?.optionGroups ? JSON.parse(product.optionGroups) : [],
       variants: product?.variants.map(v => ({
+          id: v.id,
           ...v,
           options: typeof v.options === 'string' ? JSON.parse(v.options) : v.options,
+          price: v.price || 0,
+          stock: v.stock || 0,
       })) || [{ options: {}, price: 0, stock: 0 }],
     },
   });
@@ -114,6 +118,7 @@ export function ProductForm({ product, categories }: ProductFormProps) {
             const variantName = optionValues.length > 0 ? optionValues.join(' / ') : data.name;
             return {
                 ...v,
+                id: v.id,
                 name: variantName,
                 options: JSON.stringify(v.options || {})
             }
@@ -235,63 +240,59 @@ export function ProductForm({ product, categories }: ProductFormProps) {
             </FormDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-                 {isEditMode ? (
-                     <p className="text-sm text-muted-foreground">Variant editing is not supported. To change variants, please delete and recreate the product.</p>
-                 ) : (
-                    <>
-                    {variantFields.map((variantField, index) => (
-                        <Card key={variantField.id} className="p-4 space-y-4 relative">
-                           <div className="absolute top-2 right-2">
-                            {variantFields.length > 1 && (
-                                <Button type="button" variant="ghost" size="icon" onClick={() => removeVariant(index)}>
-                                    <Trash className="h-4 w-4 text-destructive" />
-                                </Button>
-                            )}
-                           </div>
-                           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                                {hasOptionGroups && watchedGroups.map((group) => (
-                                    <FormField
-                                        key={`${variantField.id}-${group.name}`}
-                                        control={form.control}
-                                        name={`variants.${index}.options.${group.name}`}
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>{group.name}</FormLabel>
-                                                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                                    <FormControl><SelectTrigger><SelectValue placeholder={`Select ${group.name.toLowerCase()}`} /></SelectTrigger></FormControl>
-                                                    <SelectContent>
-                                                        {group.options.map((option) => (
-                                                            <SelectItem key={option.value} value={option.value}>{option.value}</SelectItem>
-                                                        ))}
-                                                    </SelectContent>
-                                                </Select>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-                                ))}
+                 {variantFields.map((variantField, index) => (
+                    <Card key={variantField.id} className="p-4 space-y-4 relative">
+                        <div className="absolute top-2 right-2">
+                        {variantFields.length > 1 && !isEditMode && (
+                            <Button type="button" variant="ghost" size="icon" onClick={() => removeVariant(index)}>
+                                <Trash className="h-4 w-4 text-destructive" />
+                            </Button>
+                        )}
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                            {hasOptionGroups && watchedGroups.map((group) => (
+                                <FormField
+                                    key={`${variantField.id}-${group.name}`}
+                                    control={form.control}
+                                    name={`variants.${index}.options.${group.name}`}
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>{group.name}</FormLabel>
+                                            <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isEditMode}>
+                                                <FormControl><SelectTrigger><SelectValue placeholder={`Select ${group.name.toLowerCase()}`} /></SelectTrigger></FormControl>
+                                                <SelectContent>
+                                                    {group.options.filter(o => o.value).map((option) => (
+                                                        <SelectItem key={option.value} value={option.value}>{option.value}</SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                            ))}
 
-                                <FormField control={form.control} name={`variants.${index}.price`} render={({ field }) => (
-                                    <FormItem><FormLabel>Price</FormLabel><FormControl><Input type="number" step="0.01" placeholder="99.99" {...field} /></FormControl><FormMessage /></FormItem>
-                                )}/>
-                                <FormField control={form.control} name={`variants.${index}.stock`} render={({ field }) => (
-                                    <FormItem><FormLabel>Stock</FormLabel><FormControl><Input type="number" placeholder="100" {...field} /></FormControl><FormMessage /></FormItem>
-                                )}/>
-                                <FormField control={form.control} name={`variants.${index}.image`} render={({ field }) => (
-                                    <FormItem className={hasOptionGroups ? "md:col-span-2" : ""}>
-                                      <FormLabel>Image URL (Optional)</FormLabel>
-                                      <FormControl><Input placeholder="https://..." {...field} /></FormControl>
-                                      <FormMessage />
-                                    </FormItem>
-                                )}/>
-                           </div>
-                        </Card>
-                    ))}
-                    <Button type="button" variant="outline" onClick={() => appendVariant({ options: {}, price: 0, stock: 0, image: '' })}>
-                        <PlusCircle className="mr-2 h-4 w-4" /> Add Variant
-                    </Button>
-                    </>
-                 )}
+                            <FormField control={form.control} name={`variants.${index}.price`} render={({ field }) => (
+                                <FormItem><FormLabel>Price</FormLabel><FormControl><Input type="number" step="0.01" placeholder="99.99" {...field} /></FormControl><FormMessage /></FormItem>
+                            )}/>
+                            <FormField control={form.control} name={`variants.${index}.stock`} render={({ field }) => (
+                                <FormItem><FormLabel>Stock</FormLabel><FormControl><Input type="number" placeholder="100" {...field} /></FormControl><FormMessage /></FormItem>
+                            )}/>
+                            <FormField control={form.control} name={`variants.${index}.image`} render={({ field }) => (
+                                <FormItem className={hasOptionGroups ? "md:col-span-2 lg:col-span-4" : "col-span-1 md:col-span-2 lg:col-span-4"}>
+                                    <FormLabel>Image URL (Optional)</FormLabel>
+                                    <FormControl><Input placeholder="https://..." {...field} /></FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}/>
+                        </div>
+                    </Card>
+                ))}
+                {!isEditMode && (
+                <Button type="button" variant="outline" onClick={() => appendVariant({ options: {}, price: 0, stock: 0, image: '' })}>
+                    <PlusCircle className="mr-2 h-4 w-4" /> Add Variant
+                </Button>
+                )}
             </CardContent>
         </Card>
 

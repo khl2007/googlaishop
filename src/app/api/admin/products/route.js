@@ -26,6 +26,8 @@ export async function POST(request) {
     const productId = `prod-${randomUUID().slice(0, 8)}`;
 
     try {
+        await new Promise((resolve, reject) => db.run('BEGIN TRANSACTION', err => err ? reject(err) : resolve()));
+
         await new Promise((resolve, reject) => {
             db.run('INSERT INTO products (id, name, slug, description, categoryId, optionGroups) VALUES (?, ?, ?, ?, ?, ?)', 
             [productId, name, slug, description, categoryId, optionGroups], 
@@ -38,19 +40,21 @@ export async function POST(request) {
         const insertVariantStmt = db.prepare('INSERT INTO product_variants (id, productId, name, price, image, stock, options) VALUES (?, ?, ?, ?, ?, ?, ?)');
         for (const variant of variants) {
             const variantId = `var-${randomUUID().slice(0, 8)}`;
-            // Find the image from the option groups if the variant doesn't have one
+            
             const parsedOptionGroups = optionGroups ? JSON.parse(optionGroups) : [];
             let image = variant.image;
-            if (!image) {
+            if (!image && variant.options) {
+                const variantOptions = typeof variant.options === 'string' ? JSON.parse(variant.options) : variant.options;
                 for (const group of parsedOptionGroups) {
-                    const option = group.options.find(o => o.value === variant.options[group.name]);
+                    const selectedOptionValue = variantOptions[group.name];
+                    const option = group.options.find(o => o.value === selectedOptionValue);
                     if (option && option.image) {
                         image = option.image;
                         break;
                     }
                 }
             }
-             if (!image) image = "https://placehold.co/600x600.png"
+            if (!image) image = "https://placehold.co/600x600.png"
 
 
             await new Promise((resolve, reject) => {
@@ -62,8 +66,11 @@ export async function POST(request) {
         }
         insertVariantStmt.finalize();
 
+        await new Promise((resolve, reject) => db.run('COMMIT', err => err ? reject(err) : resolve()));
+
         return NextResponse.json({ message: 'Product created successfully', id: productId }, { status: 201 });
     } catch (error) {
+        await new Promise((resolve) => db.run('ROLLBACK', () => resolve()));
         console.error("Product creation error:", error);
         return NextResponse.json({ message: 'Failed to create product', error: error.message }, { status: 500 });
     }

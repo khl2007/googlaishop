@@ -15,9 +15,13 @@ export async function GET(request, { params }) {
     if (!product) {
       return NextResponse.json({ message: 'Product not found' }, { status: 404 });
     }
-    // Note: Variant fetching could be added here if needed for the edit form.
-    // For now, we are only editing the main product details.
-    product.variants = [];
+    const variants = await new Promise((resolve, reject) => {
+        db.all('SELECT * FROM product_variants WHERE productId = ?', [id], (err, rows) => {
+            if (err) reject(err);
+            resolve(rows);
+        });
+    });
+    product.variants = variants;
     return NextResponse.json(product);
   } catch (error) {
     return NextResponse.json({ message: 'Failed to fetch product', error: error.message }, { status: 500 });
@@ -35,6 +39,8 @@ export async function PUT(request, { params }) {
   }
 
   try {
+    await new Promise((resolve, reject) => db.run('BEGIN TRANSACTION', err => err ? reject(err) : resolve()));
+
     await new Promise((resolve, reject) => {
       db.run('UPDATE products SET name = ?, slug = ?, description = ?, categoryId = ?, optionGroups = ? WHERE id = ?', 
       [name, slug, description, categoryId, optionGroups, id], function (err) {
@@ -43,10 +49,29 @@ export async function PUT(request, { params }) {
         resolve(this);
       });
     });
-    // In edit mode, we are not updating variants for simplicity now.
-    // A more complex implementation could handle variant updates.
+
+    if (variants && variants.length > 0) {
+        const updateVariantStmt = db.prepare(
+          'UPDATE product_variants SET price = ?, stock = ?, image = ? WHERE id = ?'
+        );
+        for (const variant of variants) {
+          if (variant.id) { 
+            await new Promise((resolve, reject) => {
+              updateVariantStmt.run([variant.price, variant.stock, variant.image, variant.id], function(err) {
+                if (err) return reject(err);
+                resolve(this);
+              });
+            });
+          }
+        }
+        updateVariantStmt.finalize();
+      }
+
+    await new Promise((resolve, reject) => db.run('COMMIT', err => err ? reject(err) : resolve()));
+
     return NextResponse.json({ message: 'Product updated successfully' });
   } catch (error) {
+    await new Promise((resolve) => db.run('ROLLBACK', () => resolve()));
     return NextResponse.json({ message: 'Failed to update product', error: error.message }, { status: 500 });
   }
 }
