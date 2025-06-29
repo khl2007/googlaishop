@@ -105,3 +105,65 @@ export async function getAllCategories() {
     });
     return categories;
 }
+
+export async function getCategoryById(id) {
+    const db = getDatabase();
+    return new Promise((resolve, reject) => {
+        db.get('SELECT * FROM categories WHERE id = ?', [id], (err, row) => {
+            if (err) {
+                return reject(new Error('Failed to fetch category.'));
+            }
+            resolve(row);
+        });
+    });
+}
+
+export async function getUsers() {
+    const db = getDatabase();
+    return new Promise((resolve, reject) => {
+        db.all(`
+            SELECT u.id, u.fullName, u.username, u.phoneNumber, u.country, u.city, r.name as role
+            FROM users u
+            JOIN roles r ON u.role_id = r.id
+        `, (err, rows) => {
+            if (err) {
+                console.error('Database error in getUsers:', err);
+                return reject(new Error('Failed to fetch users.'));
+            }
+            resolve(rows);
+        });
+    });
+}
+
+export async function getAdminUserById(id) {
+  const db = getDatabase();
+
+  const user = await new Promise((resolve, reject) => {
+    db.get(`
+        SELECT u.id, u.fullName, u.username, u.phoneNumber, u.country, u.city, u.role_id
+        FROM users u
+        WHERE u.id = ?
+    `, [id], (err, row) => {
+      if (err) {
+        console.error('Database error in getAdminUserById:', err);
+        return reject(new Error('Failed to fetch user.'));
+      }
+      resolve(row);
+    });
+  });
+
+  return user;
+}
+
+export async function getRoles() {
+    const db = getDatabase();
+    return new Promise((resolve, reject) => {
+        db.all('SELECT * FROM roles', (err, rows) => {
+            if (err) {
+                console.error('Database error in getRoles:', err);
+                return reject(new Error('Failed to fetch roles.'));
+            }
+            resolve(rows);
+        });
+    });
+}
