@@ -19,7 +19,7 @@ export function BottomToolbar({ user }: BottomToolbarProps) {
 
   const navItems = [
     { href: "/", label: "Home", icon: Home },
-    { href: "/products", label: "Categories", icon: LayoutGrid },
+    { href: "/categories", label: "Categories", icon: LayoutGrid },
   ];
   
   const accountItem = {
@@ -30,7 +30,7 @@ export function BottomToolbar({ user }: BottomToolbarProps) {
   
   const isActive = (href: string) => {
       if (href === '/') return pathname === href;
-      // For /products, it should be active for /products and /products/[slug]
+      // For /categories, it should be active for /categories and /categories/[slug]
       return pathname.startsWith(href);
   };
   
@@ -58,18 +58,20 @@ export function BottomToolbar({ user }: BottomToolbarProps) {
         ))}
 
         
-        <button
-          onClick={() => setIsCartOpen(true)}
-          className="inline-flex flex-1 flex-col items-center justify-center px-2 hover:bg-muted group text-muted-foreground relative h-full"
-        >
-          <ShoppingCart className="w-5 h-5 mb-1" />
-          <span className="text-xs">Cart</span>
-          {cartCount > 0 && (
-            <span className="absolute top-2 right-1/2 translate-x-[18px] flex h-4 w-4 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold">
-              {cartCount}
-            </span>
-          )}
-        </button>
+        {isCustomer && (
+          <button
+            onClick={() => setIsCartOpen(true)}
+            className="inline-flex flex-1 flex-col items-center justify-center px-2 hover:bg-muted group text-muted-foreground relative h-full"
+          >
+            <ShoppingCart className="w-5 h-5 mb-1" />
+            <span className="text-xs">Cart</span>
+            {cartCount > 0 && (
+              <span className="absolute top-2 right-1/2 translate-x-[18px] flex h-4 w-4 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold">
+                {cartCount}
+              </span>
+            )}
+          </button>
+        )}
         
 
         <Link
