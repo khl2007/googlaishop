@@ -1,25 +1,24 @@
-import { openDb } from '../../../src/lib/database';
+import { NextResponse } from 'next/server';
+import getDatabase from '@/lib/database';
 import bcrypt from 'bcrypt';
 
-export async function POST(req) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ message: 'Method Not Allowed' });
-  }
-
-  const { username, password } = req.body;
-
-  if (!username || !password) {
-    return res.status(400).json({ message: 'Username and password are required' });
-  }
-
+export async function POST(request) {
   try {
-    const db = await openDb();
-    const { username, password } = await req.json();
+    const { email, password, fullName } = await request.json();
+
+    if (!email || !password) {
+      return NextResponse.json({ message: 'Email and password are required' }, { status: 400 });
+    }
+    
+    // The UI uses 'email', so we'll use that as the username for consistency.
+    const username = email;
+    const db = getDatabase();
+
     // Check if user already exists
     const existingUser = await new Promise((resolve, reject) => {
-      db.get('SELECT * FROM users WHERE username = ?', [username], (err, row) => {
+      db.get('SELECT id FROM users WHERE username = ?', [username], (err, row) => {
         if (err) {
-          reject(err);
+          reject(new Error('Database error during user check.'));
         } else {
           resolve(row);
         }
@@ -27,26 +26,27 @@ export async function POST(req) {
     });
 
     if (existingUser) {
-      db.close();
-      return res.status(409).json({ message: 'Username already exists' });
+      return NextResponse.json({ message: 'An account with this email already exists' }, { status: 409 });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Insert new user
     await new Promise((resolve, reject) => {
-      db.run('INSERT INTO users (username, password) VALUES (?, ?)', [username, hashedPassword], function(err) {
+      // The 'users' table only has username and password columns. 'fullName' from the form is ignored.
+      db.run('INSERT INTO users (username, password) VALUES (?, ?)', [username, hashedPassword], function (err) {
         if (err) {
-          reject(err);
+          reject(new Error('Database error during user insertion.'));
         } else {
           resolve(this.lastID);
         }
       });
     });
 
-    db.close();
-    res.status(201).json({ message: 'User created successfully' });
+    return NextResponse.json({ message: 'User created successfully' }, { status: 201 });
 
   } catch (error) {
-    console.error('Database error:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    console.error('Registration error:', error);
+    return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
   }
 }

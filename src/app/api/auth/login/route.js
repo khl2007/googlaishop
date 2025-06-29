@@ -1,38 +1,50 @@
 import { NextResponse } from 'next/server';
-import { getDatabase } from '@/lib/database';
+import getDatabase from '@/lib/database';
 import bcrypt from 'bcrypt';
 
 export async function POST(request) {
   try {
-    const { username, password } = await request.json();
-    const db = await getDatabase();
+    const { email, password } = await request.json();
+    const db = getDatabase();
 
-    return new Promise((resolve, reject) => {
-      db.get('SELECT id, username FROM users WHERE username = ? AND password = ?', [username, password], (err, row) => {
-        if (err) { // Handle database errors
+    // Promisify db.get to use with async/await
+    const user = await new Promise((resolve, reject) => {
+      // The DB schema uses 'username', but the form uses 'email' for the same field.
+      db.get('SELECT * FROM users WHERE username = ?', [email], (err, row) => {
+        if (err) {
           console.error('Database error:', err);
-          db.close();
-          resolve(NextResponse.json({ message: 'Database error' }, { status: 500 }));
-          return;
-        }
-
-        if (row) {
-          // Compare provided password with the hashed password in the database
-          const passwordMatch = await bcrypt.compare(password, row.password);
-          db.close();
-          if (passwordMatch) {
-            // In a real application, you would generate a token here
-            const user = { id: row.id, username: row.username }; // Exclude password
-            resolve(NextResponse.json({ user }, { status: 200 }));
-          } else {
-            resolve(NextResponse.json({ message: 'Invalid credentials' }, { status: 401 }));
-          }
+          reject(new Error('Database error'));
         } else {
-          db.close();
-          resolve(NextResponse.json({ message: 'Invalid credentials' }, { status: 401 }));
+          resolve(row);
         }
       });
     });
+
+    if (!user) {
+      return NextResponse.json({ message: 'Invalid credentials' }, { status: 401 });
+    }
+
+    const passwordMatch = await bcrypt.compare(password, user.password);
+
+    if (!passwordMatch) {
+      return NextResponse.json({ message: 'Invalid credentials' }, { status: 401 });
+    }
+
+    // Exclude password hash from the response
+    const { password: _, ...userWithoutPassword } = user;
+
+    const response = NextResponse.json({ user: userWithoutPassword }, { status: 200 });
+
+    // Set a simple cookie for the middleware to check for authentication
+    response.cookies.set('admin_token', 'true', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      path: '/',
+      maxAge: 60 * 60 * 24 * 7, // 1 week
+    });
+    
+    return response;
+
   } catch (error) {
     console.error('Login error:', error);
     return NextResponse.json({ message: 'Login failed' }, { status: 500 });
