@@ -12,12 +12,14 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
 import { useEffect, useState } from "react";
-import { Loader2 } from "lucide-react";
+import { Loader2, Search } from "lucide-react";
 import type { Address } from "@/lib/types";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Separator } from "@/components/ui/separator";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { AddressAutocomplete } from "@/components/address-autocomplete";
 
 const addressFormSchema = z.object({
   fullName: z.string().min(2, "Full name is required."),
@@ -40,6 +42,7 @@ export default function CheckoutPage() {
   const [loadingAddresses, setLoadingAddresses] = useState(true);
   const [selectedAddressId, setSelectedAddressId] = useState<string>('');
   const [isAddingNewAddress, setIsAddingNewAddress] = useState(false);
+  const [isAutocompleteOpen, setIsAutocompleteOpen] = useState(false);
 
   const form = useForm<AddressFormValues>({
     resolver: zodResolver(addressFormSchema),
@@ -131,6 +134,15 @@ export default function CheckoutPage() {
     router.push("/");
   }
 
+  const handleAutocompleteSelect = (address: { street: string; city: string; state: string; zip: string; country: string; }) => {
+    form.setValue("street", address.street);
+    form.setValue("city", address.city);
+    form.setValue("state", address.state);
+    form.setValue("zip", address.zip);
+    form.setValue("country", address.country);
+    setIsAutocompleteOpen(false);
+  };
+
   if (cartItems.length === 0 || loadingAddresses) {
     return (
       <div className="flex min-h-[calc(100vh-10rem)] items-center justify-center">
@@ -182,6 +194,22 @@ export default function CheckoutPage() {
                 <div className="pt-6 border-t">
                     <Form {...form}>
                         <form onSubmit={handleAddNewAddress} className="space-y-4">
+                            <div className="flex justify-end">
+                                <Dialog open={isAutocompleteOpen} onOpenChange={setIsAutocompleteOpen}>
+                                    <DialogTrigger asChild>
+                                        <Button type="button" variant="outline" size="sm">
+                                            <Search className="mr-2 h-4 w-4" />
+                                            Find Address
+                                        </Button>
+                                    </DialogTrigger>
+                                    <DialogContent>
+                                        <DialogHeader>
+                                            <DialogTitle>Find Address</DialogTitle>
+                                        </DialogHeader>
+                                        <AddressAutocomplete onSelect={handleAutocompleteSelect} />
+                                    </DialogContent>
+                                </Dialog>
+                            </div>
                             <FormField control={form.control} name="fullName" render={({ field }) => (
                                 <FormItem><FormLabel>Full Name</FormLabel><FormControl><Input placeholder="John Doe" {...field} /></FormControl><FormMessage /></FormItem>
                             )}/>

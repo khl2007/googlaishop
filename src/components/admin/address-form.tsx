@@ -9,8 +9,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2 } from "lucide-react";
+import { Loader2, Search } from "lucide-react";
 import type { Address } from "@/lib/types";
+import { useState } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "../ui/dialog";
+import { AddressAutocomplete } from "../address-autocomplete";
 
 const formSchema = z.object({
   fullName: z.string().min(2, "Full name is required."),
@@ -33,6 +36,8 @@ interface AddressFormProps {
 export function AddressForm({ address, userId, returnPath }: AddressFormProps) {
   const router = useRouter();
   const { toast } = useToast();
+  const [isAutocompleteOpen, setIsAutocompleteOpen] = useState(false);
+
   const form = useForm<AddressFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -47,6 +52,16 @@ export function AddressForm({ address, userId, returnPath }: AddressFormProps) {
   });
   
   const isSubmitting = form.formState.isSubmitting;
+
+  const handleAutocompleteSelect = (address: { street: string; city: string; state: string; zip: string; country: string; }) => {
+    form.setValue("street", address.street);
+    form.setValue("city", address.city);
+    form.setValue("state", address.state);
+    form.setValue("zip", address.zip);
+    form.setValue("country", address.country);
+    setIsAutocompleteOpen(false);
+  };
+
 
   const onSubmit: SubmitHandler<AddressFormValues> = async (data) => {
     try {
@@ -79,6 +94,22 @@ export function AddressForm({ address, userId, returnPath }: AddressFormProps) {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 max-w-2xl">
+        <div className="flex justify-end">
+            <Dialog open={isAutocompleteOpen} onOpenChange={setIsAutocompleteOpen}>
+                <DialogTrigger asChild>
+                    <Button type="button" variant="outline">
+                        <Search className="mr-2 h-4 w-4" />
+                        Find Address
+                    </Button>
+                </DialogTrigger>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Find Address</DialogTitle>
+                    </DialogHeader>
+                    <AddressAutocomplete onSelect={handleAutocompleteSelect} />
+                </DialogContent>
+            </Dialog>
+        </div>
         <FormField control={form.control} name="fullName" render={({ field }) => (
             <FormItem><FormLabel>Contact Full Name</FormLabel><FormControl><Input placeholder="John Doe" {...field} /></FormControl><FormMessage /></FormItem>
         )}/>
