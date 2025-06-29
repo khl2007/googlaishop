@@ -15,6 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import type { Product, Category } from "@/lib/types";
 import { Loader2, PlusCircle, Trash } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
+import { Switch } from "../ui/switch";
 
 const optionValueSchema = z.object({
   id: z.string().optional(),
@@ -48,6 +49,14 @@ const formSchema = z.object({
   vendorId: z.string().min(1, "Please select a vendor."),
   optionGroups: z.array(optionGroupSchema).optional(),
   variants: z.array(variantSchema).min(1, "At least one product variant is required."),
+  tags: z.string().optional(),
+  isFeatured: z.boolean().default(false),
+  isOnOffer: z.boolean().default(false),
+  weight: z.preprocess(
+    (a) => (a === "" || a === undefined) ? undefined : parseFloat(z.string().parse(a)),
+    z.number().min(0).optional()
+  ),
+  dimensions: z.string().optional(),
 });
 
 type ProductFormValues = z.infer<typeof formSchema>;
@@ -84,6 +93,11 @@ export function ProductForm({ product, categories, vendors }: ProductFormProps) 
           price: v.price || 0,
           stock: v.stock || 0,
       })) || [{ options: {}, price: 0, stock: 0 }],
+      tags: product?.tags || "",
+      isFeatured: product?.isFeatured || false,
+      isOnOffer: product?.isOnOffer || false,
+      weight: product?.weight ?? undefined,
+      dimensions: product?.dimensions || "",
     },
   });
 
@@ -169,157 +183,215 @@ export function ProductForm({ product, categories, vendors }: ProductFormProps) 
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8 max-w-4xl">
-        <Card>
-            <CardHeader><CardTitle>Product Details</CardTitle></CardHeader>
-            <CardContent className="space-y-4">
-                <FormField control={form.control} name="name" render={({ field }) => (
-                    <FormItem><FormLabel>Product Name</FormLabel><FormControl><Input placeholder="e.g., AuraPhone X" {...field} /></FormControl><FormMessage /></FormItem>
-                )} />
-                <FormField control={form.control} name="slug" render={({ field }) => (
-                    <FormItem><FormLabel>Slug</FormLabel><FormControl><Input placeholder="e.g., auraphone-x" {...field} /></FormControl><FormMessage /></FormItem>
-                )} />
-                <FormField control={form.control} name="description" render={({ field }) => (
-                    <FormItem><FormLabel>Description</FormLabel><FormControl><Textarea placeholder="Describe the product..." {...field} /></FormControl><FormMessage /></FormItem>
-                )} />
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField control={form.control} name="categoryId" render={({ field }) => (
-                      <FormItem><FormLabel>Category</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                          <FormControl><SelectTrigger><SelectValue placeholder="Select a category" /></SelectTrigger></FormControl>
-                          <SelectContent>{categories.map((c) => (<SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>))}</SelectContent>
-                      </Select>
-                      <FormMessage />
-                      </FormItem>
-                  )} />
-                   <FormField control={form.control} name="vendorId" render={({ field }) => (
-                      <FormItem><FormLabel>Vendor</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                          <FormControl><SelectTrigger><SelectValue placeholder="Select a vendor" /></SelectTrigger></FormControl>
-                          <SelectContent>{vendors.map((v) => (<SelectItem key={v.id} value={String(v.id)}>{v.fullName}</SelectItem>))}</SelectContent>
-                      </Select>
-                      <FormMessage />
-                      </FormItem>
-                  )} />
-                </div>
-            </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Product Options</CardTitle>
-            <FormDescription>
-             Define groups of options for your product, like 'Color' or 'Size'. If your product has no options, you can skip this.
-            </FormDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {groupFields.map((groupField, groupIndex) => (
-              <Card key={groupField.id}>
-                <CardHeader className="flex flex-row items-center justify-between py-4">
-                   <h3 className="font-semibold">Option Group</h3>
-                   {!isEditMode && (
-                      <Button type="button" variant="ghost" size="icon" onClick={() => removeGroup(groupIndex)}>
-                        <Trash className="h-4 w-4 text-destructive" />
-                      </Button>
-                   )}
-                </CardHeader>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="lg:col-span-2 space-y-8">
+            <Card>
+                <CardHeader><CardTitle>Product Details</CardTitle></CardHeader>
                 <CardContent className="space-y-4">
-                 <FormField
-                    control={form.control}
-                    name={`optionGroups.${groupIndex}.name`}
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Group Name</FormLabel>
-                        <FormControl>
-                          <Input placeholder="e.g., Color" {...field} disabled={isEditMode} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <OptionValuesArray groupIndex={groupIndex} isEditMode={isEditMode} />
+                    <FormField control={form.control} name="name" render={({ field }) => (
+                        <FormItem><FormLabel>Product Name</FormLabel><FormControl><Input placeholder="e.g., AuraPhone X" {...field} /></FormControl><FormMessage /></FormItem>
+                    )} />
+                    <FormField control={form.control} name="slug" render={({ field }) => (
+                        <FormItem><FormLabel>Slug</FormLabel><FormControl><Input placeholder="e.g., auraphone-x" {...field} /></FormControl><FormMessage /></FormItem>
+                    )} />
+                    <FormField control={form.control} name="description" render={({ field }) => (
+                        <FormItem><FormLabel>Description</FormLabel><FormControl><Textarea placeholder="Describe the product..." {...field} /></FormControl><FormMessage /></FormItem>
+                    )} />
                 </CardContent>
-              </Card>
-            ))}
-             {!isEditMode && (
-                <Button type="button" variant="outline" onClick={() => appendGroup({ name: '', options: [{ value: '' }] })}>
-                  <PlusCircle className="mr-2 h-4 w-4" /> Add Option Group
-                </Button>
-             )}
-             {isEditMode && <p className="text-sm text-muted-foreground">Option groups cannot be changed after creation to maintain variant consistency.</p>}
-          </CardContent>
-        </Card>
-        
-        <Card>
-            <CardHeader><CardTitle>Variants</CardTitle>
-             <FormDescription>
-              {hasOptionGroups 
-                ? "Add and configure each product variant based on the option groups you created."
-                : "Configure the details for your standard product."
-              }
-            </FormDescription>
+            </Card>
+
+            <Card>
+            <CardHeader>
+                <CardTitle>Product Options</CardTitle>
+                <FormDescription>
+                Define groups of options for your product, like 'Color' or 'Size'. If your product has no options, you can skip this.
+                </FormDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-                 {variantFields.map((variantField, index) => (
-                    <Card key={variantField.id} className="p-4 space-y-4 relative">
-                        <div className="absolute top-2 right-2">
-                        {variantFields.length > 1 && !isEditMode && (
-                            <Button type="button" variant="ghost" size="icon" onClick={() => removeVariant(index)}>
-                                <Trash className="h-4 w-4 text-destructive" />
-                            </Button>
+                {groupFields.map((groupField, groupIndex) => (
+                <Card key={groupField.id}>
+                    <CardHeader className="flex flex-row items-center justify-between py-4">
+                    <h3 className="font-semibold">Option Group</h3>
+                    {!isEditMode && (
+                        <Button type="button" variant="ghost" size="icon" onClick={() => removeGroup(groupIndex)}>
+                            <Trash className="h-4 w-4 text-destructive" />
+                        </Button>
+                    )}
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                    <FormField
+                        control={form.control}
+                        name={`optionGroups.${groupIndex}.name`}
+                        render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Group Name</FormLabel>
+                            <FormControl>
+                            <Input placeholder="e.g., Color" {...field} disabled={isEditMode} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
                         )}
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                            {hasOptionGroups && watchedGroups.map((group) => (
-                                <FormField
-                                    key={`${variantField.id}-${group.name}`}
-                                    control={form.control}
-                                    name={`variants.${index}.options.${group.name}`}
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>{group.name}</FormLabel>
-                                            <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isEditMode}>
-                                                <FormControl><SelectTrigger><SelectValue placeholder={`Select ${group.name.toLowerCase()}`} /></SelectTrigger></FormControl>
-                                                <SelectContent>
-                                                    {group.options.filter(o => o.value).map((option) => (
-                                                        <SelectItem key={option.value} value={option.value}>{option.value}</SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                            ))}
-
-                            <FormField control={form.control} name={`variants.${index}.price`} render={({ field }) => (
-                                <FormItem><FormLabel>Price</FormLabel><FormControl><Input type="number" step="0.01" placeholder="99.99" {...field} /></FormControl><FormMessage /></FormItem>
-                            )}/>
-                            <FormField control={form.control} name={`variants.${index}.stock`} render={({ field }) => (
-                                <FormItem><FormLabel>Stock</FormLabel><FormControl><Input type="number" placeholder="100" {...field} /></FormControl><FormMessage /></FormItem>
-                            )}/>
-                            <FormField control={form.control} name={`variants.${index}.image`} render={({ field }) => (
-                                <FormItem className={hasOptionGroups ? "md:col-span-2 lg:col-span-4" : "col-span-1 md:col-span-2 lg:col-span-4"}>
-                                    <FormLabel>Image URL (Optional)</FormLabel>
-                                    <FormControl><Input placeholder="https://..." {...field} /></FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}/>
-                        </div>
-                    </Card>
+                    />
+                    <OptionValuesArray groupIndex={groupIndex} isEditMode={isEditMode} />
+                    </CardContent>
+                </Card>
                 ))}
                 {!isEditMode && (
-                <Button type="button" variant="outline" onClick={() => appendVariant({ options: {}, price: 0, stock: 0, image: '' })}>
-                    <PlusCircle className="mr-2 h-4 w-4" /> Add Variant
-                </Button>
+                    <Button type="button" variant="outline" onClick={() => appendGroup({ name: '', options: [{ value: '' }] })}>
+                    <PlusCircle className="mr-2 h-4 w-4" /> Add Option Group
+                    </Button>
                 )}
+                {isEditMode && <p className="text-sm text-muted-foreground">Option groups cannot be changed after creation to maintain variant consistency.</p>}
             </CardContent>
-        </Card>
+            </Card>
+            
+            <Card>
+                <CardHeader><CardTitle>Variants</CardTitle>
+                <FormDescription>
+                {hasOptionGroups 
+                    ? "Add and configure each product variant based on the option groups you created."
+                    : "Configure the details for your standard product."
+                }
+                </FormDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                    {variantFields.map((variantField, index) => (
+                        <Card key={variantField.id} className="p-4 space-y-4 relative">
+                            <div className="absolute top-2 right-2">
+                            {variantFields.length > 1 && (
+                                <Button type="button" variant="ghost" size="icon" onClick={() => removeVariant(index)}>
+                                    <Trash className="h-4 w-4 text-destructive" />
+                                </Button>
+                            )}
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                                {hasOptionGroups && watchedGroups.map((group) => (
+                                    <FormField
+                                        key={`${variantField.id}-${group.name}`}
+                                        control={form.control}
+                                        name={`variants.${index}.options.${group.name}`}
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>{group.name}</FormLabel>
+                                                <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isEditMode}>
+                                                    <FormControl><SelectTrigger><SelectValue placeholder={`Select ${group.name.toLowerCase()}`} /></SelectTrigger></FormControl>
+                                                    <SelectContent>
+                                                        {group.options.filter(o => o.value).map((option) => (
+                                                            <SelectItem key={option.value} value={option.value}>{option.value}</SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                ))}
 
-        <Button type="submit" disabled={isSubmitting}>
-          {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          {isEditMode ? "Save Changes" : "Create Product"}
-        </Button>
+                                <FormField control={form.control} name={`variants.${index}.price`} render={({ field }) => (
+                                    <FormItem><FormLabel>Price</FormLabel><FormControl><Input type="number" step="0.01" placeholder="99.99" {...field} /></FormControl><FormMessage /></FormItem>
+                                )}/>
+                                <FormField control={form.control} name={`variants.${index}.stock`} render={({ field }) => (
+                                    <FormItem><FormLabel>Stock</FormLabel><FormControl><Input type="number" placeholder="100" {...field} /></FormControl><FormMessage /></FormItem>
+                                )}/>
+                                <FormField control={form.control} name={`variants.${index}.image`} render={({ field }) => (
+                                    <FormItem className={hasOptionGroups ? "md:col-span-2 lg:col-span-4" : "col-span-1 md:col-span-2 lg:col-span-4"}>
+                                        <FormLabel>Image URL (Optional)</FormLabel>
+                                        <FormControl><Input placeholder="https://..." {...field} /></FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}/>
+                            </div>
+                        </Card>
+                    ))}
+                    {!isEditMode && (
+                    <Button type="button" variant="outline" onClick={() => appendVariant({ options: {}, price: 0, stock: 0, image: '' })}>
+                        <PlusCircle className="mr-2 h-4 w-4" /> Add Variant
+                    </Button>
+                    )}
+                     {isEditMode && variantFields.length > 1 && (
+                      <p className="text-sm text-muted-foreground">Adding/removing variants is disabled in edit mode. You can adjust price, stock, and image for existing variants.</p>
+                     )}
+                </CardContent>
+            </Card>
+        </div>
+
+        <div className="lg:col-span-1 space-y-8">
+            <Card>
+                <CardHeader><CardTitle>Organization</CardTitle></CardHeader>
+                <CardContent className="space-y-4">
+                    <FormField control={form.control} name="vendorId" render={({ field }) => (
+                        <FormItem><FormLabel>Vendor</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl><SelectTrigger><SelectValue placeholder="Select a vendor" /></SelectTrigger></FormControl>
+                            <SelectContent>{vendors.map((v) => (<SelectItem key={v.id} value={String(v.id)}>{v.fullName}</SelectItem>))}</SelectContent>
+                        </Select>
+                        <FormMessage />
+                        </FormItem>
+                    )} />
+                     <FormField control={form.control} name="categoryId" render={({ field }) => (
+                        <FormItem><FormLabel>Category</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl><SelectTrigger><SelectValue placeholder="Select a category" /></SelectTrigger></FormControl>
+                            <SelectContent>{categories.map((c) => (<SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>))}</SelectContent>
+                        </Select>
+                        <FormMessage />
+                        </FormItem>
+                    )} />
+                    <FormField control={form.control} name="tags" render={({ field }) => (
+                        <FormItem><FormLabel>Tags</FormLabel><FormControl><Input placeholder="e.g. new, sale, featured" {...field} /></FormControl><FormDescription>Comma-separated tags.</FormDescription><FormMessage /></FormItem>
+                    )} />
+                </CardContent>
+            </Card>
+            <Card>
+                <CardHeader><CardTitle>Status</CardTitle></CardHeader>
+                <CardContent className="space-y-4">
+                     <FormField
+                        control={form.control}
+                        name="isFeatured"
+                        render={({ field }) => (
+                            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                            <div className="space-y-0.5">
+                                <FormLabel>Featured Product</FormLabel>
+                                <FormDescription>Display this product on the homepage.</FormDescription>
+                            </div>
+                            <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                            </FormItem>
+                        )}
+                    />
+                     <FormField
+                        control={form.control}
+                        name="isOnOffer"
+                        render={({ field }) => (
+                            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                            <div className="space-y-0.5">
+                                <FormLabel>On Offer</FormLabel>
+                                <FormDescription>Display a sale badge on this product.</FormDescription>
+                            </div>
+                            <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                            </FormItem>
+                        )}
+                    />
+                </CardContent>
+            </Card>
+            <Card>
+                <CardHeader><CardTitle>Shipping</CardTitle></CardHeader>
+                <CardContent className="space-y-4">
+                    <FormField control={form.control} name="weight" render={({ field }) => (
+                        <FormItem><FormLabel>Weight (kg)</FormLabel><FormControl><Input type="number" step="0.01" placeholder="0.5" {...field} /></FormControl><FormMessage /></FormItem>
+                    )} />
+                    <FormField control={form.control} name="dimensions" render={({ field }) => (
+                        <FormItem><FormLabel>Dimensions (L x W x H)</FormLabel><FormControl><Input placeholder="e.g. 20cm x 15cm x 5cm" {...field} /></FormControl><FormMessage /></FormItem>
+                    )} />
+                </CardContent>
+            </Card>
+        </div>
+        
+        <div className="lg:col-span-3">
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {isEditMode ? "Save Changes" : "Create Product"}
+            </Button>
+        </div>
       </form>
     </Form>
   );

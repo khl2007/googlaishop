@@ -23,6 +23,11 @@ export type Product = {
   vendorId: number;
   optionGroups?: string | null; // JSON string
   variants: ProductVariant[];
+  tags?: string;
+  isFeatured?: boolean;
+  isOnOffer?: boolean;
+  weight?: number;
+  dimensions?: string;
 };
 
 export type CartItem = {

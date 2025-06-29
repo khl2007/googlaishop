@@ -17,7 +17,7 @@ export async function GET() {
 
 // CREATE a new product
 export async function POST(request) {
-    const { name, slug, description, categoryId, vendorId, variants, optionGroups } = await request.json();
+    const { name, slug, description, categoryId, vendorId, variants, optionGroups, tags, isFeatured, isOnOffer, weight, dimensions } = await request.json();
     const db = getDatabase();
 
     if (!name || !slug || !description || !categoryId || !vendorId || !variants || !variants.length) {
@@ -30,8 +30,8 @@ export async function POST(request) {
         await new Promise((resolve, reject) => db.run('BEGIN TRANSACTION', err => err ? reject(err) : resolve()));
 
         await new Promise((resolve, reject) => {
-            db.run('INSERT INTO products (id, name, slug, description, categoryId, vendorId, optionGroups) VALUES (?, ?, ?, ?, ?, ?, ?)', 
-            [productId, name, slug, description, categoryId, vendorId, optionGroups], 
+            const sql = 'INSERT INTO products (id, name, slug, description, categoryId, vendorId, optionGroups, tags, isFeatured, isOnOffer, weight, dimensions) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
+            db.run(sql, [productId, name, slug, description, categoryId, vendorId, optionGroups, tags, isFeatured, isOnOffer, weight, dimensions], 
             function (err) {
                 if (err) return reject(err);
                 resolve(this);
