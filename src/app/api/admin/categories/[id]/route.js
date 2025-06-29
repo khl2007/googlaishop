@@ -24,16 +24,20 @@ export async function GET(request, { params }) {
 // UPDATE a category
 export async function PUT(request, { params }) {
   const { id } = params;
-  const { name, slug, image } = await request.json();
+  const { name, slug, image, parentId } = await request.json();
   const db = getDatabase();
 
   if (!name || !slug) {
     return NextResponse.json({ message: 'Name and slug are required' }, { status: 400 });
   }
 
+  if (id === parentId) {
+    return NextResponse.json({ message: 'A category cannot be its own parent.' }, { status: 400 });
+  }
+
   try {
     await new Promise((resolve, reject) => {
-      db.run('UPDATE categories SET name = ?, slug = ?, image = ? WHERE id = ?', [name, slug, image, id], function (err) {
+      db.run('UPDATE categories SET name = ?, slug = ?, image = ?, parentId = ? WHERE id = ?', [name, slug, image, parentId || null, id], function (err) {
         if (err) reject(err);
         if (this.changes === 0) reject(new Error('Category not found'));
         resolve(this);

@@ -3,6 +3,8 @@ export type Category = {
   name: string;
   slug: string;
   image?: string | null;
+  parentId?: string | null;
+  parentName?: string | null;
 };
 
 export type ProductVariant = {

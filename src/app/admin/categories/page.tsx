@@ -79,6 +79,7 @@ export default function CategoriesPage() {
               <TableHead className="w-[80px]">Image</TableHead>
               <TableHead>Name</TableHead>
               <TableHead>Slug</TableHead>
+              <TableHead>Parent Category</TableHead>
               <TableHead><span className="sr-only">Actions</span></TableHead>
             </TableRow>
           </TableHeader>
@@ -97,6 +98,7 @@ export default function CategoriesPage() {
                 </TableCell>
                 <TableCell className="font-medium">{category.name}</TableCell>
                 <TableCell>{category.slug}</TableCell>
+                <TableCell>{category.parentName || '—'}</TableCell>
                 <TableCell>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>

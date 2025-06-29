@@ -8,9 +8,9 @@ db.serialize(() => {
   db.run("DROP TABLE IF EXISTS permissions");
   db.run("DROP TABLE IF EXISTS product_variants");
   db.run("DROP TABLE IF EXISTS products");
+  db.run("DROP TABLE IF EXISTS categories");
   db.run("DROP TABLE IF EXISTS users");
   db.run("DROP TABLE IF EXISTS roles");
-  db.run("DROP TABLE IF EXISTS categories");
   db.run("DROP TABLE IF EXISTS settings");
 
 
@@ -64,7 +64,7 @@ db.serialize(() => {
   `);
 
   // Keep other tables
-  db.run("CREATE TABLE categories (id TEXT PRIMARY KEY, name TEXT, slug TEXT UNIQUE, image TEXT)");
+  db.run("CREATE TABLE categories (id TEXT PRIMARY KEY, name TEXT, slug TEXT UNIQUE, image TEXT, parentId TEXT, FOREIGN KEY(parentId) REFERENCES categories(id) ON DELETE SET NULL)");
   db.run("CREATE TABLE products (id TEXT PRIMARY KEY, name TEXT, slug TEXT UNIQUE, description TEXT, categoryId TEXT, vendorId INTEGER, optionGroups TEXT, tags TEXT, isFeatured BOOLEAN DEFAULT 0, isOnOffer BOOLEAN DEFAULT 0, weight REAL, dimensions TEXT, FOREIGN KEY(categoryId) REFERENCES categories(id), FOREIGN KEY(vendorId) REFERENCES users(id))");
   db.run("CREATE TABLE product_variants (id TEXT PRIMARY KEY, productId TEXT, name TEXT, price INTEGER, image TEXT, stock INTEGER, options TEXT, FOREIGN KEY(productId) REFERENCES products(id))");
   db.run("CREATE TABLE settings (id INTEGER PRIMARY KEY DEFAULT 1, websiteTitle TEXT, websiteLogo TEXT, timeZone TEXT, country TEXT)");
