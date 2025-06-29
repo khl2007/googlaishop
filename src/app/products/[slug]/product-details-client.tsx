@@ -41,7 +41,7 @@ export function ProductDetailsClient({ product }: ProductDetailsClientProps) {
         </p>
         <p className="mt-6 text-base text-muted-foreground">{product.description}</p>
         
-        <div className="mt-8 space-y-6">
+        <div className="mt-8">
           <ProductVariantSelectors 
             product={product}
             selectedVariant={selectedVariant}

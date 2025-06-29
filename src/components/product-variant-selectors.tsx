@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useMemo, useState, useEffect, useCallback } from "react";
@@ -11,6 +10,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./ui/tooltip";
+
 
 interface ProductVariantSelectorsProps {
   product: Product;
@@ -59,11 +60,10 @@ export function ProductVariantSelectors({
   useEffect(() => {
     setSelectedOptions(getOptionsFromVariant(selectedVariant));
   }, [selectedVariant, getOptionsFromVariant]);
-
+  
   const handleOptionSelect = (groupName: string, value: string) => {
     const newSelectedOptions = { ...selectedOptions, [groupName]: value };
     
-    // Find a variant that is the best match for the new selection
     let bestMatch: ProductVariant | undefined;
     let maxMatchCount = -1;
 
@@ -71,6 +71,9 @@ export function ProductVariantSelectors({
         const variantOptions = getOptionsFromVariant(variant);
         let currentMatchCount = 0;
         
+        // Prioritize variants that match the just-changed option value
+        if (variantOptions[groupName] !== value) continue;
+
         for (const group of optionGroups) {
             if (variantOptions[group.name] === newSelectedOptions[group.name]) {
                 currentMatchCount++;
@@ -87,75 +90,96 @@ export function ProductVariantSelectors({
       onVariantChange(bestMatch);
     }
   };
+
+  const isOptionAvailable = useCallback((groupName: string, optionValue: string) => {
+    // Check if there is any variant that has this option...
+    return variants.some(variant => {
+      const vOptions = getOptionsFromVariant(variant);
+      if (vOptions[groupName] !== optionValue) {
+        return false;
+      }
+
+      // ...and is compatible with all *other* selected options
+      return optionGroups.every(otherGroup => {
+        if (otherGroup.name === groupName) {
+          return true; // Don't check against the group we are currently evaluating
+        }
+        // If another option is selected, the variant must match it
+        const otherSelectedValue = selectedOptions[otherGroup.name];
+        return !otherSelectedValue || otherSelectedValue === vOptions[otherGroup.name];
+      });
+    });
+  }, [variants, optionGroups, selectedOptions, getOptionsFromVariant]);
   
   if (variants.length <= 1 || optionGroups.length === 0) return null;
 
   return (
-    <>
-      {optionGroups.map((group) => (
-        <div key={group.name}>
-          <h3 className="text-lg font-semibold">{group.name}</h3>
-          <div className="mt-2">
-            {group.name.toLowerCase() === 'color' ? (
-              <div className="flex flex-wrap gap-2">
-                {group.options.map((option) => {
-                  const isSelected = selectedOptions[group.name] === option.value;
-                  const hex = option.color_hex;
+    <TooltipProvider>
+      <div className="space-y-6">
+        {optionGroups.map((group) => (
+          <div key={group.name} className="space-y-2">
+            <h3 className="text-lg font-semibold">{group.name}</h3>
+            <div>
+              {group.name.toLowerCase() === 'color' ? (
+                <div className="flex flex-wrap items-center gap-2">
+                  {group.options.map((option) => {
+                    if (!option.value) return null;
+                    const isSelected = selectedOptions[group.name] === option.value;
+                    const hex = option.color_hex;
+                    const available = isOptionAvailable(group.name, option.value);
 
-                  if (hex) {
-                    return (
+                    const button = (
                       <button
-                        key={option.value}
-                        onClick={() => handleOptionSelect(group.name, option.value)}
-                        title={option.value}
-                        className={cn(
-                          "h-8 w-8 rounded-full border-2 transition-transform duration-100 ease-in-out hover:scale-110 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
-                          isSelected
-                            ? "border-primary scale-110"
-                            : "border-border"
-                        )}
-                        style={{ backgroundColor: hex }}
-                      />
+                          key={option.value}
+                          type="button"
+                          onClick={() => handleOptionSelect(group.name, option.value)}
+                          disabled={!available}
+                          className={cn(
+                            "relative h-8 w-8 rounded-full border-2 transition-transform duration-100 ease-in-out focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+                            isSelected
+                              ? "border-primary scale-110"
+                              : "border-border",
+                            available ? "hover:scale-110 cursor-pointer" : "opacity-50 cursor-not-allowed",
+                            !available && "after:absolute after:inset-0 after:block after:h-full after:w-px after:rotate-45 after:transform after:bg-muted-foreground after:content-[''] after:[transform-origin:center] after:left-1/2 after:-translate-x-1/2"
+                          )}
+                          style={hex ? { backgroundColor: hex } : {}}
+                        />
                     );
-                  }
 
-                  // Fallback for non-hex colors
-                  return (
-                    <button
-                      key={option.value}
-                      onClick={() => handleOptionSelect(group.name, option.value)}
-                      className={cn(
-                        "rounded-md border px-4 py-2 text-sm font-medium transition-colors",
-                        isSelected
-                          ? "border-primary bg-primary text-primary-foreground"
-                          : "bg-transparent hover:bg-accent hover:text-accent-foreground"
-                      )}
-                    >
-                      {option.value}
-                    </button>
-                  );
-                })}
-              </div>
-            ) : (
-              <Select
-                onValueChange={(value) => handleOptionSelect(group.name, value)}
-                value={selectedOptions[group.name]}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder={`Select a ${group.name.toLowerCase()}`} />
-                </SelectTrigger>
-                <SelectContent>
-                  {group.options.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.value}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
+                    return (
+                      <Tooltip key={option.value} delayDuration={100}>
+                          <TooltipTrigger asChild>{button}</TooltipTrigger>
+                          <TooltipContent>
+                            <p>{option.value}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                    );
+                  })}
+                </div>
+              ) : (
+                <Select
+                  onValueChange={(value) => handleOptionSelect(group.name, value)}
+                  value={selectedOptions[group.name]}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder={`Select a ${group.name.toLowerCase()}`} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {group.options.map((option) => {
+                      if (!option.value) return null;
+                      return (
+                          <SelectItem key={option.value} value={option.value} disabled={!isOptionAvailable(group.name, option.value)}>
+                            {option.value}
+                          </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
           </div>
-        </div>
-      ))}
-    </>
+        ))}
+      </div>
+    </TooltipProvider>
   );
 }
