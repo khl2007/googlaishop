@@ -22,6 +22,9 @@ export default function RegisterPage() {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [country, setCountry] = useState("");
+  const [city, setCity] = useState("");
   const [role, setRole] = useState("");
   const [roles, setRoles] = useState<Role[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -58,7 +61,7 @@ export default function RegisterPage() {
       const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fullName, email, password, role }),
+        body: JSON.stringify({ fullName, email, password, role, phoneNumber, country, city }),
       });
 
       const data = await res.json();
@@ -89,7 +92,7 @@ export default function RegisterPage() {
 
 
   return (
-    <div className="flex min-h-[calc(100vh-10rem)] items-center justify-center">
+    <div className="flex min-h-[calc(100vh-10rem)] items-center justify-center py-12">
       <Card className="mx-auto max-w-sm">
         <CardHeader>
           <CardTitle className="text-xl">Sign Up</CardTitle>
@@ -132,6 +135,41 @@ export default function RegisterPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 disabled={isLoading}
               />
+            </div>
+            <div className="grid gap-2">
+                <Label htmlFor="phone-number">Phone Number</Label>
+                <Input 
+                    id="phone-number" 
+                    placeholder="e.g., +1 123 456 7890" 
+                    required 
+                    value={phoneNumber}
+                    onChange={(e) => setPhoneNumber(e.target.value)}
+                    disabled={isLoading}
+                />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+                <div className="grid gap-2">
+                    <Label htmlFor="country">Country</Label>
+                    <Input 
+                        id="country" 
+                        placeholder="Your Country" 
+                        required 
+                        value={country}
+                        onChange={(e) => setCountry(e.target.value)}
+                        disabled={isLoading}
+                    />
+                </div>
+                <div className="grid gap-2">
+                    <Label htmlFor="city">City</Label>
+                    <Input 
+                        id="city" 
+                        placeholder="Your City" 
+                        required 
+                        value={city}
+                        onChange={(e) => setCity(e.target.value)}
+                        disabled={isLoading}
+                    />
+                </div>
             </div>
             <div className="grid gap-2">
               <Label htmlFor="role">Account Type</Label>

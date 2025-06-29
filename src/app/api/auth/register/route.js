@@ -4,9 +4,9 @@ import bcrypt from 'bcrypt';
 
 export async function POST(request) {
   try {
-    const { email, password, fullName, role } = await request.json();
+    const { email, password, fullName, role, phoneNumber, country, city } = await request.json();
 
-    if (!email || !password || !fullName || !role) {
+    if (!email || !password || !fullName || !role || !phoneNumber || !country || !city) {
       return NextResponse.json({ message: 'All fields are required' }, { status: 400 });
     }
     
@@ -40,7 +40,9 @@ export async function POST(request) {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     await new Promise((resolve, reject) => {
-      db.run('INSERT INTO users (username, password, fullName, role_id) VALUES (?, ?, ?, ?)', [email, hashedPassword, fullName, roleRecord.id], function (err) {
+      const sql = 'INSERT INTO users (username, password, fullName, role_id, phoneNumber, country, city) VALUES (?, ?, ?, ?, ?, ?, ?)';
+      const params = [email, hashedPassword, fullName, roleRecord.id, phoneNumber, country, city];
+      db.run(sql, params, function (err) {
         if (err) {
           reject(new Error('Database error during user insertion.'));
         } else {

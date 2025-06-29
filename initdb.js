@@ -11,13 +11,16 @@ db.serialize(() => {
   // Create roles table
   db.run("CREATE TABLE roles (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT UNIQUE NOT NULL)");
 
-  // Create users table with a foreign key to roles
+  // Create users table with a foreign key to roles and new fields
   db.run(`
     CREATE TABLE users (
       id INTEGER PRIMARY KEY,
       username TEXT UNIQUE,
       password TEXT,
       fullName TEXT,
+      phoneNumber TEXT,
+      country TEXT,
+      city TEXT,
       role_id INTEGER,
       FOREIGN KEY(role_id) REFERENCES roles(id)
     )

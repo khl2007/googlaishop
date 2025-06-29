@@ -73,8 +73,8 @@ function seedDatabase() {
         const hashedPassword = bcrypt.hashSync(adminPassword, 10);
         const adminRoleId = roleMap.get('admin');
 
-        const insertAdminStmt = db.prepare("INSERT OR IGNORE INTO users (username, password, fullName, role_id) VALUES (?, ?, ?, ?)");
-        insertAdminStmt.run(adminEmail, hashedPassword, adminFullName, adminRoleId, (err) => {
+        const insertAdminStmt = db.prepare("INSERT OR IGNORE INTO users (username, password, fullName, role_id, phoneNumber, country, city) VALUES (?, ?, ?, ?, ?, ?, ?)");
+        insertAdminStmt.run(adminEmail, hashedPassword, adminFullName, adminRoleId, '555-0100', 'Adminland', 'Admin City', (err) => {
           if (err) console.error('Error inserting admin user:', err.message);
         });
         insertAdminStmt.finalize();
