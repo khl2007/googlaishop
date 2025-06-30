@@ -749,9 +749,12 @@ export async function deleteSlide(id) {
 // Home Page Sections
 export async function getAllHomeSections() {
     const db = getDatabase();
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
         db.all('SELECT * FROM home_sections ORDER BY "order" ASC', (err, rows) => {
-            if (err) return reject(new Error('Failed to fetch home sections.'));
+            if (err) {
+                console.error("Database error in getAllHomeSections:", err.message);
+                return resolve([]);
+            }
             resolve(rows.map(row => ({ ...row, isActive: !!row.isActive })));
         });
     });
@@ -759,14 +762,23 @@ export async function getAllHomeSections() {
 
 export async function getActiveHomeSections() {
     const db = getDatabase();
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
         db.all('SELECT * FROM home_sections WHERE isActive = 1 ORDER BY "order" ASC', (err, rows) => {
-            if (err) return reject(new Error('Failed to fetch active home sections.'));
-            resolve(rows.map(row => ({
-                ...row,
-                isActive: !!row.isActive,
-                config: row.config ? JSON.parse(row.config) : null
-            })));
+            if (err) {
+                console.error("Database error in getActiveHomeSections:", err.message);
+                return resolve([]);
+            }
+            try {
+                const sections = rows.map(row => ({
+                    ...row,
+                    isActive: !!row.isActive,
+                    config: row.config ? JSON.parse(row.config) : null
+                }));
+                resolve(sections);
+            } catch (parseError) {
+                console.error("Error parsing home section config:", parseError.message);
+                resolve([]);
+            }
         });
     });
 }
