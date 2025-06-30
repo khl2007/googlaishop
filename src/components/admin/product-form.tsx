@@ -37,20 +37,10 @@ const optionGroupSchema = z.object({
 const variantSchema = z.object({
   id: z.string().optional(),
   options: z.record(z.string()).optional(),
-  price: z.preprocess(
-    (val) => (val === "" || val == null ? undefined : val),
-    z.coerce.number({
-        required_error: "Price is required.",
-        invalid_type_error: "Price must be a number.",
-    }).min(0, "Price must be non-negative.")
-  ),
-  stock: z.preprocess(
-    (val) => (val === "" || val == null ? undefined : val),
-    z.coerce.number({
-        required_error: "Stock is required.",
-        invalid_type_error: "Stock must be a number.",
-    }).int("Stock must be an integer.").min(0, "Stock must be non-negative.")
-  ),
+  // Price and stock are now handled as flexible types at this level.
+  // The required/number validation is moved to the superRefine block.
+  price: z.any().optional(),
+  stock: z.any().optional(),
   image: z.string().optional().or(z.literal('')),
 });
 
@@ -62,7 +52,8 @@ const formSchema = z.object({
   categoryId: z.string().min(1, "Please select a category."),
   vendorId: z.string().min(1, "Please select a vendor."),
   optionGroups: z.array(optionGroupSchema).optional(),
-  variants: z.array(variantSchema).min(1, "At least one product variant is required."),
+  // The .min(1) is removed here and handled inside superRefine for better error control.
+  variants: z.array(variantSchema),
   tags: z.string().optional(),
   isFeatured: z.boolean().default(false),
   isOnOffer: z.boolean().default(false),
@@ -72,27 +63,68 @@ const formSchema = z.object({
   ),
   dimensions: z.string().optional(),
 }).superRefine((data, ctx) => {
-    // This refined validation ensures that for every option group that is properly defined
-    // (i.e., has a name and at least one option value), every variant must have a selection for that group.
-    if (data.optionGroups && data.optionGroups.length > 0) {
-        data.optionGroups.forEach((group) => {
-            // Only validate for groups that have a name and have at least one option with a value.
-            // This prevents validation errors from firing prematurely while the user is still defining the group.
-            if (group.name && group.options?.some(opt => opt.value)) {
-                data.variants.forEach((variant, vIndex) => {
+    // 1. Manually check if there is at least one variant.
+    if (data.variants.length === 0) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "At least one product variant is required.",
+            // This error isn't attached to a specific field, but it will prevent submission.
+            path: ["variants"],
+        });
+        return;
+    }
+
+    // 2. Iterate over each variant to validate its contents.
+    data.variants.forEach((variant, vIndex) => {
+        // Validate Price
+        if (variant.price == null || String(variant.price).trim() === '') {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: "Price is required.",
+                path: [`variants`, vIndex, `price`],
+            });
+        } else if (isNaN(Number(variant.price))) {
+             ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: "Must be a number.",
+                path: [`variants`, vIndex, `price`],
+            });
+        }
+
+        // Validate Stock
+        if (variant.stock == null || String(variant.stock).trim() === '') {
+             ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: "Stock is required.",
+                path: [`variants`, vIndex, `stock`],
+            });
+        } else if (isNaN(Number(variant.stock)) || !Number.isInteger(Number(variant.stock))) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: "Must be a whole number.",
+                path: [`variants`, vIndex, `stock`],
+            });
+        }
+
+        // 3. Conditionally validate variant options if option groups exist.
+        if (data.optionGroups && data.optionGroups.length > 0) {
+            data.optionGroups.forEach((group) => {
+                // Only validate if the group is fully formed (has a name and at least one defined option).
+                if (group.name && group.options?.some(opt => opt.value)) {
                     if (!variant.options || !variant.options[group.name]) {
-                        // If the option for this group is missing or empty for a variant, add an issue.
+                        // Add an issue to the specific dropdown that is missing a selection.
                         ctx.addIssue({
                             code: z.ZodIssueCode.custom,
                             message: "Required",
                             path: [`variants`, vIndex, `options`, group.name],
                         });
                     }
-                });
-            }
-        });
-    }
+                }
+            });
+        }
+    });
 });
+
 
 type ProductFormValues = z.infer<typeof formSchema>;
 
@@ -127,7 +159,7 @@ export function ProductForm({ product, categories, vendors }: ProductFormProps) 
           options: typeof v.options === 'string' ? JSON.parse(v.options) : v.options,
           price: v.price,
           stock: v.stock,
-      })) || [{ options: {}, price: undefined, stock: undefined, image: '' }],
+      })) || [{ options: {}, price: '', stock: '', image: '' }],
       tags: product?.tags || "",
       isFeatured: !!product?.isFeatured,
       isOnOffer: !!product?.isOnOffer,
@@ -181,6 +213,8 @@ export function ProductForm({ product, categories, vendors }: ProductFormProps) 
                 ...v,
                 id: v.id,
                 name: variantName,
+                price: Number(v.price),
+                stock: Number(v.stock),
                 options: JSON.stringify(v.options || {}),
             }
         })
@@ -377,7 +411,7 @@ export function ProductForm({ product, categories, vendors }: ProductFormProps) 
                         </Card>
                     ))}
                     {!isEditMode && (
-                    <Button type="button" variant="outline" onClick={() => appendVariant({ options: {}, price: undefined, stock: undefined, image: '' })}>
+                    <Button type="button" variant="outline" onClick={() => appendVariant({ options: {}, price: '', stock: '', image: '' })}>
                         <PlusCircle className="mr-2 h-4 w-4" /> Add Variant
                     </Button>
                     )}
