@@ -6,7 +6,7 @@ import bcrypt from 'bcrypt';
 import type { User } from '@/lib/types';
 
 async function getUserFromSession(): Promise<User | null> {
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const sessionCookie = cookieStore.get('user_session');
     if (sessionCookie?.value) {
         try {

@@ -4,7 +4,7 @@ import { cookies } from 'next/headers';
 import { updateUserAddress, deleteUserAddress, getPrimaryAddressByUserId } from '@/lib/data';
 
 async function getUserFromSession() {
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const sessionCookie = cookieStore.get('user_session');
     if (sessionCookie?.value) {
         try {
