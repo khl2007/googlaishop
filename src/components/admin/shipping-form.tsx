@@ -19,32 +19,30 @@ import { Switch } from "../ui/switch";
 
 const overrideSchema = z.object({
   type: z.enum(['city', 'area']),
-  locationId: z.preprocess((a) => parseInt(z.string().parse(a), 10), z.number()),
-  cost: z.preprocess((a) => parseFloat(z.string().parse(a)), z.number().min(0, "Cost must be a positive number.")),
+  locationId: z.coerce.number(),
+  cost: z.coerce.number().min(0, "Cost must be a positive number."),
 });
 
-const formSchema = z.object({
-  title: z.string().min(2, "Title is required."),
-  logo: z.string().url().optional().or(z.literal('')),
-  enabled: z.boolean().default(false),
-  cost_type: z.enum(['city', 'area', 'weight']),
-  default_cost: z.preprocess(
-    (a) => (a === "" || a === undefined) ? undefined : parseFloat(z.string().parse(a)),
-    z.number().min(0).optional()
-  ),
-  cost_per_kg: z.preprocess(
-    (a) => (a === "" || a === undefined) ? undefined : parseFloat(z.string().parse(a)),
-    z.number().min(0).optional()
-  ),
-  overrides: z.array(overrideSchema).optional(),
-}).refine(data => {
-    if (data.cost_type === 'weight') return data.cost_per_kg !== undefined && data.cost_per_kg >= 0;
-    return true;
-}, { message: "Cost per KG is required for weight-based shipping.", path: ["cost_per_kg"] })
-.refine(data => {
-    if ((data.cost_type === 'city' || data.cost_type === 'area')) return data.default_cost !== undefined && data.default_cost >= 0;
-    return true;
-}, { message: "Default Cost is required for location-based shipping.", path: ["default_cost"] });
+const formSchema = z.discriminatedUnion("cost_type", [
+  // Schema for when cost_type is 'weight'
+  z.object({
+    cost_type: z.literal("weight"),
+    title: z.string().min(2, "Title is required."),
+    logo: z.string().url().optional().or(z.literal('')),
+    enabled: z.boolean().default(false),
+    cost_per_kg: z.coerce.number({ required_error: "Cost per KG is required." }).min(0, "Cost cannot be negative."),
+  }),
+  // Schema for when cost_type is 'city' or 'area'
+  z.object({
+    cost_type: z.enum(["city", "area"]),
+    title: z.string().min(2, "Title is required."),
+    logo: z.string().url().optional().or(z.literal('')),
+    enabled: z.boolean().default(false),
+    default_cost: z.coerce.number({ required_error: "Default Cost is required." }).min(0, "Cost cannot be negative."),
+    overrides: z.array(overrideSchema).optional(),
+  }),
+]);
+
 
 type ShippingFormValues = z.infer<typeof formSchema>;
 
@@ -75,12 +73,12 @@ export function ShippingForm({ method, cities, areas }: ShippingFormProps) {
       default_cost: method?.default_cost ?? undefined,
       cost_per_kg: parsedConfig.cost_per_kg ?? undefined,
       overrides: parsedConfig.overrides || [],
-    },
+    } as any, // Use 'as any' to bypass initial discriminated union type check for defaultValues
   });
 
   const { fields, append, remove } = useFieldArray({
     control: form.control,
-    name: "overrides",
+    name: "overrides" as any, // Use 'as any' because overrides doesn't exist on all union members
   });
   
   const watchedCostType = form.watch("cost_type");
@@ -90,25 +88,30 @@ export function ShippingForm({ method, cities, areas }: ShippingFormProps) {
   React.useEffect(() => {
     // When cost type changes, reset irrelevant fields to prevent validation issues
     if (watchedCostType === 'weight') {
-      setValue('default_cost', undefined);
-      clearErrors('default_cost');
-      setValue('overrides', []);
+      setValue('default_cost', undefined as any);
+      clearErrors('default_cost' as any);
+      setValue('overrides', [] as any);
+      clearErrors('overrides' as any);
     } else { // 'city' or 'area'
-      setValue('cost_per_kg', undefined);
-      clearErrors('cost_per_kg');
+      setValue('cost_per_kg', undefined as any);
+      clearErrors('cost_per_kg' as any);
       // Also clear overrides when switching between city/area or to them from weight.
-      setValue('overrides', []);
+      setValue('overrides', [] as any);
+      clearErrors('overrides' as any);
     }
   }, [watchedCostType, setValue, clearErrors]);
 
   const onSubmit: SubmitHandler<ShippingFormValues> = async (data) => {
     let config = {};
+    let finalDefaultCost: number | null = null;
+    
     if (data.cost_type === 'weight') {
         config = { cost_per_kg: data.cost_per_kg };
-    } else {
-        // Filter out overrides that don't match the current cost type, as a safety measure.
+        finalDefaultCost = null;
+    } else { // 'city' or 'area'
         const filteredOverrides = (data.overrides || []).filter(o => o.type === data.cost_type);
         config = { overrides: filteredOverrides };
+        finalDefaultCost = data.default_cost;
     }
 
     const payload = {
@@ -116,7 +119,7 @@ export function ShippingForm({ method, cities, areas }: ShippingFormProps) {
         logo: data.logo,
         enabled: data.enabled,
         cost_type: data.cost_type,
-        default_cost: data.cost_type === 'weight' ? null : data.default_cost,
+        default_cost: finalDefaultCost,
         config: JSON.stringify(config),
     };
 
@@ -286,4 +289,3 @@ export function ShippingForm({ method, cities, areas }: ShippingFormProps) {
     </Form>
   );
 }
-
