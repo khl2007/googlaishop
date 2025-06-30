@@ -1,3 +1,4 @@
+
 "use client";
 
 import type { CartItem, ProductVariant } from "@/lib/types";
@@ -16,7 +17,8 @@ interface CartContextType {
   addToCart: (
     product: { id: string; name: string },
     variant: ProductVariant,
-    quantity: number
+    quantity: number,
+    options?: { openCart?: boolean }
   ) => void;
   removeFromCart: (variantId: string) => void;
   updateQuantity: (variantId: string, quantity: number) => void;
@@ -57,7 +59,8 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     (
       product: { id: string; name: string },
       variant: ProductVariant,
-      quantity: number
+      quantity: number,
+      options?: { openCart?: boolean }
     ) => {
       setCartItems((prevItems) => {
         const existingItem = prevItems.find(
@@ -87,7 +90,11 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         title: "Added to cart",
         description: `${product.name} (${variant.name}) has been added to your cart.`,
       });
-      setIsCartOpen(true);
+      
+      // Conditionally open the cart. Default is true.
+      if (options?.openCart !== false) {
+          setIsCartOpen(true);
+      }
     },
     [toast]
   );
