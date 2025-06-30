@@ -15,12 +15,14 @@ import {
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import type { User } from "@/lib/types";
+import { cn } from "@/lib/utils";
 
 interface UserNavProps {
   user: User;
+  scrolled: boolean;
 }
 
-export function UserNav({ user }: UserNavProps) {
+export function UserNav({ user, scrolled }: UserNavProps) {
   const router = useRouter();
 
   const handleLogout = async () => {
@@ -39,9 +41,11 @@ export function UserNav({ user }: UserNavProps) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="relative h-8 w-8 rounded-full hover:bg-white/10">
+        <Button variant="ghost" className={cn("relative h-8 w-8 rounded-full", !scrolled && "hover:bg-white/10")}>
           <Avatar className="h-9 w-9">
-            <AvatarFallback>{user.fullName.charAt(0).toUpperCase()}</AvatarFallback>
+            <AvatarFallback className={cn(!scrolled && "text-primary-foreground bg-primary-foreground/20")}>
+              {user.fullName.charAt(0).toUpperCase()}
+            </AvatarFallback>
           </Avatar>
         </Button>
       </DropdownMenuTrigger>
