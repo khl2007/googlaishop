@@ -59,8 +59,8 @@ const formSchema = z.object({
   isFeatured: z.boolean().default(false),
   isOnOffer: z.boolean().default(false),
   weight: z.preprocess(
-    (val) => (val === "" ? undefined : val),
-    z.coerce.number().min(0).optional()
+    (val) => (val === "" || val === null ? undefined : val),
+    z.coerce.number({ invalid_type_error: "Weight must be a number."}).min(0).optional()
   ),
   dimensions: z.string().optional(),
 }).superRefine((data, ctx) => {
@@ -111,10 +111,10 @@ export function ProductForm({ product, categories, vendors }: ProductFormProps) 
           options: typeof v.options === 'string' ? JSON.parse(v.options) : v.options,
           price: v.price ?? undefined,
           stock: v.stock ?? 0,
-      })) || [{ options: {}, price: undefined, stock: 0 }],
+      })) || [{ options: {}, price: undefined, stock: 0, image: '' }],
       tags: product?.tags || "",
-      isFeatured: product?.isFeatured || false,
-      isOnOffer: product?.isOnOffer || false,
+      isFeatured: !!product?.isFeatured,
+      isOnOffer: !!product?.isOnOffer,
       weight: product?.weight ?? undefined,
       dimensions: product?.dimensions || "",
     },
@@ -507,7 +507,7 @@ function OptionValuesArray({ groupIndex, isEditMode }: { groupIndex: number, isE
                     <FormLabel className="text-xs">Color (Optional)</FormLabel>
                     <FormControl>
                     <div className="flex items-center gap-2">
-                        <Input type="color" {...field} value={field.value || '#ffffff'} className="w-12 h-10 p-1" disabled={isEditMode} />
+                        <Input type="color" onChange={field.onChange} value={field.value || '#ffffff'} className="w-12 h-10 p-1" disabled={isEditMode} />
                         <Input type="text" placeholder="#RRGGBB" {...field} value={field.value ?? ''} disabled={isEditMode} />
                     </div>
                     </FormControl>
@@ -524,14 +524,10 @@ function OptionValuesArray({ groupIndex, isEditMode }: { groupIndex: number, isE
             </div>
         ))}
        {!isEditMode && (
-        <Button type="button" variant="outline" size="sm" onClick={() => append({ value: '' })}>
+        <Button type="button" variant="outline" size="sm" onClick={() => append({ value: '', image: '', color_hex: '' })}>
           <PlusCircle className="mr-2 h-4 w-4" /> Add Option
         </Button>
        )}
     </div>
   );
 }
-
-    
-
-    
