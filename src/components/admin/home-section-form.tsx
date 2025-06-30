@@ -5,7 +5,6 @@ import { useForm, type SubmitHandler } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
@@ -13,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 import { getCsrfToken } from "@/lib/csrf";
 import type { HomeSection } from "@/lib/types";
+import { MultiSelect } from "@/components/ui/multi-select";
 
 interface FormOptions {
   categories: { value: string; label: string }[];
@@ -93,42 +93,62 @@ export function HomeSectionForm({ section, formOptions, onFormSubmit, sectionCou
   };
 
   const renderConfigField = () => {
-      // For multi-select, it would be better to use a component like `react-select`
-      // but for simplicity, we use a text input for comma-separated values.
-      const placeholderMap = {
-          category: 'Enter comma-separated category IDs (e.g., cat1,cat2)',
-          tag: 'Enter comma-separated tags (e.g., new,sale)',
-          custom: 'Enter comma-separated product IDs (e.g., prod1,prod2)',
-      };
+    const configFieldProps = {
+        category: {
+            component: MultiSelect,
+            props: {
+                placeholder: "Select categories...",
+                options: formOptions.categories,
+            },
+            description: "Select one or more categories to display products from."
+        },
+        tag: {
+            component: MultiSelect,
+            props: {
+                placeholder: "Select tags...",
+                options: formOptions.tags,
+            },
+            description: "Select one or more tags to display products."
+        },
+        custom: {
+            component: MultiSelect,
+            props: {
+                placeholder: "Select products...",
+                options: formOptions.products,
+            },
+            description: "Select specific products to display."
+        }
+    };
 
-      if (['category', 'tag', 'custom'].includes(watchedType)) {
-          return (
-             <FormField
-                control={form.control}
-                name="config"
-                render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>Configuration</FormLabel>
-                        <FormControl>
-                            <Input 
-                                placeholder={placeholderMap[watchedType as keyof typeof placeholderMap]}
-                                {...field}
-                                // Handle array-to-string conversion for the input
-                                value={Array.isArray(field.value) ? field.value.join(',') : ''}
-                                onChange={e => field.onChange(e.target.value.split(',').map(s => s.trim()).filter(Boolean))}
-                            />
-                        </FormControl>
-                        <FormDescription>
-                           Provide the required IDs or tags for this section type.
-                        </FormDescription>
-                        <FormMessage />
-                    </FormItem>
-                )}
-            />
-          );
-      }
-      return null;
-  }
+    const configDetails = configFieldProps[watchedType as keyof typeof configFieldProps];
+    
+    if (configDetails) {
+        const { component: Component, props, description } = configDetails;
+        return (
+           <FormField
+              control={form.control}
+              name="config"
+              render={({ field }) => (
+                  <FormItem>
+                      <FormLabel>Configuration</FormLabel>
+                      <FormControl>
+                          <Component
+                              {...props}
+                              value={field.value || []}
+                              onChange={field.onChange}
+                          />
+                      </FormControl>
+                      <FormDescription>
+                         {description}
+                      </FormDescription>
+                      <FormMessage />
+                  </FormItem>
+              )}
+          />
+        );
+    }
+    return null;
+}
 
   return (
     <Form {...form}>
