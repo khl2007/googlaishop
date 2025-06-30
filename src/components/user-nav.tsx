@@ -52,7 +52,7 @@ export function UserNav({ user, scrolled }: UserNavProps) {
       <DropdownMenuContent className="w-56" align="end" forceMount>
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
-            <p className="text-base font-medium leading-none md:text-lg">{user.fullName}</p>
+            <p className="text-base md:text-lg">{user.fullName}</p>
             <p className="text-sm leading-none text-muted-foreground md:text-base">
               {user.username}
             </p>

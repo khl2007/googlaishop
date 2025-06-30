@@ -142,9 +142,8 @@ export function Header({ user }: HeaderProps) {
         ? "border-border bg-background/80 backdrop-blur-sm" 
         : "border-transparent bg-[linear-gradient(to_left,#18101a,#431d4f_50%,#2d1d60_60%,#432066)]"
     )}>
-      <div className="container flex h-16 max-w-7xl items-center gap-4 px-2">
-        {/* LEFT SECTION */}
-        <div className="flex items-center justify-start gap-4">
+      <div className="container flex h-16 max-w-7xl items-center justify-between gap-4 px-2">
+        <div className="flex items-center gap-4">
           {pathname !== '/' && (
             <Button
               variant="ghost"
@@ -164,23 +163,20 @@ export function Header({ user }: HeaderProps) {
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6 text-primary"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path></svg>
             <span className={cn("hidden font-bold font-headline text-lg md:inline", scrolled ? "text-foreground" : "text-primary-foreground")}>Zain</span>
           </Link>
+          <nav className="hidden items-center gap-4 md:flex">
+            {navLinks.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                className={cn("text-base md:text-lg font-medium transition-colors", scrolled ? "text-muted-foreground hover:text-foreground" : "text-primary-foreground/80 hover:text-primary-foreground")}
+              >
+                {link.label}
+              </Link>
+            ))}
+          </nav>
         </div>
 
-        {/* CENTER SECTION */}
-        <nav className="hidden flex-1 items-center justify-center gap-4 md:flex">
-          {navLinks.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className={cn("font-medium transition-colors text-base md:text-lg", scrolled ? "text-muted-foreground hover:text-foreground" : "text-primary-foreground/80 hover:text-primary-foreground")}
-            >
-              {link.label}
-            </Link>
-          ))}
-        </nav>
-        
-        {/* RIGHT SECTION */}
-        <div className="flex items-center justify-end gap-2">
+        <div className="flex flex-1 items-center justify-end gap-2 md:flex-initial">
             <form onSubmit={handleSearch} className="flex flex-1 items-center gap-1 md:flex-initial">
                 <Input 
                     placeholder={placeholder}
@@ -238,10 +234,11 @@ export function Header({ user }: HeaderProps) {
         </div>
       </div>
 
-      <Sheet open={isCartOpen} onOpenChange={setIsCartOpen}>
+      <Sheet open={isCartOpen} onOpenChange={setIsCartOpen}
+        onOpenAutoFocus={(e) => e.preventDefault()}
+      >
         <SheetContent 
           className="flex w-full flex-col sm:max-w-md"
-          onOpenAutoFocus={(e) => e.preventDefault()}
         >
           <SheetHeader>
             <SheetTitle>Shopping Cart ({cartCount})</SheetTitle>
