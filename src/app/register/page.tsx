@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -9,6 +10,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { citiesByCountry } from "@/lib/cities";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -18,6 +21,7 @@ export default function RegisterPage() {
   const [password, setPassword] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [country, setCountry] = useState("");
+  const [cities, setCities] = useState<string[]>([]);
   const [city, setCity] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
@@ -27,7 +31,9 @@ export default function RegisterPage() {
         const response = await fetch('/api/settings');
         if (response.ok) {
           const settings = await response.json();
-          setCountry(settings.country || "");
+          const countryName = settings.country || "";
+          setCountry(countryName);
+          setCities(citiesByCountry[countryName] || []);
         }
       } catch (error) {
         console.error("Failed to fetch settings for default country:", error);
@@ -141,20 +147,30 @@ export default function RegisterPage() {
                         placeholder="Loading..." 
                         required 
                         value={country}
-                        onChange={(e) => setCountry(e.target.value)}
+                        readOnly
                         disabled={true}
+                        className="bg-muted/50"
                     />
                 </div>
                 <div className="grid gap-2">
                     <Label htmlFor="city">City</Label>
-                    <Input 
-                        id="city" 
-                        placeholder="Your City" 
-                        required 
+                     <Select
                         value={city}
-                        onChange={(e) => setCity(e.target.value)}
-                        disabled={isLoading}
-                    />
+                        onValueChange={setCity}
+                        required
+                        disabled={isLoading || cities.length === 0}
+                    >
+                        <SelectTrigger id="city">
+                            <SelectValue placeholder={cities.length > 0 ? "Select a city" : "No cities available"} />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {cities.map((cityName) => (
+                                <SelectItem key={cityName} value={cityName}>
+                                    {cityName}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
                 </div>
             </div>
             <Button type="submit" className="w-full bg-primary text-primary-foreground hover:bg-primary/90" disabled={isLoading}>
