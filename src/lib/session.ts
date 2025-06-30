@@ -3,7 +3,7 @@ import { cookies } from 'next/headers';
 import type { User } from '@/lib/types';
 
 export async function getUser(): Promise<User | null> {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const sessionCookie = cookieStore.get('user_session');
 
   if (sessionCookie?.value) {
