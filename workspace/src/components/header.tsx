@@ -16,15 +16,18 @@ import {
   ShoppingCart,
   X,
   ArrowLeft,
+  Search,
+  Share2,
 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useCart } from "@/hooks/use-cart";
 import Image from "next/image";
-import { Input } from "./ui/input";
+import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import type { User } from "@/lib/types";
 import { UserNav } from "./user-nav";
 import { useRouter, usePathname } from "next/navigation";
+import { useToast } from "@/hooks/use-toast";
 
 const navLinks = [
   { href: "/products", label: "All Products" },
@@ -40,8 +43,52 @@ export function Header({ user }: HeaderProps) {
   const { cartItems, cartCount, cartTotal, isCartOpen, setIsCartOpen, removeFromCart, updateQuantity } = useCart();
   const router = useRouter();
   const pathname = usePathname();
+  const { toast } = useToast();
+  const [searchTerm, setSearchTerm] = useState("");
   const isCustomer = !user || user.role === 'customer';
   const [scrolled, setScrolled] = useState(false);
+
+  // New state and effect for typing animation
+  const [placeholder, setPlaceholder] = useState('');
+  const placeholders = useMemo(() => ["Search for AuraPhone X...", "Find ZenBook Pro...", "Explore accessories..."], []);
+
+  useEffect(() => {
+    let currentPlaceholderIndex = 0;
+    let currentCharIndex = 0;
+    let isDeleting = false;
+    let timeoutId: NodeJS.Timeout;
+
+    const type = () => {
+        const currentWord = placeholders[currentPlaceholderIndex];
+        const typingSpeed = 150;
+        const deletingSpeed = 100;
+        const delayBetweenWords = 2000;
+
+        if (isDeleting) {
+            setPlaceholder(currentWord.substring(0, currentCharIndex - 1));
+            currentCharIndex--;
+        } else {
+            setPlaceholder(currentWord.substring(0, currentCharIndex + 1));
+            currentCharIndex++;
+        }
+
+        if (!isDeleting && currentCharIndex === currentWord.length) {
+            isDeleting = true;
+            timeoutId = setTimeout(type, delayBetweenWords);
+        } else if (isDeleting && currentCharIndex === 0) {
+            isDeleting = false;
+            currentPlaceholderIndex = (currentPlaceholderIndex + 1) % placeholders.length;
+            timeoutId = setTimeout(type, 500);
+        } else {
+            timeoutId = setTimeout(type, isDeleting ? deletingSpeed : typingSpeed);
+        }
+    };
+
+    type();
+
+    return () => clearTimeout(timeoutId);
+  }, [placeholders]);
+
 
   useEffect(() => {
     const handleScroll = () => {
@@ -52,6 +99,40 @@ export function Header({ user }: HeaderProps) {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchTerm.trim()) {
+      router.push(`/search?q=${encodeURIComponent(searchTerm.trim())}`);
+      setSearchTerm("");
+    }
+  };
+
+  const handleShare = async () => {
+    const shareData = {
+      title: document.title,
+      text: "Check this out!",
+      url: window.location.href,
+    };
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData);
+      } else {
+        await navigator.clipboard.writeText(window.location.href);
+        toast({
+          title: "Link Copied!",
+          description: "The page URL has been copied to your clipboard.",
+        });
+      }
+    } catch (err) {
+      console.error("Share failed:", err);
+      toast({
+        title: "Error",
+        description: "Could not share this page.",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <header className={cn(
       "sticky top-0 z-50 w-full border-b transition-colors duration-300",
@@ -59,7 +140,7 @@ export function Header({ user }: HeaderProps) {
         ? "border-border bg-background/80 backdrop-blur-sm" 
         : "border-transparent bg-[linear-gradient(to_left,#18101a,#431d4f_50%,#2d1d60_60%,#432066)]"
     )}>
-      <div className="container flex h-16 max-w-7xl items-center justify-between">
+      <div className="container flex h-16 max-w-7xl items-center justify-between gap-4 px-2">
         <div className="flex items-center gap-4">
           {pathname !== '/' && (
             <Button
@@ -78,7 +159,7 @@ export function Header({ user }: HeaderProps) {
             pathname === '/' ? "flex md:flex" : "hidden md:flex"
           )}>
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6 text-primary"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path></svg>
-            <span className={cn("font-bold font-headline text-lg", scrolled ? "text-foreground" : "text-primary-foreground")}>Zain</span>
+            <span className={cn("hidden font-bold font-headline text-lg md:inline", scrolled ? "text-foreground" : "text-primary-foreground")}>Zain</span>
           </Link>
           <nav className="hidden items-center gap-4 md:flex">
             {navLinks.map((link) => (
@@ -93,8 +174,33 @@ export function Header({ user }: HeaderProps) {
           </nav>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-1 items-center justify-end gap-2 md:flex-initial">
+            <form onSubmit={handleSearch} className="flex flex-1 items-center gap-1 md:flex-initial">
+                <Input 
+                    placeholder={placeholder}
+                    className={cn(
+                        "h-9 w-full transition-all duration-300 md:w-32 focus-within:w-full md:focus-within:w-48", 
+                        scrolled 
+                            ? "bg-background" 
+                            : "bg-white/20 text-primary-foreground placeholder:text-primary-foreground/70 border-primary-foreground/50"
+                    )}
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                />
+                <Button type="submit" size="icon" variant="ghost" className={cn("h-9 w-9 flex-shrink-0", !scrolled && "text-primary-foreground hover:bg-white/10")}>
+                    <Search className="h-5 w-5" />
+                </Button>
+            </form>
+            <Button
+              variant="ghost"
+              size="icon"
+              className={cn("h-9 w-9 flex-shrink-0", !scrolled && "text-primary-foreground hover:bg-white/10")}
+              onClick={handleShare}
+            >
+              <Share2 className="h-5 w-5" />
+            </Button>
           <div className="hidden items-center gap-2 md:flex">
+            <div className={cn("h-6 w-px", scrolled ? "bg-border" : "bg-primary-foreground/30")}></div>
             {user ? (
                 <UserNav user={user} scrolled={scrolled}/>
             ) : (
