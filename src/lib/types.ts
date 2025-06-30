@@ -68,3 +68,22 @@ export type Address = {
   country: string;
   isPrimary: boolean;
 };
+
+export type ShippingMethod = {
+  id: number;
+  title: string;
+  logo: string | null;
+  cost_type: 'city' | 'area' | 'weight';
+  default_cost: number | null;
+  config: string; // JSON string
+  enabled: boolean;
+};
+
+export type ShippingMethodConfig = {
+    cost_per_kg?: number;
+    overrides?: {
+        type: 'city' | 'area';
+        locationId: number;
+        cost: number;
+    }[];
+};

@@ -42,6 +42,8 @@ function seedDatabase() {
     db.run(`CREATE TABLE IF NOT EXISTS payment_methods (id INTEGER PRIMARY KEY, provider TEXT UNIQUE NOT NULL, enabled BOOLEAN DEFAULT 0, config TEXT)`);
     db.run(`CREATE TABLE IF NOT EXISTS cities (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, country_name TEXT NOT NULL, UNIQUE(name, country_name))`);
     db.run(`CREATE TABLE IF NOT EXISTS areas (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, city_id INTEGER NOT NULL, UNIQUE(name, city_id), FOREIGN KEY(city_id) REFERENCES cities(id) ON DELETE CASCADE)`);
+    db.run(`CREATE TABLE IF NOT EXISTS shipping_methods (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL, logo TEXT, cost_type TEXT NOT NULL, default_cost REAL, config TEXT, enabled BOOLEAN DEFAULT 0)`);
+
 
     // Seed roles
     const insertRoleStmt = db.prepare('INSERT OR IGNORE INTO roles (name) VALUES (?)');
@@ -67,6 +69,36 @@ function seedDatabase() {
     paymentMethods.forEach(pm => insertPaymentStmt.run(pm.provider, pm.enabled, pm.config));
     insertPaymentStmt.finalize();
     console.log('Payment methods seeded.');
+    
+    // Seed Shipping Methods
+    const shippingMethods = [
+      {
+          title: 'Standard Delivery (City-based)',
+          logo: 'https://placehold.co/100x40.png',
+          cost_type: 'city',
+          default_cost: 10,
+          config: JSON.stringify({
+              overrides: [
+                  { type: 'city', locationId: 1, cost: 5 },
+                  { type: 'city', locationId: 2, cost: 8 }
+              ]
+          }),
+          enabled: 1
+      },
+      {
+          title: 'Heavy Goods (Weight-based)',
+          logo: 'https://placehold.co/100x40.png',
+          cost_type: 'weight',
+          default_cost: null,
+          config: JSON.stringify({ cost_per_kg: 2.5 }),
+          enabled: 1
+      }
+    ];
+    const insertShippingStmt = db.prepare('INSERT OR IGNORE INTO shipping_methods (title, logo, cost_type, default_cost, config, enabled) VALUES (?, ?, ?, ?, ?, ?, ?)');
+    shippingMethods.forEach(sm => insertShippingStmt.run(sm.title, sm.logo, sm.cost_type, sm.default_cost, sm.config, sm.enabled));
+    insertShippingStmt.finalize();
+    console.log('Shipping methods seeded.');
+
 
     // Seed Cities
     const insertCityStmt = db.prepare('INSERT OR IGNORE INTO cities (name, country_name) VALUES (?, ?)');

@@ -15,6 +15,7 @@ db.serialize(() => {
   db.run("DROP TABLE IF EXISTS payment_methods");
   db.run("DROP TABLE IF EXISTS areas");
   db.run("DROP TABLE IF EXISTS cities");
+  db.run("DROP TABLE IF EXISTS shipping_methods");
 
 
   // Create roles table
@@ -80,6 +81,17 @@ db.serialize(() => {
   db.run("CREATE TABLE product_variants (id TEXT PRIMARY KEY, productId TEXT, name TEXT, price INTEGER, image TEXT, stock INTEGER, options TEXT, FOREIGN KEY(productId) REFERENCES products(id))");
   db.run("CREATE TABLE settings (id INTEGER PRIMARY KEY DEFAULT 1, websiteTitle TEXT, websiteLogo TEXT, timeZone TEXT, country TEXT)");
   db.run("CREATE TABLE payment_methods (id INTEGER PRIMARY KEY, provider TEXT UNIQUE NOT NULL, enabled BOOLEAN DEFAULT 0, config TEXT)");
+  db.run(`
+    CREATE TABLE shipping_methods (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      title TEXT NOT NULL,
+      logo TEXT,
+      cost_type TEXT NOT NULL, -- 'city', 'area', 'weight'
+      default_cost REAL, -- For city/area based shipping
+      config TEXT, -- JSON for weight cost or specific overrides
+      enabled BOOLEAN DEFAULT 0
+    )
+  `);
 });
 
 db.close();

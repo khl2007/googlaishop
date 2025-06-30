@@ -570,3 +570,61 @@ export async function deleteArea(id) {
         });
     });
 }
+
+// Shipping Methods
+export async function getShippingMethods() {
+    const db = getDatabase();
+    return new Promise((resolve, reject) => {
+        db.all('SELECT * FROM shipping_methods ORDER BY id', (err, rows) => {
+            if (err) {
+                console.error('Database error in getShippingMethods:', err);
+                return reject(new Error('Failed to fetch shipping methods.'));
+            }
+            resolve(rows.map(row => ({ ...row, enabled: !!row.enabled })));
+        });
+    });
+}
+
+export async function getShippingMethodById(id) {
+    const db = getDatabase();
+    return new Promise((resolve, reject) => {
+        db.get('SELECT * FROM shipping_methods WHERE id = ?', [id], (err, row) => {
+            if (err) {
+                console.error('Database error in getShippingMethodById:', err);
+                return reject(new Error('Failed to fetch shipping method.'));
+            }
+            resolve(row ? { ...row, enabled: !!row.enabled } : null);
+        });
+    });
+}
+
+export async function getAllCitiesWithCountry() {
+    const db = getDatabase();
+    return new Promise((resolve, reject) => {
+        db.all('SELECT id, name, country_name FROM cities ORDER BY country_name, name', (err, rows) => {
+            if (err) {
+                console.error('Database error in getAllCitiesWithCountry:', err);
+                return reject(new Error('Failed to fetch cities.'));
+            }
+            resolve(rows);
+        });
+    });
+}
+
+export async function getAllAreasWithCity() {
+    const db = getDatabase();
+    return new Promise((resolve, reject) => {
+        db.all(`
+            SELECT a.id, a.name, c.name as city_name, c.country_name 
+            FROM areas a
+            JOIN cities c ON a.city_id = c.id
+            ORDER BY c.country_name, c.name, a.name
+        `, (err, rows) => {
+            if (err) {
+                console.error('Database error in getAllAreasWithCity:', err);
+                return reject(new Error('Failed to fetch areas.'));
+            }
+            resolve(rows);
+        });
+    });
+}
