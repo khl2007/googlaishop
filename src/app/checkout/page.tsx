@@ -12,8 +12,8 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
 import { useEffect, useState } from "react";
-import { Loader2, Search, CreditCard, Wallet, DollarSign } from "lucide-react";
-import type { Address } from "@/lib/types";
+import { Loader2, Search, CreditCard, Wallet, DollarSign, Truck } from "lucide-react";
+import type { Address, CartItem } from "@/lib/types";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -44,6 +44,13 @@ interface PaymentMethod {
     }
 }
 
+interface CalculatedShippingMethod {
+  id: number;
+  title: string;
+  logo: string | null;
+  cost: number;
+}
+
 export default function CheckoutPage() {
   const { cartItems, cartTotal, clearCart } = useCart();
   const router = useRouter();
@@ -54,6 +61,10 @@ export default function CheckoutPage() {
   const [selectedAddressId, setSelectedAddressId] = useState<string>('');
   const [isAddingNewAddress, setIsAddingNewAddress] = useState(false);
   const [isAutocompleteOpen, setIsAutocompleteOpen] = useState(false);
+
+  const [shippingOptions, setShippingOptions] = useState<CalculatedShippingMethod[]>([]);
+  const [loadingShipping, setLoadingShipping] = useState(false);
+  const [selectedShippingMethodId, setSelectedShippingMethodId] = useState<string>('');
 
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
   const [loadingPaymentMethods, setLoadingPaymentMethods] = useState(true);
@@ -84,7 +95,9 @@ export default function CheckoutPage() {
       const data = await res.json();
       setAddresses(data);
       if (data.length > 0) {
-        setSelectedAddressId(String(data[0].id));
+        // Find primary or first address and set it as selected
+        const primaryAddress = data.find((a: Address) => a.isPrimary) || data[0];
+        setSelectedAddressId(String(primaryAddress.id));
         setIsAddingNewAddress(false);
       } else {
         setIsAddingNewAddress(true);
@@ -168,13 +181,49 @@ export default function CheckoutPage() {
             body: JSON.stringify(data),
         });
         if (!res.ok) throw new Error("Failed to save address");
+        const newAddress = await res.json();
         toast({ title: "Success", description: "Address saved successfully." });
         form.reset();
         await fetchAddresses();
+        // Automatically select the newly added address
+        setSelectedAddressId(String(newAddress.address.id));
     } catch (error: any) {
         toast({ title: "Error", description: error.message, variant: "destructive" });
     }
   };
+
+  useEffect(() => {
+    const fetchShippingOptions = async () => {
+      if (selectedAddressId && selectedAddressId !== 'new' && cartItems.length > 0) {
+        setLoadingShipping(true);
+        setShippingOptions([]);
+        setSelectedShippingMethodId('');
+        try {
+          const res = await fetch('/api/shipping-cost', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ addressId: parseInt(selectedAddressId), cartItems }),
+          });
+          if (!res.ok) {
+            throw new Error('Failed to fetch shipping options');
+          }
+          const data = await res.json();
+          setShippingOptions(data);
+          if (data.length > 0) {
+            setSelectedShippingMethodId(String(data[0].id));
+          }
+        } catch (error: any) {
+          toast({ title: 'Shipping Error', description: error.message, variant: 'destructive' });
+          setShippingOptions([]);
+        } finally {
+          setLoadingShipping(false);
+        }
+      } else {
+        setShippingOptions([]);
+      }
+    };
+    fetchShippingOptions();
+  }, [selectedAddressId, cartItems, toast]);
   
   const handlePlaceOrder = (e: React.FormEvent) => {
     e.preventDefault();
@@ -184,13 +233,16 @@ export default function CheckoutPage() {
         return;
     }
 
+    if (shippingOptions.length > 0 && !selectedShippingMethodId) {
+        toast({ title: "Error", description: "Please select a shipping method.", variant: "destructive" });
+        return;
+    }
+
     if (!selectedPaymentMethod) {
         toast({ title: "Error", description: "Please select a payment method.", variant: "destructive" });
         return;
     }
     
-    // Clear cart before redirecting to payment page for Stripe/PayPal
-    // to prevent users from modifying it during payment.
     if (selectedPaymentMethod !== 'cash') {
         clearCart();
         router.push(`/checkout/${selectedPaymentMethod}`);
@@ -211,6 +263,9 @@ export default function CheckoutPage() {
     form.setValue("zip", address.zip);
     setIsAutocompleteOpen(false);
   };
+
+  const selectedShippingCost = shippingOptions.find(o => String(o.id) === selectedShippingMethodId)?.cost || 0;
+  const orderTotal = cartTotal + selectedShippingCost;
 
   if (cartItems.length === 0 || loadingAddresses || loadingPaymentMethods) {
     return (
@@ -336,6 +391,39 @@ export default function CheckoutPage() {
 
             <Card>
                 <CardHeader>
+                    <CardTitle>Shipping Method</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    {loadingShipping ? (
+                        <div className="flex items-center gap-2 text-muted-foreground">
+                            <Loader2 className="h-5 w-5 animate-spin" />
+                            <span>Loading shipping options...</span>
+                        </div>
+                    ) : shippingOptions.length > 0 ? (
+                        <RadioGroup value={selectedShippingMethodId} onValueChange={setSelectedShippingMethodId} className="space-y-4">
+                            {shippingOptions.map((method) => (
+                                <Label key={method.id} htmlFor={`shipping-${method.id}`} className="flex items-center justify-between gap-4 rounded-md border p-4 cursor-pointer hover:bg-accent has-[[data-state=checked]]:bg-accent">
+                                    <div className="flex items-center gap-4">
+                                        <RadioGroupItem value={String(method.id)} id={`shipping-${method.id}`} />
+                                        {method.logo && <Image src={method.logo} alt={method.title} width={40} height={24} className="object-contain" />}
+                                        <p className="font-semibold">{method.title}</p>
+                                    </div>
+                                    <p className="font-semibold">{method.cost > 0 ? `$${method.cost.toFixed(2)}` : 'FREE'}</p>
+                                </Label>
+                            ))}
+                        </RadioGroup>
+                    ) : (
+                        <div className="flex items-center gap-3 text-muted-foreground border-dashed border rounded-md p-6 justify-center">
+                            <Truck className="h-8 w-8" />
+                            <p>Please select an address to view shipping options.</p>
+                        </div>
+                    )}
+                </CardContent>
+            </Card>
+
+
+            <Card>
+                <CardHeader>
                     <CardTitle>Payment Method</CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -385,16 +473,17 @@ export default function CheckoutPage() {
                 </div>
                 <div className="flex justify-between">
                   <span>Shipping</span>
-                  <span>FREE</span>
+                  <span>{selectedShippingCost > 0 ? `$${selectedShippingCost.toFixed(2)}` : 'FREE'}</span>
                 </div>
-                <div className="flex justify-between text-lg font-bold">
+                <div className="flex justify-between text-lg font-bold border-t pt-2 mt-2">
                   <span>Total</span>
-                  <span>${cartTotal.toFixed(2)}</span>
+                  <span>${orderTotal.toFixed(2)}</span>
                 </div>
               </div>
             </CardContent>
           </Card>
-           <Button size="lg" type="submit" className="mt-6 w-full bg-primary text-primary-foreground hover:bg-primary/90">
+           <Button size="lg" type="submit" className="mt-6 w-full bg-primary text-primary-foreground hover:bg-primary/90" disabled={loadingShipping}>
+              {loadingShipping && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Place Order
             </Button>
         </div>

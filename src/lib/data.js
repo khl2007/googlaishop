@@ -628,3 +628,40 @@ export async function getAllAreasWithCity() {
         });
     });
 }
+
+export async function getCityByNameAndCountry(cityName, countryName) {
+    const db = getDatabase();
+    return new Promise((resolve, reject) => {
+        const sql = `SELECT id FROM cities WHERE name = ? AND country_name = ?`;
+        db.get(sql, [cityName, countryName], (err, row) => {
+            if (err) reject(err);
+            resolve(row);
+        });
+    });
+}
+
+export async function getAreaByNameAndCity(areaName, cityId) {
+    const db = getDatabase();
+    return new Promise((resolve, reject) => {
+        const sql = `SELECT id FROM areas WHERE name = ? AND city_id = ?`;
+        db.get(sql, [areaName, cityId], (err, row) => {
+            if (err) reject(err);
+            resolve(row);
+        });
+    });
+}
+
+export async function getProductWeights(productIds) {
+    if (!productIds || productIds.length === 0) {
+        return [];
+    }
+    const db = getDatabase();
+    const placeholders = productIds.map(() => '?').join(',');
+    return new Promise((resolve, reject) => {
+        const sql = `SELECT id, weight FROM products WHERE id IN (${placeholders})`;
+        db.all(sql, productIds, (err, rows) => {
+            if (err) reject(err);
+            resolve(rows);
+        });
+    });
+}
