@@ -745,3 +745,142 @@ export async function deleteSlide(id) {
         });
     });
 }
+
+// Home Page Sections
+export async function getAllHomeSections() {
+    const db = getDatabase();
+    return new Promise((resolve, reject) => {
+        db.all('SELECT * FROM home_sections ORDER BY "order" ASC', (err, rows) => {
+            if (err) return reject(new Error('Failed to fetch home sections.'));
+            resolve(rows.map(row => ({ ...row, isActive: !!row.isActive })));
+        });
+    });
+}
+
+export async function getActiveHomeSections() {
+    const db = getDatabase();
+    return new Promise((resolve, reject) => {
+        db.all('SELECT * FROM home_sections WHERE isActive = 1 ORDER BY "order" ASC', (err, rows) => {
+            if (err) return reject(new Error('Failed to fetch active home sections.'));
+            resolve(rows.map(row => ({
+                ...row,
+                isActive: !!row.isActive,
+                config: row.config ? JSON.parse(row.config) : null
+            })));
+        });
+    });
+}
+
+export async function createHomeSection(data) {
+    const db = getDatabase();
+    const { title, type, config, style, order, isActive } = data;
+    return new Promise((resolve, reject) => {
+        const sql = 'INSERT INTO home_sections (title, type, config, style, "order", isActive) VALUES (?, ?, ?, ?, ?, ?)';
+        db.run(sql, [title, type, config, style, order, isActive ? 1 : 0], function (err) {
+            if (err) return reject(err);
+            db.get('SELECT * FROM home_sections WHERE id = ?', [this.lastID], (err, row) => {
+                if (err) reject(err)
+                else resolve(row);
+            });
+        });
+    });
+}
+
+export async function updateHomeSection(id, data) {
+    const db = getDatabase();
+    const { title, type, config, style, isActive } = data;
+    return new Promise((resolve, reject) => {
+        const sql = 'UPDATE home_sections SET title = ?, type = ?, config = ?, style = ?, isActive = ? WHERE id = ?';
+        db.run(sql, [title, type, config, style, isActive ? 1 : 0, id], function (err) {
+            if (err) return reject(err);
+            if (this.changes === 0) return reject(new Error("Section not found or no changes made."));
+            resolve(this);
+        });
+    });
+}
+
+export async function updateHomeSectionsOrder(orderedIds) {
+    const db = getDatabase();
+    return new Promise((resolve, reject) => {
+        db.serialize(() => {
+            db.run("BEGIN TRANSACTION", err => { if (err) reject(err) });
+            const stmt = db.prepare("UPDATE home_sections SET \"order\" = ? WHERE id = ?");
+            orderedIds.forEach((id, index) => {
+                stmt.run(index + 1, id, err => { if(err) reject(err) });
+            });
+            stmt.finalize(err => {
+                if (err) {
+                    db.run("ROLLBACK", () => reject(err));
+                } else {
+                    db.run("COMMIT", err => {
+                        if (err) reject(err);
+                        else resolve();
+                    });
+                }
+            });
+        });
+    });
+}
+
+export async function deleteHomeSection(id) {
+    const db = getDatabase();
+    return new Promise((resolve, reject) => {
+        db.run('DELETE FROM home_sections WHERE id = ?', [id], function (err) {
+            if (err) return reject(err);
+            if (this.changes === 0) return reject(new Error("Section not found."));
+            resolve(this);
+        });
+    });
+}
+
+export async function getAllProductTags() {
+    const db = getDatabase();
+    return new Promise((resolve, reject) => {
+        db.all('SELECT tags FROM products WHERE tags IS NOT NULL AND tags != ""', (err, rows) => {
+            if (err) return reject(new Error('Failed to fetch tags.'));
+            const allTags = new Set();
+            rows.forEach(row => {
+                row.tags.split(',').forEach(tag => {
+                    const trimmedTag = tag.trim();
+                    if (trimmedTag) allTags.add(trimmedTag);
+                });
+            });
+            resolve(Array.from(allTags));
+        });
+    });
+}
+
+export async function getProductsForSection(section) {
+    const allProducts = await getAllProducts();
+    if (!section.type) return [];
+
+    try {
+        switch (section.type) {
+            case 'featured':
+                return allProducts.filter(p => p.isFeatured);
+            case 'on_offer':
+                return allProducts.filter(p => p.isOnOffer);
+            case 'category': {
+                const categoryIds = section.config;
+                return allProducts.filter(p => categoryIds.includes(p.categoryId));
+            }
+            case 'tag': {
+                const tags = section.config;
+                return allProducts.filter(p => p.tags && tags.some(tag => p.tags.split(',').map(t=>t.trim()).includes(tag)));
+            }
+            case 'custom': {
+                const productIds = section.config;
+                 const productMap = new Map(allProducts.map(p => [p.id, p]));
+                 return productIds.map(id => productMap.get(id)).filter(Boolean);
+            }
+            case 'ai':
+                // AI logic placeholder
+                return allProducts.slice(0, 4);
+            default:
+                return [];
+        }
+    } catch (e) {
+        console.error(`Failed to get products for section ${section.id}`, e);
+        return [];
+    }
+}

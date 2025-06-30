@@ -45,6 +45,7 @@ function seedDatabase() {
     db.run(`CREATE TABLE IF NOT EXISTS areas (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, city_id INTEGER NOT NULL, UNIQUE(name, city_id), FOREIGN KEY(city_id) REFERENCES cities(id) ON DELETE CASCADE)`);
     db.run(`CREATE TABLE IF NOT EXISTS shipping_methods (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL, logo TEXT, cost_type TEXT NOT NULL, default_cost REAL, config TEXT, enabled BOOLEAN DEFAULT 0)`);
     db.run(`CREATE TABLE IF NOT EXISTS slides (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL, description TEXT, image TEXT NOT NULL, link TEXT, buttonText TEXT, isActive BOOLEAN DEFAULT 0, "order" INTEGER DEFAULT 0)`);
+    db.run(`CREATE TABLE IF NOT EXISTS home_sections (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL, type TEXT NOT NULL, config TEXT, style TEXT NOT NULL, "order" INTEGER, isActive BOOLEAN DEFAULT 0)`);
 
 
     // Seed roles
@@ -111,6 +112,16 @@ function seedDatabase() {
     slides.forEach(s => insertSlideStmt.run(s.title, s.description, s.image, s.link, s.buttonText, s.isActive, s.order));
     insertSlideStmt.finalize();
     console.log('Slides seeded.');
+
+    // Seed Home Sections
+    const homeSections = [
+        { title: 'Featured Laptops', type: 'category', config: JSON.stringify(['cat2']), style: 'style1', order: 1, isActive: 1 },
+        { title: 'Hot Deals', type: 'tag', config: JSON.stringify(['new', 'sale']), style: 'style1', order: 2, isActive: 1 },
+    ];
+    const insertHomeSectionStmt = db.prepare('INSERT OR IGNORE INTO home_sections (title, type, config, style, "order", isActive) VALUES (?, ?, ?, ?, ?, ?)');
+    homeSections.forEach(s => insertHomeSectionStmt.run(s.title, s.type, s.config, s.style, s.order, s.isActive));
+    insertHomeSectionStmt.finalize();
+    console.log('Home sections seeded.');
 
 
     // Seed Cities

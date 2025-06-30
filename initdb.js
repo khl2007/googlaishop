@@ -17,6 +17,7 @@ db.serialize(() => {
   db.run("DROP TABLE IF EXISTS cities");
   db.run("DROP TABLE IF EXISTS shipping_methods");
   db.run("DROP TABLE IF EXISTS slides");
+  db.run("DROP TABLE IF EXISTS home_sections");
 
 
   // Create roles table
@@ -87,6 +88,19 @@ db.serialize(() => {
       buttonText TEXT,
       isActive BOOLEAN DEFAULT 0,
       "order" INTEGER DEFAULT 0
+    )
+  `);
+
+  // Create home_sections table
+  db.run(`
+    CREATE TABLE home_sections (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT NOT NULL,
+        type TEXT NOT NULL, -- 'category', 'tag', 'ai', 'custom', 'featured', 'on_offer'
+        config TEXT, -- JSON storing an array of slugs/ids/tags
+        style TEXT NOT NULL DEFAULT 'style1', -- 'style1', 'style2', etc.
+        "order" INTEGER NOT NULL,
+        isActive BOOLEAN DEFAULT 0
     )
   `);
 

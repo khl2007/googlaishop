@@ -98,3 +98,13 @@ export type Slide = {
     isActive: boolean;
     order: number;
 };
+
+export type HomeSection = {
+    id: number;
+    title: string;
+    type: 'category' | 'tag' | 'ai' | 'custom' | 'featured' | 'on_offer';
+    config: string | null; // JSON string
+    style: string;
+    order: number;
+    isActive: boolean;
+};
