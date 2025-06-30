@@ -9,8 +9,8 @@ import { Providers } from '@/components/providers';
 import { getUser } from '@/lib/session';
 import { Header } from '@/components/header';
 import { Footer } from '@/components/footer';
-import { BottomToolbar } from '@/components/bottom-toolbar';
 import { PageTransitionWrapper } from '@/components/page-transition-wrapper';
+import { ConditionalBottomToolbar } from '@/components/conditional-bottom-toolbar';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -44,9 +44,6 @@ export default async function RootLayout({
   
   const showHeaderAndFooter = !isAdminRoute && !isVendorRoute && !isDeliveryRoute;
 
-  // This regex matches /products/ followed by one or more characters, i.e., a product page
-  const isProductPage = /^\/products\/.+/.test(pathname);
-
   return (
     <html lang="en" suppressHydrationWarning>
       <head />
@@ -60,8 +57,7 @@ export default async function RootLayout({
               </PageTransitionWrapper>
             </main>
             {showHeaderAndFooter && <Footer />}
-            {/* The BottomToolbar will now be hidden on product detail pages */}
-            {showHeaderAndFooter && !isProductPage && <BottomToolbar user={user} />}
+            {showHeaderAndFooter && <ConditionalBottomToolbar user={user} />}
           </div>
           <Toaster />
         </Providers>

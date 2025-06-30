@@ -6,16 +6,13 @@ import type { ReactNode } from 'react';
 
 const variants = {
   initial: {
-    x: '100vw',
-    opacity: 0.8,
+    opacity: 0,
   },
   in: {
-    x: 0,
     opacity: 1,
   },
   out: {
-    x: '-100vw',
-    opacity: 0.8,
+    opacity: 0,
   },
 };
 
@@ -34,7 +31,7 @@ export function PageTransitionWrapper({
         initial="initial"
         animate="in"
         exit="out"
-        transition={{ type: 'tween', ease: 'anticipate', duration: 0.5 }}
+        transition={{ type: 'tween', ease: 'easeInOut', duration: 0.3 }}
         className="w-full"
       >
         {children}
