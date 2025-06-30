@@ -64,7 +64,7 @@ export function CustomerForm({ customer, roles }: CustomerFormProps) {
     },
   });
   
-  const onSubmit: SubmitHandler<z.infer<typeof baseSchema & { password?: string }>> = async (data) => {
+  const onFormSubmit: SubmitHandler<z.infer<typeof baseSchema & { password?: string }>> = async (data) => {
     const customerRole = roles.find(role => role.name === 'customer');
     if (!customerRole) {
         toast({ title: "Error", description: "Customer role not found.", variant: "destructive" });
@@ -112,7 +112,7 @@ export function CustomerForm({ customer, roles }: CustomerFormProps) {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 max-w-2xl">
+      <form onSubmit={form.handleSubmit(onFormSubmit)} className="space-y-4 max-w-2xl">
         <FormField control={form.control} name="fullName" render={({ field }) => (
             <FormItem><FormLabel>Full Name</FormLabel><FormControl><Input placeholder="John Doe" {...field} /></FormControl><FormMessage /></FormItem>
         )}/>
