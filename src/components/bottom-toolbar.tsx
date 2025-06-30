@@ -59,7 +59,7 @@ export function BottomToolbar({ user }: BottomToolbarProps) {
             )}
           >
             <item.icon className="w-5 h-5 mb-1" />
-            <span className="text-xs">{item.label}</span>
+            <span className="text-sm">{item.label}</span>
           </Link>
         ))}
 
@@ -70,7 +70,7 @@ export function BottomToolbar({ user }: BottomToolbarProps) {
             className="inline-flex flex-1 flex-col items-center justify-center px-2 hover:bg-muted group text-muted-foreground relative h-full"
           >
             <ShoppingCart className="w-5 h-5 mb-1" />
-            <span className="text-xs">Cart</span>
+            <span className="text-sm">Cart</span>
             {isMounted && cartCount > 0 && (
               <span className="absolute top-2 right-1/2 translate-x-[18px] flex h-4 w-4 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold">
                 {cartCount}
@@ -88,7 +88,7 @@ export function BottomToolbar({ user }: BottomToolbarProps) {
           )}
         >
           <accountItem.icon className="w-5 h-5 mb-1" />
-          <span className="text-xs">{accountItem.label}</span>
+          <span className="text-sm">{accountItem.label}</span>
         </Link>
       </div>
     </div>

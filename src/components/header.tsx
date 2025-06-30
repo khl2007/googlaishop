@@ -159,14 +159,14 @@ export function Header({ user }: HeaderProps) {
             pathname === '/' ? "flex md:flex" : "hidden md:flex"
           )}>
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6 text-primary"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path></svg>
-            <span className={cn("hidden font-bold font-headline text-lg md:inline", scrolled ? "text-foreground" : "text-primary-foreground")}>Zain</span>
+            <span className={cn("hidden font-bold font-headline text-xl md:inline", scrolled ? "text-foreground" : "text-primary-foreground")}>Zain</span>
           </Link>
           <nav className="hidden items-center gap-4 md:flex">
             {navLinks.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
-                className={cn("text-sm font-medium transition-colors", scrolled ? "text-muted-foreground hover:text-foreground" : "text-primary-foreground/80 hover:text-primary-foreground")}
+                className={cn("text-base font-medium transition-colors", scrolled ? "text-muted-foreground hover:text-foreground" : "text-primary-foreground/80 hover:text-primary-foreground")}
               >
                 {link.label}
               </Link>
@@ -205,10 +205,10 @@ export function Header({ user }: HeaderProps) {
                 <UserNav user={user} scrolled={scrolled}/>
             ) : (
                 <>
-                    <Link href="/login" className={cn(buttonVariants({ variant: scrolled ? 'outline' : 'ghost' }), scrolled ? 'rounded-full' : 'text-primary-foreground hover:bg-white/10 hover:text-primary-foreground')}>
+                    <Link href="/login" className={cn(buttonVariants({ variant: scrolled ? 'outline' : 'ghost' }), 'text-base', scrolled ? 'rounded-full' : 'text-primary-foreground hover:bg-white/10 hover:text-primary-foreground')}>
                         Log In
                     </Link>
-                    <Link href="/register" className={cn(buttonVariants({ variant: "default" }), "bg-primary text-primary-foreground hover:bg-primary/90", scrolled && "rounded-full")}>
+                    <Link href="/register" className={cn(buttonVariants({ variant: "default" }), "text-base", "bg-primary text-primary-foreground hover:bg-primary/90", scrolled && "rounded-full")}>
                         Sign Up
                     </Link>
                 </>
