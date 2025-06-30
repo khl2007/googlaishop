@@ -234,11 +234,10 @@ export function Header({ user }: HeaderProps) {
         </div>
       </div>
 
-      <Sheet open={isCartOpen} onOpenChange={setIsCartOpen}
-        onOpenAutoFocus={(e) => e.preventDefault()}
-      >
+      <Sheet open={isCartOpen} onOpenChange={setIsCartOpen}>
         <SheetContent 
           className="flex w-full flex-col sm:max-w-md"
+          onOpenAutoFocus={(e) => e.preventDefault()}
         >
           <SheetHeader>
             <SheetTitle>Shopping Cart ({cartCount})</SheetTitle>
