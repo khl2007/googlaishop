@@ -27,5 +27,24 @@ export const citiesByCountry: Record<string, string[]> = {
     "Bristol",
     "Manchester"
   ],
+  "Jordan": [
+    "Amman",
+    "Zarqa",
+    "Irbid",
+    "Russeifa",
+    "Aqaba",
+    "Madaba",
+    "Salt",
+    "Jerash"
+  ],
+  "United Arab Emirates": [
+    "Dubai",
+    "Abu Dhabi",
+    "Sharjah",
+    "Al Ain",
+    "Ajman",
+    "Ras Al Khaimah",
+    "Fujairah"
+  ]
   // This structure can be expanded with more countries and cities.
 };
