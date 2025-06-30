@@ -84,13 +84,22 @@ export function ShippingForm({ method, cities, areas }: ShippingFormProps) {
   });
   
   const watchedCostType = form.watch("cost_type");
+  const { setValue, clearErrors } = form;
   const [logoPreview, setLogoPreview] = React.useState<string | null>(method?.logo || null);
 
   React.useEffect(() => {
-    // When cost type changes, clear the overrides to prevent submitting stale data
-    // from a previously selected type.
-    form.setValue('overrides', []);
-  }, [watchedCostType, form.setValue]);
+    // When cost type changes, reset irrelevant fields to prevent validation issues
+    if (watchedCostType === 'weight') {
+      setValue('default_cost', undefined);
+      clearErrors('default_cost');
+      setValue('overrides', []);
+    } else { // 'city' or 'area'
+      setValue('cost_per_kg', undefined);
+      clearErrors('cost_per_kg');
+      // Also clear overrides when switching between city/area or to them from weight.
+      setValue('overrides', []);
+    }
+  }, [watchedCostType, setValue, clearErrors]);
 
   const onSubmit: SubmitHandler<ShippingFormValues> = async (data) => {
     let config = {};
@@ -277,3 +286,4 @@ export function ShippingForm({ method, cities, areas }: ShippingFormProps) {
     </Form>
   );
 }
+
