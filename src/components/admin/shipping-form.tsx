@@ -86,12 +86,20 @@ export function ShippingForm({ method, cities, areas }: ShippingFormProps) {
   const watchedCostType = form.watch("cost_type");
   const [logoPreview, setLogoPreview] = React.useState<string | null>(method?.logo || null);
 
+  React.useEffect(() => {
+    // When cost type changes, clear the overrides to prevent submitting stale data
+    // from a previously selected type.
+    form.setValue('overrides', []);
+  }, [watchedCostType, form.setValue]);
+
   const onSubmit: SubmitHandler<ShippingFormValues> = async (data) => {
     let config = {};
     if (data.cost_type === 'weight') {
         config = { cost_per_kg: data.cost_per_kg };
     } else {
-        config = { overrides: data.overrides };
+        // Filter out overrides that don't match the current cost type, as a safety measure.
+        const filteredOverrides = (data.overrides || []).filter(o => o.type === data.cost_type);
+        config = { overrides: filteredOverrides };
     }
 
     const payload = {
