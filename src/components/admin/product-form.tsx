@@ -58,24 +58,6 @@ const formSchema = z.object({
       message: "Weight must be a non-negative number.",
   }),
   dimensions: z.string().optional(),
-}).superRefine((data, ctx) => {
-    if (data.optionGroups && data.optionGroups.length > 0) {
-        data.variants.forEach((variant, vIndex) => {
-            data.optionGroups?.forEach(group => {
-                // If the group name is empty, we can't validate its options yet.
-                // The required error on the group name itself will be shown.
-                if (!group.name) return;
-
-                if (!variant.options || !variant.options[group.name]) {
-                    ctx.addIssue({
-                        code: z.ZodIssueCode.custom,
-                        message: "Required",
-                        path: [`variants`, vIndex, `options.${group.name}`],
-                    });
-                }
-            });
-        });
-    }
 });
 
 type ProductFormValues = z.infer<typeof formSchema>;
@@ -137,6 +119,31 @@ export function ProductForm({ product, categories, vendors }: ProductFormProps) 
   const isSubmitting = form.formState.isSubmitting;
 
   const onSubmit: SubmitHandler<ProductFormValues> = async (data) => {
+    // Manual validation for variant options
+    let hasError = false;
+    data.optionGroups?.forEach((group) => {
+      if (!group.name) return; // Ignore groups without a name
+
+      data.variants.forEach((variant, variantIndex) => {
+        if (!variant.options?.[group.name]) {
+          form.setError(`variants.${variantIndex}.options.${group.name}` as const, {
+            type: 'manual',
+            message: 'Required',
+          });
+          hasError = true;
+        }
+      });
+    });
+
+    if (hasError) {
+      toast({
+        title: 'Missing Variant Options',
+        description: 'Please select an option for each variant dropdown.',
+        variant: 'destructive',
+      });
+      return; // Stop submission
+    }
+
     const transformedData = {
         ...data,
         vendorId: parseInt(data.vendorId),
