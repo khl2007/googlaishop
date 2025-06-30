@@ -190,7 +190,7 @@ export async function getAdminUserById(id) {
 
   const user = await new Promise((resolve, reject) => {
     db.get(`
-        SELECT u.id, u.fullName, u.username, u.phoneNumber, u.country, u.city, u.role_id
+        SELECT u.id, u.fullName, u.username, u.phoneNumber, u.country, u.city, u.role_id, u.logo
         FROM users u
         WHERE u.id = ?
     `, [id], (err, row) => {

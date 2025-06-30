@@ -36,7 +36,7 @@ export async function GET(request) {
 
 // CREATE a new user
 export async function POST(request) {
-  const { fullName, username, password, role_id, phoneNumber, country, city } = await request.json();
+  const { fullName, username, password, role_id, phoneNumber, country, city, logo } = await request.json();
   const db = getDatabase();
 
   if (!fullName || !username || !role_id || !phoneNumber || !country || !city) {
@@ -46,8 +46,8 @@ export async function POST(request) {
   try {
     const hashedPassword = password ? await bcrypt.hash(password, 10) : null;
     const result = await new Promise((resolve, reject) => {
-      const sql = 'INSERT INTO users (fullName, username, password, role_id, phoneNumber, country, city) VALUES (?, ?, ?, ?, ?, ?, ?)';
-      db.run(sql, [fullName, username, hashedPassword, role_id, phoneNumber, country, city], function (err) {
+      const sql = 'INSERT INTO users (fullName, username, password, role_id, phoneNumber, country, city, logo) VALUES (?, ?, ?, ?, ?, ?, ?, ?)';
+      db.run(sql, [fullName, username, hashedPassword, role_id, phoneNumber, country, city, logo || null], function (err) {
         if (err) {
             if (err.code === 'SQLITE_CONSTRAINT') {
                 return reject(new Error('A user with this email already exists.'));

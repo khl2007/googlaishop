@@ -27,6 +27,7 @@ db.serialize(() => {
       phoneNumber TEXT,
       country TEXT,
       city TEXT,
+      logo TEXT,
       role_id INTEGER,
       FOREIGN KEY(role_id) REFERENCES roles(id)
     )

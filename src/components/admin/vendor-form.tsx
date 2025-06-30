@@ -21,6 +21,7 @@ interface VendorData {
     country: string;
     city: string;
     role_id: number;
+    logo?: string | null;
 }
 
 // Password is not required for admin vendor management.
@@ -30,6 +31,7 @@ const formSchema = z.object({
   phoneNumber: z.string().min(5, "Phone number is required."),
   country: z.string().min(2, "Country is required."),
   city: z.string().min(2, "City is required."),
+  logo: z.string().url("Must be a valid URL").optional().or(z.literal('')),
 });
 
 type VendorFormValues = z.infer<typeof formSchema>;
@@ -50,6 +52,7 @@ export function VendorForm({ vendor, roles }: VendorFormProps) {
       phoneNumber: vendor?.phoneNumber || "",
       country: vendor?.country || "",
       city: vendor?.city || "",
+      logo: vendor?.logo || "",
     },
   });
   
@@ -109,6 +112,19 @@ export function VendorForm({ vendor, roles }: VendorFormProps) {
               <FormLabel>Company Name</FormLabel>
               <FormControl>
                 <Input placeholder="Awesome Gadgets Inc." {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="logo"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Company Logo URL</FormLabel>
+              <FormControl>
+                <Input placeholder="https://example.com/logo.png" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>

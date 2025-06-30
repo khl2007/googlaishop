@@ -9,7 +9,7 @@ export async function GET(request, { params }) {
   try {
     const user = await new Promise((resolve, reject) => {
       const sql = `
-        SELECT u.id, u.username, u.fullName, u.phoneNumber, u.country, u.city, r.id as role_id
+        SELECT u.id, u.username, u.fullName, u.phoneNumber, u.country, u.city, r.id as role_id, u.logo
         FROM users u
         JOIN roles r ON u.role_id = r.id
         WHERE u.id = ?
@@ -31,7 +31,7 @@ export async function GET(request, { params }) {
 // UPDATE a user
 export async function PUT(request, { params }) {
     const { id } = params;
-    const { fullName, username, role_id, phoneNumber, country, city, password } = await request.json();
+    const { fullName, username, role_id, phoneNumber, country, city, password, logo } = await request.json();
     const db = getDatabase();
 
     if (!fullName || !username || !role_id || !phoneNumber || !country || !city) {
@@ -43,8 +43,8 @@ export async function PUT(request, { params }) {
             // If password is provided, hash it and update
             const hashedPassword = await bcrypt.hash(password, 10);
             await new Promise((resolve, reject) => {
-                const sql = 'UPDATE users SET fullName = ?, username = ?, role_id = ?, phoneNumber = ?, country = ?, city = ?, password = ? WHERE id = ?';
-                db.run(sql, [fullName, username, role_id, phoneNumber, country, city, hashedPassword, id], function (err) {
+                const sql = 'UPDATE users SET fullName = ?, username = ?, role_id = ?, phoneNumber = ?, country = ?, city = ?, password = ?, logo = ? WHERE id = ?';
+                db.run(sql, [fullName, username, role_id, phoneNumber, country, city, hashedPassword, logo || null, id], function (err) {
                     if (err) reject(err);
                     if (this.changes === 0) reject(new Error('User not found'));
                     resolve(this);
@@ -53,8 +53,8 @@ export async function PUT(request, { params }) {
         } else {
             // If no password, update other fields
             await new Promise((resolve, reject) => {
-                const sql = 'UPDATE users SET fullName = ?, username = ?, role_id = ?, phoneNumber = ?, country = ?, city = ? WHERE id = ?';
-                db.run(sql, [fullName, username, role_id, phoneNumber, country, city, id], function (err) {
+                const sql = 'UPDATE users SET fullName = ?, username = ?, role_id = ?, phoneNumber = ?, country = ?, city = ?, logo = ? WHERE id = ?';
+                db.run(sql, [fullName, username, role_id, phoneNumber, country, city, logo || null, id], function (err) {
                     if (err) reject(err);
                     if (this.changes === 0) reject(new Error('User not found'));
                     resolve(this);

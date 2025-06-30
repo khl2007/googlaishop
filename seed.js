@@ -36,7 +36,7 @@ function seedDatabase() {
     db.run(`CREATE TABLE IF NOT EXISTS roles (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT UNIQUE)`);
     db.run(`CREATE TABLE IF NOT EXISTS permissions (id INTEGER PRIMARY KEY AUTOINCREMENT, action TEXT, subject TEXT, UNIQUE(action, subject))`);
     db.run(`CREATE TABLE IF NOT EXISTS role_permissions (role_id INTEGER, permission_id INTEGER, FOREIGN KEY(role_id) REFERENCES roles(id), FOREIGN KEY(permission_id) REFERENCES permissions(id), UNIQUE(role_id, permission_id))`);
-    db.run(`CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT UNIQUE, password TEXT, fullName TEXT, role_id INTEGER, phoneNumber TEXT, country TEXT, city TEXT, FOREIGN KEY(role_id) REFERENCES roles(id))`);
+    db.run(`CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT UNIQUE, password TEXT, fullName TEXT, role_id INTEGER, phoneNumber TEXT, country TEXT, city TEXT, logo TEXT, FOREIGN KEY(role_id) REFERENCES roles(id))`);
     db.run(`CREATE TABLE IF NOT EXISTS settings (id INTEGER PRIMARY KEY DEFAULT 1, websiteTitle TEXT, websiteLogo TEXT, timeZone TEXT, country TEXT)`);
 
     // Seed roles
@@ -88,8 +88,8 @@ function seedDatabase() {
         const hashedPassword = bcrypt.hashSync(adminPassword, 10);
         const adminRoleId = roleMap.get('admin');
 
-        const insertUserStmt = db.prepare("INSERT OR IGNORE INTO users (username, password, fullName, role_id, phoneNumber, country, city) VALUES (?, ?, ?, ?, ?, ?, ?)");
-        insertUserStmt.run(adminEmail, hashedPassword, adminFullName, adminRoleId, '555-0100', 'Adminland', 'Admin City', (err) => {
+        const insertUserStmt = db.prepare("INSERT OR IGNORE INTO users (username, password, fullName, role_id, phoneNumber, country, city, logo) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+        insertUserStmt.run(adminEmail, hashedPassword, adminFullName, adminRoleId, '555-0100', 'Adminland', 'Admin City', null, (err) => {
           if (err) console.error('Error inserting admin user:', err.message);
         });
         
@@ -100,7 +100,7 @@ function seedDatabase() {
         const hashedVendorPassword = bcrypt.hashSync(vendorPassword, 10);
         const vendorRoleId = roleMap.get('vendor');
         
-        insertUserStmt.run(vendorEmail, hashedVendorPassword, vendorFullName, vendorRoleId, '555-0101', 'Vendoria', 'Vendor City', function(err) {
+        insertUserStmt.run(vendorEmail, hashedVendorPassword, vendorFullName, vendorRoleId, '555-0101', 'Vendoria', 'Vendor City', 'https://placehold.co/100x100.png', function(err) {
             if (err) {
                 console.error('Error inserting vendor user:', err.message);
                 seedProductsAndCategories(null); // Proceed without a vendor if insertion fails
