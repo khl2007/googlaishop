@@ -107,7 +107,7 @@ function seedDatabase() {
         { title: 'ZenBook Pro Launch', description: 'Power and elegance combined.', image: 'https://placehold.co/1200x500/10b981/ffffff.png', link: '/products/zenbook-pro', buttonText: 'Explore', isActive: 1, order: 2 },
         { title: 'Huge Sale on Accessories', description: 'Up to 50% off on selected items.', image: 'https://placehold.co/1200x500/f59e0b/ffffff.png', link: '/categories/accessories', buttonText: 'View Deals', isActive: 0, order: 3 },
     ];
-    const insertSlideStmt = db.prepare('INSERT OR IGNORE INTO slides (title, description, image, link, buttonText, isActive, "order") VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
+    const insertSlideStmt = db.prepare('INSERT OR IGNORE INTO slides (title, description, image, link, buttonText, isActive, "order") VALUES (?, ?, ?, ?, ?, ?, ?)');
     slides.forEach(s => insertSlideStmt.run(s.title, s.description, s.image, s.link, s.buttonText, s.isActive, s.order));
     insertSlideStmt.finalize();
     console.log('Slides seeded.');
@@ -283,3 +283,5 @@ function seedDatabase() {
 }
 
   
+
+    
