@@ -23,7 +23,7 @@ const optionValueSchema = z.object({
   id: z.string().optional(),
   value: z.string().min(1, "Option value is required."),
   image: z.string().optional().or(z.literal('')),
-  color_hex: z.string().optional().or(z.literal('')).refine(val => !val || /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(val), {
+  color_hex: z.string().optional().or(z.literal('')).refine(val => !val || val === '' || /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(val), {
     message: "Invalid hex color format.",
   }),
 });
@@ -37,15 +37,16 @@ const optionGroupSchema = z.object({
 const variantSchema = z.object({
   id: z.string().optional(),
   options: z.record(z.string()).optional(),
-  price: z.string().min(1, "Price is required.").refine(val => !isNaN(parseFloat(val)) && parseFloat(val) > 0, {
-    message: "Price must be a positive number.",
-  }),
-  stock: z.string().min(1, "Stock is required.").refine(val => {
-    const num = parseInt(val, 10);
-    return !isNaN(num) && String(num) === val && num >= 0;
-  }, {
-    message: "Stock must be a non-negative whole number.",
-  }),
+  price: z.string()
+    .min(1, "Price is required.")
+    .refine((val) => !isNaN(parseFloat(val)) && parseFloat(val) >= 0, {
+      message: "Price must be a valid non-negative number.",
+    }),
+  stock: z.string()
+    .min(1, "Stock is required.")
+    .refine((val) => /^\d+$/.test(val) && parseInt(val, 10) >= 0, {
+      message: "Stock must be a non-negative whole number.",
+    }),
   image: z.string().optional().or(z.literal('')),
 });
 
@@ -59,10 +60,10 @@ const formSchema = z.object({
   optionGroups: z.array(optionGroupSchema).optional(),
   variants: z.array(variantSchema).min(1, "At least one product variant is required."),
   tags: z.string().optional(),
-  isFeatured: z.boolean().default(false),
-  isOnOffer: z.boolean().default(false),
+  isFeatured: z.union([z.boolean(), z.number()]).transform(v => !!v).default(false),
+  isOnOffer: z.union([z.boolean(), z.number()]).transform(v => !!v).default(false),
   weight: z.string().optional().refine(val => val === '' || val === undefined || (!isNaN(parseFloat(val)) && parseFloat(val) >= 0), {
-      message: "Weight must be a positive number.",
+      message: "Weight must be a non-negative number.",
   }),
   dimensions: z.string().optional(),
 }).superRefine((data, ctx) => {
@@ -116,8 +117,8 @@ export function ProductForm({ product, categories, vendors }: ProductFormProps) 
           stock: v.stock != null ? String(v.stock) : '',
       })) || [{ options: {}, price: '', stock: '', image: '' }],
       tags: product?.tags || "",
-      isFeatured: !!product?.isFeatured,
-      isOnOffer: !!product?.isOnOffer,
+      isFeatured: product?.isFeatured || false,
+      isOnOffer: product?.isOnOffer || false,
       weight: product?.weight != null ? String(product.weight) : '',
       dimensions: product?.dimensions || "",
     },
@@ -302,10 +303,10 @@ export function ProductForm({ product, categories, vendors }: ProductFormProps) 
                                 ))}
 
                                 <FormField control={form.control} name={`variants.${index}.price`} render={({ field }) => (
-                                    <FormItem><FormLabel>Price</FormLabel><FormControl><Input type="number" step="0.01" placeholder="99.99" {...field} /></FormControl><FormMessage /></FormItem>
+                                    <FormItem><FormLabel>Price</FormLabel><FormControl><Input type="text" placeholder="99.99" {...field} /></FormControl><FormMessage /></FormItem>
                                 )}/>
                                 <FormField control={form.control} name={`variants.${index}.stock`} render={({ field }) => (
-                                    <FormItem><FormLabel>Stock</FormLabel><FormControl><Input type="number" placeholder="100" {...field} /></FormControl><FormMessage /></FormItem>
+                                    <FormItem><FormLabel>Stock</FormLabel><FormControl><Input type="text" placeholder="100" {...field} /></FormControl><FormMessage /></FormItem>
                                 )}/>
                                 <FormField control={form.control} name={`variants.${index}.image`} render={({ field: { onChange, value, ...rest } }) => {
                                     const fileInputRef = React.useRef<HTMLInputElement>(null);
@@ -420,7 +421,7 @@ export function ProductForm({ product, categories, vendors }: ProductFormProps) 
                 <CardHeader><CardTitle>Shipping</CardTitle></CardHeader>
                 <CardContent className="space-y-4">
                     <FormField control={form.control} name="weight" render={({ field }) => (
-                        <FormItem><FormLabel>Weight (kg)</FormLabel><FormControl><Input type="number" step="0.01" placeholder="0.5" {...field} /></FormControl><FormMessage /></FormItem>
+                        <FormItem><FormLabel>Weight (kg)</FormLabel><FormControl><Input type="text" placeholder="0.5" {...field} /></FormControl><FormMessage /></FormItem>
                     )} />
                     <FormField control={form.control} name="dimensions" render={({ field }) => (
                         <FormItem><FormLabel>Dimensions (L x W x H)</FormLabel><FormControl><Input placeholder="e.g. 20cm x 15cm x 5cm" {...field} /></FormControl><FormMessage /></FormItem>
