@@ -16,6 +16,8 @@ import {
   ShoppingCart,
   X,
   ArrowLeft,
+  Search,
+  Share2,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useCart } from "@/hooks/use-cart";
@@ -25,6 +27,7 @@ import { cn } from "@/lib/utils";
 import type { User } from "@/lib/types";
 import { UserNav } from "./user-nav";
 import { useRouter, usePathname } from "next/navigation";
+import { useToast } from "@/hooks/use-toast";
 
 const navLinks = [
   { href: "/products", label: "All Products" },
@@ -40,6 +43,8 @@ export function Header({ user }: HeaderProps) {
   const { cartItems, cartCount, cartTotal, isCartOpen, setIsCartOpen, removeFromCart, updateQuantity } = useCart();
   const router = useRouter();
   const pathname = usePathname();
+  const { toast } = useToast();
+  const [searchTerm, setSearchTerm] = useState("");
   const isCustomer = !user || user.role === 'customer';
   const [scrolled, setScrolled] = useState(false);
 
@@ -51,6 +56,40 @@ export function Header({ user }: HeaderProps) {
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchTerm.trim()) {
+      router.push(`/search?q=${encodeURIComponent(searchTerm.trim())}`);
+      setSearchTerm("");
+    }
+  };
+
+  const handleShare = async () => {
+    const shareData = {
+      title: document.title,
+      text: "Check this out!",
+      url: window.location.href,
+    };
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData);
+      } else {
+        await navigator.clipboard.writeText(window.location.href);
+        toast({
+          title: "Link Copied!",
+          description: "The page URL has been copied to your clipboard.",
+        });
+      }
+    } catch (err) {
+      console.error("Share failed:", err);
+      toast({
+        title: "Error",
+        description: "Could not share this page.",
+        variant: "destructive",
+      });
+    }
+  };
 
   return (
     <header className={cn(
@@ -95,11 +134,36 @@ export function Header({ user }: HeaderProps) {
 
         <div className="flex items-center gap-2">
           <div className="hidden items-center gap-2 md:flex">
+             <form onSubmit={handleSearch} className="flex items-center gap-1">
+                <Input 
+                    placeholder="Search..." 
+                    className={cn(
+                        "h-9 transition-all duration-300 w-32 focus-within:w-48", 
+                        scrolled 
+                            ? "bg-background" 
+                            : "bg-white/20 text-primary-foreground placeholder:text-primary-foreground/70 border-primary-foreground/50"
+                    )}
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                />
+                <Button type="submit" size="icon" variant="ghost" className={cn("h-9 w-9 flex-shrink-0", !scrolled && "text-primary-foreground hover:bg-white/10")}>
+                    <Search className="h-5 w-5" />
+                </Button>
+            </form>
+            <Button
+              variant="ghost"
+              size="icon"
+              className={cn("h-9 w-9 flex-shrink-0", !scrolled && "text-primary-foreground hover:bg-white/10")}
+              onClick={handleShare}
+            >
+              <Share2 className="h-5 w-5" />
+            </Button>
+            <div className={cn("h-6 w-px", scrolled ? "bg-border" : "bg-primary-foreground/30")}></div>
             {user ? (
                 <UserNav user={user} scrolled={scrolled}/>
             ) : (
                 <>
-                    <Link href="/login" className={cn(buttonVariants({ size: "default" }), scrolled ? buttonVariants({variant: "outline"}) + " rounded-full" : buttonVariants({variant: "ghost"}) + " text-primary-foreground hover:bg-white/10 hover:text-primary-foreground" )}>
+                    <Link href="/login" className={cn(buttonVariants({ variant: scrolled ? 'outline' : 'ghost' }), scrolled ? 'rounded-full' : 'text-primary-foreground hover:bg-white/10 hover:text-primary-foreground')}>
                         Log In
                     </Link>
                     <Link href="/register" className={cn(buttonVariants({ variant: "default" }), "bg-primary text-primary-foreground hover:bg-primary/90", scrolled && "rounded-full")}>
