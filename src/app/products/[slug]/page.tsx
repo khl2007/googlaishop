@@ -5,8 +5,9 @@ import { getProductBySlug } from "@/lib/data";
 import { getUser } from "@/lib/session";
 
 export default async function ProductPage({ params }: { params: { slug: string } }) {
+  const { slug } = params;
   const [product, user] = await Promise.all([
-    getProductBySlug(params.slug),
+    getProductBySlug(slug),
     getUser(),
   ]);
 
