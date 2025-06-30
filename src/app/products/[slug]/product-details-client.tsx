@@ -135,8 +135,7 @@ export function ProductDetailsClient({ product, user }: ProductDetailsClientProp
       {/* Mobile Add to Cart Bar */}
       {showAddToCart && (
         <div
-          className="md:hidden fixed left-0 z-60 w-full border-t bg-background p-4 shadow-[0_-2px_4px_rgba(0,0,0,0.1)]"
-          style={{ bottom: 'calc(4rem + env(safe-area-inset-bottom, 0px))' }}
+          className="md:hidden fixed bottom-0 left-0 z-50 w-full border-t bg-background p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] shadow-[0_-2px_4px_rgba(0,0,0,0.1)]"
         >
           <div className="flex items-center gap-4">
             <div className="flex items-center rounded-md border">

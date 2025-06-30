@@ -1,3 +1,4 @@
+
 import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 import { headers } from 'next/headers';
@@ -43,6 +44,9 @@ export default async function RootLayout({
   
   const showHeaderAndFooter = !isAdminRoute && !isVendorRoute && !isDeliveryRoute;
 
+  // This regex matches /products/ followed by one or more characters, i.e., a product page
+  const isProductPage = /^\/products\/.+/.test(pathname);
+
   return (
     <html lang="en" suppressHydrationWarning>
       <head />
@@ -56,7 +60,8 @@ export default async function RootLayout({
               </PageTransitionWrapper>
             </main>
             {showHeaderAndFooter && <Footer />}
-            {showHeaderAndFooter && <BottomToolbar user={user} />}
+            {/* The BottomToolbar will now be hidden on product detail pages */}
+            {showHeaderAndFooter && !isProductPage && <BottomToolbar user={user} />}
           </div>
           <Toaster />
         </Providers>
