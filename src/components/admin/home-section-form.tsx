@@ -85,7 +85,7 @@ export function HomeSectionForm({ section, formOptions, onFormSubmit, sectionCou
       });
 
       // To get the full object back on create
-      const finalData = isEditMode ? {...section, ...payload} : result;
+      const finalData = isEditMode ? {...section, ...payload, config: JSON.parse(payload.config) } : result;
       onFormSubmit(finalData);
 
     } catch (error: any) {
