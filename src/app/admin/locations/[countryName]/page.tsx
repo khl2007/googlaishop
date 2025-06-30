@@ -13,7 +13,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { MoreHorizontal, PlusCircle, Edit, Trash2, MapPinned } from 'lucide-react';
+import { MoreHorizontal, PlusCircle, Edit, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -88,7 +88,7 @@ export default function ManageCitiesPage({ params }: { params: { countryName: st
       toast({ title: "Success", description: `City ${currentCity ? 'updated' : 'added'} successfully.` });
       setIsDialogOpen(false);
       fetchCities();
-    } catch (err: any) => {
+    } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     } finally {
       setIsSubmitting(false);
@@ -106,7 +106,7 @@ export default function ManageCitiesPage({ params }: { params: { countryName: st
       }
       toast({ title: "Success", description: "City deleted successfully." });
       setCities(cities.filter(c => c.id !== currentCity.id));
-    } catch (err: any) => {
+    } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     } finally {
       setIsDeleteDialogOpen(false);
@@ -156,12 +156,6 @@ export default function ManageCitiesPage({ params }: { params: { countryName: st
                             </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                                <DropdownMenuItem asChild>
-                                    <Link href={`/admin/locations/${countryName}/${city.id}/areas`}>
-                                        <MapPinned className="mr-2 h-4 w-4" />
-                                        Manage Areas
-                                    </Link>
-                                </DropdownMenuItem>
                                 <DropdownMenuItem onClick={() => handleOpenDialog(city)}><Edit className="mr-2 h-4 w-4" />Edit City</DropdownMenuItem>
                                 <DropdownMenuItem className="text-destructive" onClick={() => { setCurrentCity(city); setIsDeleteDialogOpen(true); }}><Trash2 className="mr-2 h-4 w-4" />Delete City</DropdownMenuItem>
                             </DropdownMenuContent>
