@@ -13,7 +13,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import type { Address } from "@/lib/types";
-import { Loader2, Plus, Edit, Trash2, Home, Search } from "lucide-react";
+import { Loader2, Plus, Edit, Trash2, Home, Search, Star } from "lucide-react";
 import { AddressAutocomplete } from "@/components/address-autocomplete";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
@@ -39,6 +39,7 @@ export default function AddressesPage() {
   const [addressToDelete, setAddressToDelete] = useState<Address | null>(null);
   const [isAutocompleteOpen, setIsAutocompleteOpen] = useState(false);
   const { toast } = useToast();
+  const [isSettingPrimary, setIsSettingPrimary] = useState<number | null>(null);
 
   const [cities, setCities] = useState<string[]>([]);
   const [isCitiesLoading, setIsCitiesLoading] = useState(true);
@@ -158,6 +159,23 @@ export default function AddressesPage() {
       setAddressToDelete(null);
     }
   };
+
+  const handleSetPrimary = async (addressId: number) => {
+    setIsSettingPrimary(addressId);
+    try {
+        const res = await fetch(`/api/user/addresses/${addressId}/set-primary`, { method: 'PUT' });
+        if (!res.ok) {
+            const errorData = await res.json();
+            throw new Error(errorData.message || 'Failed to set primary address');
+        }
+        toast({ title: "Success", description: "Primary address updated." });
+        await fetchAddresses(); // Refresh the list to show the new primary address
+    } catch (error: any) {
+        toast({ title: "Error", description: error.message, variant: "destructive" });
+    } finally {
+        setIsSettingPrimary(null);
+    }
+  };
   
   const handleAutocompleteSelect = (address: { street: string; city: string; state: string; zip: string; country: string; }) => {
     form.setValue("street", address.street);
@@ -199,6 +217,21 @@ export default function AddressesPage() {
                 <p className="text-sm text-muted-foreground">{address.country}</p>
               </CardContent>
               <CardFooter className="flex justify-end gap-2 bg-muted/50 p-3">
+                {!address.isPrimary && (
+                  <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleSetPrimary(address.id)}
+                      disabled={isSettingPrimary === address.id}
+                  >
+                      {isSettingPrimary === address.id ? (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : (
+                          <Star className="mr-2 h-4 w-4" />
+                      )}
+                      Set as Primary
+                  </Button>
+                )}
                 <Button variant="outline" size="sm" onClick={() => openDialog(address)}>
                   <Edit className="mr-2 h-4 w-4" /> Edit
                 </Button>
