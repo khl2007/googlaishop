@@ -428,3 +428,76 @@ export async function updatePaymentMethods(methods) {
         });
     });
 }
+
+export async function getCountriesWithCityCount() {
+    const db = getDatabase();
+    return new Promise((resolve, reject) => {
+        const sql = `
+            SELECT country_name, COUNT(id) as city_count
+            FROM cities
+            GROUP BY country_name
+            ORDER BY country_name
+        `;
+        db.all(sql, (err, rows) => {
+            if (err) {
+                console.error('Database error in getCountriesWithCityCount:', err);
+                return reject(new Error('Failed to fetch country city counts.'));
+            }
+            resolve(rows);
+        });
+    });
+}
+
+export async function getCitiesByCountry(countryName) {
+    const db = getDatabase();
+    return new Promise((resolve, reject) => {
+        const sql = `SELECT * FROM cities WHERE country_name = ? ORDER BY name`;
+        db.all(sql, [countryName], (err, rows) => {
+            if (err) {
+                console.error('Database error in getCitiesByCountry:', err);
+                return reject(new Error('Failed to fetch cities.'));
+            }
+            resolve(rows);
+        });
+    });
+}
+
+export async function addCity(name, country_name) {
+    const db = getDatabase();
+    return new Promise((resolve, reject) => {
+        const sql = 'INSERT INTO cities (name, country_name) VALUES (?, ?)';
+        db.run(sql, [name, country_name], function(err) {
+            if (err) {
+                if (err.code === 'SQLITE_CONSTRAINT') {
+                    return reject(new Error('This city already exists for this country.'));
+                }
+                return reject(err);
+            }
+            resolve({ id: this.lastID, name, country_name });
+        });
+    });
+}
+
+export async function updateCity(id, name) {
+    const db = getDatabase();
+    return new Promise((resolve, reject) => {
+        const sql = 'UPDATE cities SET name = ? WHERE id = ?';
+        db.run(sql, [name, id], function(err) {
+            if (err) return reject(err);
+            if (this.changes === 0) return reject(new Error("City not found."));
+            resolve(this);
+        });
+    });
+}
+
+export async function deleteCity(id) {
+    const db = getDatabase();
+    return new Promise((resolve, reject) => {
+        const sql = 'DELETE FROM cities WHERE id = ?';
+        db.run(sql, [id], function(err) {
+            if (err) return reject(err);
+            if (this.changes === 0) return reject(new Error("City not found."));
+            resolve(this);
+        });
+    });
+}

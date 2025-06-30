@@ -2,6 +2,7 @@ const sqlite3 = require('sqlite3').verbose();
 const fs = require('fs');
 const bcrypt = require('bcrypt');
 const { allCategories, allProducts } = require('./src/lib/mock-data.js');
+const { citiesByCountry } = require('./src/lib/cities.js');
 
 const db = new sqlite3.Database('./database.sqlite', (err) => {
   if (err) {
@@ -39,6 +40,7 @@ function seedDatabase() {
     db.run(`CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT UNIQUE, password TEXT, fullName TEXT, role_id INTEGER, phoneNumber TEXT, country TEXT, city TEXT, logo TEXT, FOREIGN KEY(role_id) REFERENCES roles(id))`);
     db.run(`CREATE TABLE IF NOT EXISTS settings (id INTEGER PRIMARY KEY DEFAULT 1, websiteTitle TEXT, websiteLogo TEXT, timeZone TEXT, country TEXT)`);
     db.run(`CREATE TABLE IF NOT EXISTS payment_methods (id INTEGER PRIMARY KEY, provider TEXT UNIQUE NOT NULL, enabled BOOLEAN DEFAULT 0, config TEXT)`);
+    db.run(`CREATE TABLE IF NOT EXISTS cities (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, country_name TEXT NOT NULL, UNIQUE(name, country_name))`);
 
     // Seed roles
     const insertRoleStmt = db.prepare('INSERT OR IGNORE INTO roles (name) VALUES (?)');
@@ -64,6 +66,16 @@ function seedDatabase() {
     paymentMethods.forEach(pm => insertPaymentStmt.run(pm.provider, pm.enabled, pm.config));
     insertPaymentStmt.finalize();
     console.log('Payment methods seeded.');
+
+    // Seed Cities
+    const insertCityStmt = db.prepare('INSERT OR IGNORE INTO cities (name, country_name) VALUES (?, ?)');
+    Object.entries(citiesByCountry).forEach(([country, cities]) => {
+        cities.forEach(city => {
+            insertCityStmt.run(city, country);
+        });
+    });
+    insertCityStmt.finalize();
+    console.log('Cities seeded.');
 
     // Seed permissions
     const insertPermissionStmt = db.prepare('INSERT OR IGNORE INTO permissions (action, subject) VALUES (?, ?)');

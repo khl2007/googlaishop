@@ -11,7 +11,6 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { citiesByCountry } from "@/lib/cities";
 
 export default function VendorRegisterPage() {
   const router = useRouter();
@@ -24,6 +23,7 @@ export default function VendorRegisterPage() {
   const [cities, setCities] = useState<string[]>([]);
   const [city, setCity] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isCitiesLoading, setIsCitiesLoading] = useState(false);
 
   useEffect(() => {
     const fetchDefaultCountry = async () => {
@@ -33,7 +33,6 @@ export default function VendorRegisterPage() {
           const settings = await response.json();
           const countryName = settings.country || "";
           setCountry(countryName);
-          setCities(citiesByCountry[countryName] || []);
         }
       } catch (error) {
         console.error("Failed to fetch settings for default country:", error);
@@ -41,6 +40,29 @@ export default function VendorRegisterPage() {
     };
     fetchDefaultCountry();
   }, []);
+
+  useEffect(() => {
+    if (country) {
+      const fetchCities = async () => {
+        setIsCitiesLoading(true);
+        try {
+          const res = await fetch(`/api/cities?country=${encodeURIComponent(country)}`);
+          if (res.ok) {
+            const data = await res.json();
+            setCities(data);
+          } else {
+            setCities([]);
+          }
+        } catch (error) {
+          console.error("Failed to fetch cities:", error);
+          setCities([]);
+        } finally {
+          setIsCitiesLoading(false);
+        }
+      };
+      fetchCities();
+    }
+  }, [country]);
 
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -158,10 +180,10 @@ export default function VendorRegisterPage() {
                         value={city}
                         onValueChange={setCity}
                         required
-                        disabled={isLoading || cities.length === 0}
+                        disabled={isLoading || isCitiesLoading || cities.length === 0}
                     >
                         <SelectTrigger id="city">
-                            <SelectValue placeholder={cities.length > 0 ? "Select a city" : "No cities available"} />
+                            <SelectValue placeholder={isCitiesLoading ? "Loading cities..." : (cities.length > 0 ? "Select a city" : "No cities available")} />
                         </SelectTrigger>
                         <SelectContent>
                             {cities.map((cityName) => (

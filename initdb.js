@@ -13,6 +13,7 @@ db.serialize(() => {
   db.run("DROP TABLE IF EXISTS roles");
   db.run("DROP TABLE IF EXISTS settings");
   db.run("DROP TABLE IF EXISTS payment_methods");
+  db.run("DROP TABLE IF EXISTS cities");
 
 
   // Create roles table
@@ -64,6 +65,10 @@ db.serialize(() => {
       FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
     )
   `);
+  
+  // Create cities table
+  db.run("CREATE TABLE cities (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, country_name TEXT NOT NULL, UNIQUE(name, country_name))");
+
 
   // Keep other tables
   db.run("CREATE TABLE categories (id TEXT PRIMARY KEY, name TEXT, slug TEXT UNIQUE, image TEXT, parentId TEXT, FOREIGN KEY(parentId) REFERENCES categories(id) ON DELETE SET NULL)");
