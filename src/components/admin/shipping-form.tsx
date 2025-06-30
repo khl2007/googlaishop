@@ -60,6 +60,7 @@ export function ShippingForm({ method, cities, areas }: ShippingFormProps) {
   const { toast } = useToast();
   const isEditMode = !!method;
   const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const isInitialRender = React.useRef(true);
   
   const parsedConfig = method?.config ? JSON.parse(method.config) : {};
 
@@ -86,6 +87,12 @@ export function ShippingForm({ method, cities, areas }: ShippingFormProps) {
   const [logoPreview, setLogoPreview] = React.useState<string | null>(method?.logo || null);
 
   React.useEffect(() => {
+    // This effect should only run on subsequent renders when the cost_type actually changes.
+    if (isInitialRender.current) {
+      isInitialRender.current = false;
+      return;
+    }
+
     // When cost type changes, reset irrelevant fields to prevent validation issues
     if (watchedCostType === 'weight') {
       setValue('default_cost', undefined as any);
