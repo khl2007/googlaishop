@@ -168,7 +168,7 @@ export function Header({ user }: HeaderProps) {
               <Link
                 key={link.href}
                 href={link.href}
-                className={cn("text-base md:text-lg font-medium transition-colors", scrolled ? "text-muted-foreground hover:text-foreground" : "text-primary-foreground/80 hover:text-primary-foreground")}
+                className={cn("text-sm font-medium transition-colors", scrolled ? "text-muted-foreground hover:text-foreground" : "text-primary-foreground/80 hover:text-primary-foreground")}
               >
                 {link.label}
               </Link>
@@ -207,10 +207,10 @@ export function Header({ user }: HeaderProps) {
                 <UserNav user={user} scrolled={scrolled}/>
             ) : (
                 <>
-                    <Link href="/login" className={cn(buttonVariants({ variant: scrolled ? 'outline' : 'ghost' }), 'text-base md:text-lg', scrolled ? 'rounded-full' : 'text-primary-foreground hover:bg-white/10 hover:text-primary-foreground')}>
+                    <Link href="/login" className={cn(buttonVariants({ variant: scrolled ? 'outline' : 'ghost' }), scrolled ? 'rounded-full' : 'text-primary-foreground hover:bg-white/10 hover:text-primary-foreground')}>
                         Log In
                     </Link>
-                    <Link href="/register" className={cn(buttonVariants({ variant: "default" }), "text-base md:text-lg", "bg-primary text-primary-foreground hover:bg-primary/90", scrolled && "rounded-full")}>
+                    <Link href="/register" className={cn(buttonVariants({ variant: "default" }), "bg-primary text-primary-foreground hover:bg-primary/90", scrolled && "rounded-full")}>
                         Sign Up
                     </Link>
                 </>
