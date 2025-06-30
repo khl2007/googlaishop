@@ -2,9 +2,9 @@ import { getShippingMethodById, getAllCitiesWithCountry, getAllAreasWithCity } f
 import { ShippingForm } from "@/components/admin/shipping-form";
 import { notFound } from "next/navigation";
 
-export default async function EditShippingPage({ params }: { params: { id: string } }) {
+export default async function EditShippingPage({ params: { id } }: { params: { id: string } }) {
   const [method, cities, areas] = await Promise.all([
-    getShippingMethodById(params.id),
+    getShippingMethodById(id),
     getAllCitiesWithCountry(),
     getAllAreasWithCity()
   ]);
