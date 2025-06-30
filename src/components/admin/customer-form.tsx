@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useForm, type SubmitHandler } from "react-hook-form";
@@ -63,8 +64,6 @@ export function CustomerForm({ customer, roles }: CustomerFormProps) {
     },
   });
   
-  const isSubmitting = form.formState.isSubmitting;
-
   const onSubmit: SubmitHandler<z.infer<typeof baseSchema & { password?: string }>> = async (data) => {
     const customerRole = roles.find(role => role.name === 'customer');
     if (!customerRole) {
@@ -135,8 +134,8 @@ export function CustomerForm({ customer, roles }: CustomerFormProps) {
             )}/>
         </div>
         <div className="flex items-center gap-4">
-            <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            <Button type="submit" disabled={form.formState.isSubmitting}>
+            {form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {isEditMode ? "Save Changes" : "Create Customer"}
             </Button>
 
