@@ -1,13 +1,40 @@
-import { getActiveSlides } from "@/lib/data";
+"use client";
+
+import { useEffect, useState } from "react";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import Image from "next/image";
 import Link from "next/link";
 import { Button } from "./ui/button";
 import { ArrowRight } from "lucide-react";
 import Autoplay from "embla-carousel-autoplay";
+import type { Slide } from "@/lib/types";
+import { Skeleton } from "@/components/ui/skeleton";
 
-export async function HeroSlider() {
-    const slides = await getActiveSlides();
+export function HeroSlider() {
+    const [slides, setSlides] = useState<Slide[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchSlides = async () => {
+            setLoading(true);
+            try {
+                const res = await fetch('/api/slides');
+                if (!res.ok) throw new Error('Failed to fetch slides');
+                const data = await res.json();
+                setSlides(data);
+            } catch (error) {
+                console.error(error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchSlides();
+    }, []);
+
+    if (loading) {
+        return <Skeleton className="w-full aspect-[16/7]" />;
+    }
 
     if (!slides || slides.length === 0) {
         return (
@@ -30,6 +57,7 @@ export async function HeroSlider() {
             plugins={[
                 Autoplay({
                   delay: 5000,
+                  stopOnInteraction: false,
                 }),
             ]}
             opts={{
@@ -37,7 +65,7 @@ export async function HeroSlider() {
             }}
         >
             <CarouselContent>
-                {slides.map((slide) => (
+                {slides.map((slide, index) => (
                     <CarouselItem key={slide.id}>
                         <div className="relative aspect-[16/7] w-full overflow-hidden">
                             <Image
@@ -45,7 +73,7 @@ export async function HeroSlider() {
                                 alt={slide.title}
                                 fill
                                 className="object-cover"
-                                priority={slide.order === 1}
+                                priority={index === 0}
                                 data-ai-hint="hero slider"
                             />
                             <div className="absolute inset-0 bg-gradient-to-r from-black/60 to-black/20" />
