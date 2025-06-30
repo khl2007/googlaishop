@@ -129,7 +129,6 @@ export function ProductForm({ product, categories, vendors }: ProductFormProps) 
       weight: product?.weight,
       dimensions: product?.dimensions || "",
     },
-    mode: 'onBlur',
   });
 
   const { fields: groupFields, append: appendGroup, remove: removeGroup } = useFieldArray({
