@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState } from "react";
@@ -33,7 +34,11 @@ export function HeroSlider() {
     }, []);
 
     if (loading) {
-        return <Skeleton className="w-full aspect-[16/7]" />;
+        return (
+            <section className="my-8 md:my-12">
+                <Skeleton className="w-full aspect-[16/7] rounded-xl" />
+            </section>
+        );
     }
 
     if (!slides || slides.length === 0) {
@@ -52,54 +57,56 @@ export function HeroSlider() {
     }
 
     return (
-        <Carousel 
-            className="w-full"
-            plugins={[
-                Autoplay({
-                  delay: 5000,
-                  stopOnInteraction: false,
-                }),
-            ]}
-            opts={{
-                loop: true,
-            }}
-        >
-            <CarouselContent>
-                {slides.map((slide, index) => (
-                    <CarouselItem key={slide.id}>
-                        <div className="relative aspect-[16/7] w-full overflow-hidden">
-                            <Image
-                                src={slide.image}
-                                alt={slide.title}
-                                fill
-                                className="object-cover"
-                                priority={index === 0}
-                                data-ai-hint="hero slider"
-                            />
-                            <div className="absolute inset-0 bg-gradient-to-r from-black/60 to-black/20" />
-                            <div className="absolute inset-0 flex items-center justify-start p-8 md:p-16 lg:p-24">
-                                <div className="max-w-md text-left text-white">
-                                    <h1 className="mb-4 font-headline text-3xl font-extrabold tracking-tight md:text-4xl lg:text-5xl">
-                                        {slide.title}
-                                    </h1>
-                                    <p className="mb-8 text-md text-white/90 md:text-lg">
-                                        {slide.description}
-                                    </p>
-                                    {slide.link && slide.buttonText && (
-                                        <Button asChild size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90">
-                                            <Link href={slide.link}>
-                                                {slide.buttonText} <ArrowRight className="ml-2 h-5 w-5" />
-                                            </Link>
-                                        </Button>
-                                    )}
+        <section className="my-8 md:my-12">
+            <Carousel 
+                className="w-full"
+                plugins={[
+                    Autoplay({
+                      delay: 5000,
+                      stopOnInteraction: false,
+                    }),
+                ]}
+                opts={{
+                    loop: true,
+                }}
+            >
+                <CarouselContent>
+                    {slides.map((slide, index) => (
+                        <CarouselItem key={slide.id}>
+                            <div className="relative aspect-[16/7] w-full overflow-hidden rounded-xl">
+                                <Image
+                                    src={slide.image}
+                                    alt={slide.title}
+                                    fill
+                                    className="object-cover"
+                                    priority={index === 0}
+                                    data-ai-hint="hero slider"
+                                />
+                                <div className="absolute inset-0 bg-gradient-to-r from-black/60 to-black/20" />
+                                <div className="absolute inset-0 flex items-center justify-start p-8 md:p-16 lg:p-24">
+                                    <div className="max-w-md text-left text-white">
+                                        <h1 className="mb-4 font-headline text-3xl font-extrabold tracking-tight md:text-4xl lg:text-5xl">
+                                            {slide.title}
+                                        </h1>
+                                        <p className="mb-8 text-md text-white/90 md:text-lg">
+                                            {slide.description}
+                                        </p>
+                                        {slide.link && slide.buttonText && (
+                                            <Button asChild size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90">
+                                                <Link href={slide.link}>
+                                                    {slide.buttonText} <ArrowRight className="ml-2 h-5 w-5" />
+                                                </Link>
+                                            </Button>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    </CarouselItem>
-                ))}
-            </CarouselContent>
-            <CarouselPrevious className="absolute left-4 top-1/2 -translate-y-1/2 text-white bg-black/30 hover:bg-black/50 border-none" />
-            <CarouselNext className="absolute right-4 top-1/2 -translate-y-1/2 text-white bg-black/30 hover:bg-black/50 border-none" />
-        </Carousel>
+                        </CarouselItem>
+                    ))}
+                </CarouselContent>
+                <CarouselPrevious className="absolute left-4 top-1/2 -translate-y-1/2 text-white bg-black/30 hover:bg-black/50 border-none" />
+                <CarouselNext className="absolute right-4 top-1/2 -translate-y-1/2 text-white bg-black/30 hover:bg-black/50 border-none" />
+            </Carousel>
+        </section>
     );
 }
