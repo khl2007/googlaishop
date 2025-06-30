@@ -37,8 +37,14 @@ const optionGroupSchema = z.object({
 const variantSchema = z.object({
   id: z.string().optional(),
   options: z.record(z.string()).optional(),
-  price: z.string().min(1, "Price is required."),
-  stock: z.string().min(1, "Stock is required."),
+  price: z.preprocess(
+    (val) => (val === "" ? undefined : val),
+    z.coerce.number({ required_error: "Price is required." }).min(0, "Price must be non-negative.")
+  ),
+  stock: z.preprocess(
+    (val) => (val === "" ? undefined : val),
+    z.coerce.number({ required_error: "Stock is required." }).int("Stock must be a whole number.").min(0, "Stock must be non-negative.")
+  ),
   image: z.string().optional().or(z.literal('')),
 });
 
@@ -54,10 +60,30 @@ const formSchema = z.object({
   tags: z.string().optional(),
   isFeatured: z.union([z.boolean(), z.number()]).transform(v => !!v).default(false),
   isOnOffer: z.union([z.boolean(), z.number()]).transform(v => !!v).default(false),
-  weight: z.string().optional().refine(val => val === '' || val === undefined || (!isNaN(parseFloat(val)) && parseFloat(val) >= 0), {
-      message: "Weight must be a non-negative number.",
-  }),
+  weight: z.preprocess(
+      (val) => (val === "" || val === null ? undefined : val),
+      z.coerce.number({ invalid_type_error: "Weight must be a number." }).min(0, "Weight must be non-negative.").optional()
+  ),
   dimensions: z.string().optional(),
+}).superRefine((data, ctx) => {
+    if (data.optionGroups && data.optionGroups.length > 0) {
+        data.optionGroups.forEach((group) => {
+            // Only validate for groups that have a name, which prevents validation on new, empty groups
+            if (group.name) {
+                data.variants.forEach((variant, vIndex) => {
+                    // Check if the variant has a selected option for this group
+                    if (!variant.options || !variant.options[group.name] || variant.options[group.name] === '') {
+                        ctx.addIssue({
+                            code: z.ZodIssueCode.custom,
+                            message: "Required",
+                            // This path correctly points to the specific dropdown in the form
+                            path: [`variants`, vIndex, `options`, group.name],
+                        });
+                    }
+                });
+            }
+        });
+    }
 });
 
 type ProductFormValues = z.infer<typeof formSchema>;
@@ -119,36 +145,11 @@ export function ProductForm({ product, categories, vendors }: ProductFormProps) 
   const isSubmitting = form.formState.isSubmitting;
 
   const onSubmit: SubmitHandler<ProductFormValues> = async (data) => {
-    // Manual validation for variant options
-    let hasError = false;
-    data.optionGroups?.forEach((group) => {
-      if (!group.name) return; // Ignore groups without a name
-
-      data.variants.forEach((variant, variantIndex) => {
-        if (!variant.options?.[group.name]) {
-          form.setError(`variants.${variantIndex}.options.${group.name}` as const, {
-            type: 'manual',
-            message: 'Required',
-          });
-          hasError = true;
-        }
-      });
-    });
-
-    if (hasError) {
-      toast({
-        title: 'Missing Variant Options',
-        description: 'Please select an option for each variant dropdown.',
-        variant: 'destructive',
-      });
-      return; // Stop submission
-    }
-
     const transformedData = {
         ...data,
         vendorId: parseInt(data.vendorId),
         optionGroups: data.optionGroups ? JSON.stringify(data.optionGroups) : "[]",
-        weight: data.weight ? parseFloat(data.weight) : undefined,
+        weight: data.weight,
         variants: data.variants.map(v => {
             const optionValues = v.options ? Object.values(v.options) : [];
             const variantName = optionValues.length > 0 ? optionValues.join(' / ') : data.name;
@@ -157,8 +158,8 @@ export function ProductForm({ product, categories, vendors }: ProductFormProps) 
                 id: v.id,
                 name: variantName,
                 options: JSON.stringify(v.options || {}),
-                price: parseFloat(v.price),
-                stock: parseInt(v.stock, 10),
+                price: v.price,
+                stock: v.stock,
             }
         })
     };
@@ -197,7 +198,7 @@ export function ProductForm({ product, categories, vendors }: ProductFormProps) 
     }
   };
   
-  const hasOptionGroups = watchedGroups && watchedGroups.length > 0;
+  const hasOptionGroups = watchedGroups && watchedGroups.length > 0 && watchedGroups.some(g => g.name);
 
   return (
     <Form {...form}>
@@ -283,7 +284,7 @@ export function ProductForm({ product, categories, vendors }: ProductFormProps) 
                             )}
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                                {hasOptionGroups && watchedGroups.map((group) => {
+                                {watchedGroups && watchedGroups.map((group) => {
                                     if (!group.name) return null; // Don't render if group name is not set
                                     return (
                                         <FormField
@@ -545,3 +546,5 @@ function OptionValuesArray({ groupIndex, isEditMode }: { groupIndex: number, isE
     </div>
   );
 }
+
+    
