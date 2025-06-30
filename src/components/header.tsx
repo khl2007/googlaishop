@@ -133,12 +133,11 @@ export function Header({ user }: HeaderProps) {
         </div>
 
         <div className="flex items-center gap-2">
-          <div className="hidden items-center gap-2 md:flex">
-             <form onSubmit={handleSearch} className="flex items-center gap-1">
+            <form onSubmit={handleSearch} className="flex items-center gap-1">
                 <Input 
                     placeholder="Search..." 
                     className={cn(
-                        "h-9 transition-all duration-300 w-32 focus-within:w-48", 
+                        "h-9 transition-all duration-300 w-24 md:w-32 focus-within:w-32 md:focus-within:w-48", 
                         scrolled 
                             ? "bg-background" 
                             : "bg-white/20 text-primary-foreground placeholder:text-primary-foreground/70 border-primary-foreground/50"
@@ -158,6 +157,7 @@ export function Header({ user }: HeaderProps) {
             >
               <Share2 className="h-5 w-5" />
             </Button>
+          <div className="hidden items-center gap-2 md:flex">
             <div className={cn("h-6 w-px", scrolled ? "bg-border" : "bg-primary-foreground/30")}></div>
             {user ? (
                 <UserNav user={user} scrolled={scrolled}/>
