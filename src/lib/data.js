@@ -383,6 +383,23 @@ export async function getPaymentMethods() {
     });
 }
 
+export async function getEnabledPaymentMethods() {
+    const db = getDatabase();
+    return new Promise((resolve, reject) => {
+        db.all('SELECT * FROM payment_methods WHERE enabled = 1 ORDER BY id', (err, rows) => {
+            if (err) {
+                console.error('Database error in getEnabledPaymentMethods:', err);
+                return reject(new Error('Failed to fetch payment methods.'));
+            }
+            const methods = rows.map(row => ({
+                ...row,
+                config: row.config ? JSON.parse(row.config) : {},
+            }));
+            resolve(methods);
+        });
+    });
+}
+
 export async function updatePaymentMethods(methods) {
     const db = getDatabase();
     const sql = `UPDATE payment_methods SET enabled = ?, config = ? WHERE provider = ?`;

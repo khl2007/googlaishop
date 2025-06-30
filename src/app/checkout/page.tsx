@@ -12,7 +12,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
 import { useEffect, useState } from "react";
-import { Loader2, Search } from "lucide-react";
+import { Loader2, Search, CreditCard, Wallet, DollarSign } from "lucide-react";
 import type { Address } from "@/lib/types";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -33,6 +33,15 @@ const addressFormSchema = z.object({
 
 type AddressFormValues = z.infer<typeof addressFormSchema>;
 
+interface PaymentMethod {
+    id: number;
+    provider: string;
+    enabled: number;
+    config: {
+        description?: string;
+    }
+}
+
 export default function CheckoutPage() {
   const { cartItems, cartTotal, clearCart } = useCart();
   const router = useRouter();
@@ -43,6 +52,10 @@ export default function CheckoutPage() {
   const [selectedAddressId, setSelectedAddressId] = useState<string>('');
   const [isAddingNewAddress, setIsAddingNewAddress] = useState(false);
   const [isAutocompleteOpen, setIsAutocompleteOpen] = useState(false);
+
+  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
+  const [loadingPaymentMethods, setLoadingPaymentMethods] = useState(true);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string>('');
 
   const form = useForm<AddressFormValues>({
     resolver: zodResolver(addressFormSchema),
@@ -65,11 +78,9 @@ export default function CheckoutPage() {
       const data = await res.json();
       setAddresses(data);
       if (data.length > 0) {
-        // Pre-select the first (primary) address
         setSelectedAddressId(String(data[0].id));
         setIsAddingNewAddress(false);
       } else {
-        // If no addresses, show the new address form
         setIsAddingNewAddress(true);
         setSelectedAddressId('new');
       }
@@ -80,15 +91,31 @@ export default function CheckoutPage() {
     }
   };
 
+  const fetchPaymentMethods = async () => {
+    setLoadingPaymentMethods(true);
+    try {
+        const res = await fetch('/api/payment-methods');
+        if (!res.ok) throw new Error("Failed to fetch payment methods");
+        const data = await res.json();
+        setPaymentMethods(data);
+        if (data.length > 0) {
+            setSelectedPaymentMethod(data[0].provider);
+        }
+    } catch (error: any) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    } finally {
+      setLoadingPaymentMethods(false);
+    }
+  };
+
   useEffect(() => {
     if (cartItems.length > 0) {
         fetchAddresses();
+        fetchPaymentMethods();
     }
   }, [cartItems.length]);
 
   useEffect(() => {
-    // Redirect if cart is empty, but only after initial check.
-    // This prevents redirecting before the cart is loaded from localStorage.
     if (cartItems.length === 0 && !useCart.length) {
       const timeoutId = setTimeout(() => {
         if (useCart.length === 0) {
@@ -111,7 +138,7 @@ export default function CheckoutPage() {
             if (!res.ok) throw new Error("Failed to save address");
             toast({ title: "Success", description: "Address saved successfully." });
             form.reset();
-            await fetchAddresses(); // Refetch to get the new address and select it
+            await fetchAddresses();
         } catch (error: any) {
             toast({ title: "Error", description: error.message, variant: "destructive" });
         }
@@ -121,34 +148,46 @@ export default function CheckoutPage() {
   const handlePlaceOrder = (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!selectedAddressId || selectedAddressId === 'new') {
-        toast({ title: "Error", description: "Please select or add a shipping address.", variant: "destructive" });
+    if (!selectedAddressId || (selectedAddressId === 'new' && !form.formState.isValid)) {
+        toast({ title: "Error", description: "Please select or add a valid shipping address.", variant: "destructive" });
+        return;
+    }
+
+    if (!selectedPaymentMethod) {
+        toast({ title: "Error", description: "Please select a payment method.", variant: "destructive" });
         return;
     }
     
-    toast({
-      title: "Order Placed!",
-      description: "Thank you for your purchase. Your order is being processed.",
-    });
-    clearCart();
-    router.push("/");
-  }
+    // Clear cart before redirecting to payment page for Stripe/PayPal
+    // to prevent users from modifying it during payment.
+    if (selectedPaymentMethod !== 'cash') {
+        clearCart();
+        router.push(`/checkout/${selectedPaymentMethod}`);
+    } else {
+        toast({
+          title: "Order Placed!",
+          description: "Thank you for your purchase. Your order is being processed.",
+        });
+        clearCart();
+        router.push("/checkout/cash-success");
+    }
+  };
 
   const handleAutocompleteSelect = (address: { street: string; city: string; state: string; zip: string; country: string; }) => {
     form.setValue("street", address.street);
     form.setValue("city", address.city);
-    form.setValue("state", address.state);
+    form.setValue("state", address.state ?? "");
     form.setValue("zip", address.zip);
     form.setValue("country", address.country);
     setIsAutocompleteOpen(false);
   };
 
-  if (cartItems.length === 0 || loadingAddresses) {
+  if (cartItems.length === 0 || loadingAddresses || loadingPaymentMethods) {
     return (
       <div className="flex min-h-[calc(100vh-10rem)] items-center justify-center">
         <div className="flex items-center gap-2">
           <Loader2 className="h-8 w-8 animate-spin" />
-          <p className="text-muted-foreground">{cartItems.length === 0 ? "Redirecting..." : "Loading addresses..."}</p>
+          <p className="text-muted-foreground">{cartItems.length === 0 ? "Redirecting..." : "Loading..."}</p>
         </div>
       </div>
     );
@@ -163,86 +202,103 @@ export default function CheckoutPage() {
     </div>
   );
 
+  const getProviderTitle = (provider: string) => {
+    switch(provider) {
+        case 'cash': return 'Cash on Delivery';
+        case 'stripe': return 'Stripe';
+        case 'paypal': return 'PayPal';
+        default: return provider;
+    }
+  };
+
+  const getProviderIcon = (provider: string) => {
+      switch(provider) {
+          case 'cash': return <DollarSign className="h-5 w-5" />;
+          case 'stripe': return <CreditCard className="h-5 w-5" />;
+          case 'paypal': return <Wallet className="h-5 w-5" />;
+          default: return <CreditCard className="h-5 w-5" />;
+      }
+  };
+
   return (
     <div className="container mx-auto my-12 px-4">
       <h1 className="mb-8 text-center text-4xl font-extrabold font-headline tracking-tight lg:text-5xl">Checkout</h1>
-      <form onSubmit={handlePlaceOrder} className="grid grid-cols-1 gap-12 lg:grid-cols-2">
-        <Card className="lg:col-span-1 self-start">
-          <CardHeader>
-            <CardTitle>Shipping Information</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <RadioGroup value={selectedAddressId} onValueChange={(value) => {
-                setSelectedAddressId(value);
-                setIsAddingNewAddress(value === 'new');
-            }}>
-                {addresses.map((address) => (
-                    <Label key={address.id} htmlFor={String(address.id)} className="flex items-start gap-4 rounded-md border p-4 cursor-pointer hover:bg-accent has-[[data-state=checked]]:bg-accent">
-                         <RadioGroupItem value={String(address.id)} id={String(address.id)} className="mt-1" />
-                         {renderAddress(address)}
-                    </Label>
-                ))}
-                <Label htmlFor="new" className="flex items-start gap-4 rounded-md border p-4 cursor-pointer hover:bg-accent has-[[data-state=checked]]:bg-accent">
-                    <RadioGroupItem value="new" id="new" className="mt-1" />
-                    <div>
-                        <p className="font-semibold">Add a new address</p>
-                    </div>
-                </Label>
-            </RadioGroup>
+      <form onSubmit={handlePlaceOrder} className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+        <div className="lg:col-span-2 space-y-8">
+            <Card>
+                <CardHeader>
+                    <CardTitle>Shipping Information</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <RadioGroup value={selectedAddressId} onValueChange={(value) => {
+                        setSelectedAddressId(value);
+                        setIsAddingNewAddress(value === 'new');
+                    }} className="space-y-4">
+                        {addresses.map((address) => (
+                            <Label key={address.id} htmlFor={String(address.id)} className="flex items-start gap-4 rounded-md border p-4 cursor-pointer hover:bg-accent has-[[data-state=checked]]:bg-accent">
+                                <RadioGroupItem value={String(address.id)} id={String(address.id)} className="mt-1" />
+                                {renderAddress(address)}
+                            </Label>
+                        ))}
+                        <Label htmlFor="new" className="flex items-start gap-4 rounded-md border p-4 cursor-pointer hover:bg-accent has-[[data-state=checked]]:bg-accent">
+                            <RadioGroupItem value="new" id="new" className="mt-1" />
+                            <div><p className="font-semibold">Add a new address</p></div>
+                        </Label>
+                    </RadioGroup>
 
-            {isAddingNewAddress && (
-                <div className="pt-6 border-t">
-                    <Form {...form}>
-                        <form onSubmit={handleAddNewAddress} className="space-y-4">
-                            <div className="flex justify-end">
-                                <Dialog open={isAutocompleteOpen} onOpenChange={setIsAutocompleteOpen}>
-                                    <DialogTrigger asChild>
-                                        <Button type="button" variant="outline" size="sm">
-                                            <Search className="mr-2 h-4 w-4" />
-                                            Find Address
-                                        </Button>
-                                    </DialogTrigger>
-                                    <DialogContent>
-                                        <DialogHeader>
-                                            <DialogTitle>Find Address</DialogTitle>
-                                        </DialogHeader>
-                                        <AddressAutocomplete onSelect={handleAutocompleteSelect} />
-                                    </DialogContent>
-                                </Dialog>
-                            </div>
-                            <FormField control={form.control} name="fullName" render={({ field }) => (
-                                <FormItem><FormLabel>Full Name</FormLabel><FormControl><Input placeholder="John Doe" {...field} /></FormControl><FormMessage /></FormItem>
-                            )}/>
-                            <FormField control={form.control} name="street" render={({ field }) => (
-                                <FormItem><FormLabel>Street Address</FormLabel><FormControl><Input placeholder="123 Main St" {...field} /></FormControl><FormMessage /></FormItem>
-                            )}/>
-                            <FormField control={form.control} name="apartment" render={({ field }) => (
-                                <FormItem><FormLabel>Apartment, suite, etc. (optional)</FormLabel><FormControl><Input placeholder="Apt 4B" {...field} /></FormControl><FormMessage /></FormItem>
-                            )}/>
-                            <div className="grid grid-cols-3 gap-4">
-                                <FormField control={form.control} name="city" render={({ field }) => (
-                                    <FormItem className="col-span-2"><FormLabel>City</FormLabel><FormControl><Input placeholder="Anytown" {...field} /></FormControl><FormMessage /></FormItem>
-                                )}/>
-                                <FormField control={form.control} name="zip" render={({ field }) => (
-                                    <FormItem><FormLabel>ZIP</FormLabel><FormControl><Input placeholder="12345" {...field} /></FormControl><FormMessage /></FormItem>
-                                )}/>
-                            </div>
-                            <FormField control={form.control} name="country" render={({ field }) => (
-                                <FormItem><FormLabel>Country</FormLabel><FormControl><Input placeholder="United States" {...field} /></FormControl><FormMessage /></FormItem>
-                            )}/>
-                            <Button type="submit" disabled={form.formState.isSubmitting}>
-                                {form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                Save Address
-                            </Button>
-                        </form>
-                    </Form>
-                </div>
-            )}
-          </CardContent>
-        </Card>
+                    {isAddingNewAddress && (
+                        <div className="pt-6 mt-6 border-t">
+                            <Form {...form}>
+                                <form onSubmit={handleAddNewAddress} className="space-y-4">
+                                    <div className="flex justify-end">
+                                        <Dialog open={isAutocompleteOpen} onOpenChange={setIsAutocompleteOpen}>
+                                            <DialogTrigger asChild>
+                                                <Button type="button" variant="outline" size="sm"><Search className="mr-2 h-4 w-4" />Find Address</Button>
+                                            </DialogTrigger>
+                                            <DialogContent><DialogHeader><DialogTitle>Find Address</DialogTitle></DialogHeader><AddressAutocomplete onSelect={handleAutocompleteSelect} /></DialogContent>
+                                        </Dialog>
+                                    </div>
+                                    <FormField control={form.control} name="fullName" render={({ field }) => (<FormItem><FormLabel>Full Name</FormLabel><FormControl><Input placeholder="John Doe" {...field} /></FormControl><FormMessage /></FormItem>)}/>
+                                    <FormField control={form.control} name="street" render={({ field }) => (<FormItem><FormLabel>Street Address</FormLabel><FormControl><Input placeholder="123 Main St" {...field} /></FormControl><FormMessage /></FormItem>)}/>
+                                    <FormField control={form.control} name="apartment" render={({ field }) => (<FormItem><FormLabel>Apartment, suite, etc. (optional)</FormLabel><FormControl><Input placeholder="Apt 4B" {...field} /></FormControl><FormMessage /></FormItem>)}/>
+                                    <div className="grid grid-cols-3 gap-4">
+                                        <FormField control={form.control} name="city" render={({ field }) => (<FormItem className="col-span-2"><FormLabel>City</FormLabel><FormControl><Input placeholder="Anytown" {...field} /></FormControl><FormMessage /></FormItem>)}/>
+                                        <FormField control={form.control} name="zip" render={({ field }) => (<FormItem><FormLabel>ZIP</FormLabel><FormControl><Input placeholder="12345" {...field} /></FormControl><FormMessage /></FormItem>)}/>
+                                    </div>
+                                    <FormField control={form.control} name="country" render={({ field }) => (<FormItem><FormLabel>Country</FormLabel><FormControl><Input placeholder="United States" {...field} /></FormControl><FormMessage /></FormItem>)}/>
+                                    <Button type="submit" disabled={form.formState.isSubmitting}>{form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Save Address</Button>
+                                </form>
+                            </Form>
+                        </div>
+                    )}
+                </CardContent>
+            </Card>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle>Payment Method</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <RadioGroup value={selectedPaymentMethod} onValueChange={setSelectedPaymentMethod} className="space-y-4">
+                        {paymentMethods.map((method) => (
+                            <Label key={method.id} htmlFor={method.provider} className="flex items-center gap-4 rounded-md border p-4 cursor-pointer hover:bg-accent has-[[data-state=checked]]:bg-accent">
+                                <RadioGroupItem value={method.provider} id={method.provider} />
+                                {getProviderIcon(method.provider)}
+                                <div className="flex-1">
+                                    <p className="font-semibold">{getProviderTitle(method.provider)}</p>
+                                    {method.provider === 'cash' && method.config.description && (
+                                        <p className="text-sm text-muted-foreground">{method.config.description}</p>
+                                    )}
+                                </div>
+                            </Label>
+                        ))}
+                    </RadioGroup>
+                </CardContent>
+            </Card>
+        </div>
         
         <div className="lg:col-span-1">
-          <Card>
+          <Card className="sticky top-24">
             <CardHeader>
               <CardTitle>Your Order</CardTitle>
             </CardHeader>
@@ -251,14 +307,7 @@ export default function CheckoutPage() {
                 {cartItems.map((item) => (
                   <div key={item.variantId} className="flex items-center justify-between pt-4 first:pt-0">
                     <div className="flex items-center gap-4">
-                      <Image
-                        src={item.image}
-                        alt={item.name}
-                        width={64}
-                        height={64}
-                        className="rounded-md"
-                        data-ai-hint="product image"
-                      />
+                      <Image src={item.image} alt={item.name} width={64} height={64} className="rounded-md" data-ai-hint="product image" />
                       <div>
                         <p className="font-semibold">{item.name}</p>
                         <p className="text-sm text-muted-foreground">{item.variantName} x {item.quantity}</p>
