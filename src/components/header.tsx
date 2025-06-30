@@ -142,8 +142,9 @@ export function Header({ user }: HeaderProps) {
         ? "border-border bg-background/80 backdrop-blur-sm" 
         : "border-transparent bg-[linear-gradient(to_left,#18101a,#431d4f_50%,#2d1d60_60%,#432066)]"
     )}>
-      <div className="container flex h-16 max-w-7xl items-center justify-between gap-4 px-2">
-        <div className="flex items-center gap-4">
+      <div className="container flex h-16 max-w-7xl items-center gap-4 px-2">
+        {/* LEFT SECTION */}
+        <div className="flex items-center justify-start gap-4">
           {pathname !== '/' && (
             <Button
               variant="ghost"
@@ -163,20 +164,23 @@ export function Header({ user }: HeaderProps) {
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6 text-primary"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path></svg>
             <span className={cn("hidden font-bold font-headline text-lg md:inline", scrolled ? "text-foreground" : "text-primary-foreground")}>Zain</span>
           </Link>
-          <nav className="hidden items-center gap-4 md:flex">
-            {navLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className={cn("text-base font-medium transition-colors", scrolled ? "text-muted-foreground hover:text-foreground" : "text-primary-foreground/80 hover:text-primary-foreground")}
-              >
-                {link.label}
-              </Link>
-            ))}
-          </nav>
         </div>
 
-        <div className="flex flex-1 items-center justify-end gap-2 md:flex-initial">
+        {/* CENTER SECTION */}
+        <nav className="hidden flex-1 items-center justify-center gap-4 md:flex">
+          {navLinks.map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              className={cn("font-medium transition-colors text-base md:text-lg", scrolled ? "text-muted-foreground hover:text-foreground" : "text-primary-foreground/80 hover:text-primary-foreground")}
+            >
+              {link.label}
+            </Link>
+          ))}
+        </nav>
+        
+        {/* RIGHT SECTION */}
+        <div className="flex items-center justify-end gap-2">
             <form onSubmit={handleSearch} className="flex flex-1 items-center gap-1 md:flex-initial">
                 <Input 
                     placeholder={placeholder}
@@ -207,10 +211,10 @@ export function Header({ user }: HeaderProps) {
                 <UserNav user={user} scrolled={scrolled}/>
             ) : (
                 <>
-                    <Link href="/login" className={cn(buttonVariants({ variant: scrolled ? 'outline' : 'ghost' }), 'text-base', scrolled ? 'rounded-full' : 'text-primary-foreground hover:bg-white/10 hover:text-primary-foreground')}>
+                    <Link href="/login" className={cn(buttonVariants({ variant: scrolled ? 'outline' : 'ghost' }), 'text-base md:text-lg', scrolled ? 'rounded-full' : 'text-primary-foreground hover:bg-white/10 hover:text-primary-foreground')}>
                         Log In
                     </Link>
-                    <Link href="/register" className={cn(buttonVariants({ variant: "default" }), "text-base", "bg-primary text-primary-foreground hover:bg-primary/90", scrolled && "rounded-full")}>
+                    <Link href="/register" className={cn(buttonVariants({ variant: "default" }), "text-base md:text-lg", "bg-primary text-primary-foreground hover:bg-primary/90", scrolled && "rounded-full")}>
                         Sign Up
                     </Link>
                 </>

@@ -52,26 +52,26 @@ export function UserNav({ user, scrolled }: UserNavProps) {
       <DropdownMenuContent className="w-56" align="end" forceMount>
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
-            <p className="text-base font-medium leading-none">{user.fullName}</p>
-            <p className="text-sm leading-none text-muted-foreground">
+            <p className="text-base font-medium leading-none md:text-lg">{user.fullName}</p>
+            <p className="text-sm leading-none text-muted-foreground md:text-base">
               {user.username}
             </p>
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
-          <DropdownMenuItem asChild className="text-base">
+          <DropdownMenuItem asChild className="text-base md:text-lg">
             <Link href={dashboardLink}>Dashboard</Link>
           </DropdownMenuItem>
           {!isCustomer && (
-            <DropdownMenuItem asChild className="text-base">
+            <DropdownMenuItem asChild className="text-base md:text-lg">
               <Link href="/account">My Account</Link>
             </DropdownMenuItem>
           )}
-          <DropdownMenuItem disabled className="text-base">Settings</DropdownMenuItem>
+          <DropdownMenuItem disabled className="text-base md:text-lg">Settings</DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={handleLogout} className="text-base">
+        <DropdownMenuItem onClick={handleLogout} className="text-base md:text-lg">
           Log out
         </DropdownMenuItem>
       </DropdownMenuContent>
