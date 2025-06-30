@@ -3,12 +3,10 @@ import { Inter } from 'next/font/google';
 import { headers } from 'next/headers';
 import './globals.css';
 import { cn } from '@/lib/utils';
-import { Header } from '@/components/header';
-import { Footer } from '@/components/footer';
 import { Toaster } from '@/components/ui/toaster';
 import { Providers } from '@/components/providers';
 import { getUser } from '@/lib/session';
-import { BottomToolbar } from '@/components/bottom-toolbar';
+import { PageTransitionWrapper } from '@/components/page-transition-wrapper';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -45,18 +43,11 @@ export default async function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head />
-      <body className={cn('min-h-screen font-body antialiased', inter.variable)}>
+      <body className={cn('min-h-screen font-body antialiased overflow-x-hidden', inter.variable)}>
         <Providers>
-          {showHeaderAndFooter ? (
-            <div className="relative flex min-h-dvh flex-col">
-              <Header user={user} />
-              <main className="flex-1 pb-16 md:pb-0">{children}</main>
-              <Footer />
-              <BottomToolbar user={user} />
-            </div>
-          ) : (
-            <>{children}</>
-          )}
+          <PageTransitionWrapper user={user} showHeaderAndFooter={showHeaderAndFooter}>
+            {children}
+          </PageTransitionWrapper>
           <Toaster />
         </Providers>
       </body>
