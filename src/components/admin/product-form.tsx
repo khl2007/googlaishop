@@ -38,17 +38,17 @@ const variantSchema = z.object({
   id: z.string().optional(),
   options: z.record(z.string()).optional(),
   price: z.preprocess(
-    (val) => (val === '' || val == null ? undefined : parseFloat(String(val))),
-    z.number({
+    (val) => (val === "" || val == null ? undefined : val),
+    z.coerce.number({
         required_error: "Price is required.",
         invalid_type_error: "Price must be a number.",
     }).min(0, "Price must be non-negative.")
   ),
   stock: z.preprocess(
-    (val) => (val === '' || val == null ? undefined : parseInt(String(val), 10)),
-    z.number({
+    (val) => (val === "" || val == null ? undefined : val),
+    z.coerce.number({
         required_error: "Stock is required.",
-        invalid_type_error: "Stock must be a whole number.",
+        invalid_type_error: "Stock must be a number.",
     }).int("Stock must be an integer.").min(0, "Stock must be non-negative.")
   ),
   image: z.string().optional().or(z.literal('')),
@@ -67,16 +67,21 @@ const formSchema = z.object({
   isFeatured: z.boolean().default(false),
   isOnOffer: z.boolean().default(false),
   weight: z.preprocess(
-      (val) => (val === "" || val == null ? undefined : parseFloat(String(val))),
-      z.number({ invalid_type_error: "Weight must be a number." }).min(0, "Weight must be non-negative.").optional()
+      (val) => (val === "" || val == null ? undefined : val),
+      z.coerce.number({ invalid_type_error: "Weight must be a number." }).min(0, "Weight must be non-negative.").optional()
   ),
   dimensions: z.string().optional(),
 }).superRefine((data, ctx) => {
+    // This refined validation ensures that for every option group that is properly defined
+    // (i.e., has a name and at least one option value), every variant must have a selection for that group.
     if (data.optionGroups && data.optionGroups.length > 0) {
         data.optionGroups.forEach((group) => {
-            if (group.name) {
+            // Only validate for groups that have a name and have at least one option with a value.
+            // This prevents validation errors from firing prematurely while the user is still defining the group.
+            if (group.name && group.options?.some(opt => opt.value)) {
                 data.variants.forEach((variant, vIndex) => {
-                    if (!variant.options || !variant.options[group.name] || variant.options[group.name] === '') {
+                    if (!variant.options || !variant.options[group.name]) {
+                        // If the option for this group is missing or empty for a variant, add an issue.
                         ctx.addIssue({
                             code: z.ZodIssueCode.custom,
                             message: "Required",
@@ -563,7 +568,5 @@ function OptionValuesArray({ groupIndex, isEditMode }: { groupIndex: number, isE
     </div>
   );
 }
-
-    
 
     
