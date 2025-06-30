@@ -37,16 +37,8 @@ const optionGroupSchema = z.object({
 const variantSchema = z.object({
   id: z.string().optional(),
   options: z.record(z.string()).optional(),
-  price: z.string()
-    .min(1, "Price is required.")
-    .refine((val) => !isNaN(parseFloat(val)) && parseFloat(val) >= 0, {
-      message: "Price must be a valid non-negative number.",
-    }),
-  stock: z.string()
-    .min(1, "Stock is required.")
-    .refine((val) => /^\d+$/.test(val) && parseInt(val, 10) >= 0, {
-      message: "Stock must be a non-negative whole number.",
-    }),
+  price: z.string().min(1, "Price is required."),
+  stock: z.string().min(1, "Stock is required."),
   image: z.string().optional().or(z.literal('')),
 });
 
@@ -70,6 +62,10 @@ const formSchema = z.object({
     if (data.optionGroups && data.optionGroups.length > 0) {
         data.variants.forEach((variant, vIndex) => {
             data.optionGroups?.forEach(group => {
+                // If the group name is empty, we can't validate its options yet.
+                // The required error on the group name itself will be shown.
+                if (!group.name) return;
+
                 if (!variant.options || !variant.options[group.name]) {
                     ctx.addIssue({
                         code: z.ZodIssueCode.custom,
@@ -117,8 +113,8 @@ export function ProductForm({ product, categories, vendors }: ProductFormProps) 
           stock: v.stock != null ? String(v.stock) : '',
       })) || [{ options: {}, price: '', stock: '', image: '' }],
       tags: product?.tags || "",
-      isFeatured: product?.isFeatured || false,
-      isOnOffer: product?.isOnOffer || false,
+      isFeatured: !!product?.isFeatured,
+      isOnOffer: !!product?.isOnOffer,
       weight: product?.weight != null ? String(product.weight) : '',
       dimensions: product?.dimensions || "",
     },
@@ -280,27 +276,30 @@ export function ProductForm({ product, categories, vendors }: ProductFormProps) 
                             )}
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                                {hasOptionGroups && watchedGroups.map((group) => (
-                                    <FormField
-                                        key={`${variantField.id}-${group.name}`}
-                                        control={form.control}
-                                        name={`variants.${index}.options.${group.name}`}
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>{group.name}</FormLabel>
-                                                <Select onValueChange={field.onChange} value={field.value} disabled={isEditMode}>
-                                                    <FormControl><SelectTrigger><SelectValue placeholder={`Select ${group.name.toLowerCase()}`} /></SelectTrigger></FormControl>
-                                                    <SelectContent>
-                                                        {group.options.filter(o => o.value).map((option) => (
-                                                            <SelectItem key={option.value} value={option.value}>{option.value}</SelectItem>
-                                                        ))}
-                                                    </SelectContent>
-                                                </Select>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-                                ))}
+                                {hasOptionGroups && watchedGroups.map((group) => {
+                                    if (!group.name) return null; // Don't render if group name is not set
+                                    return (
+                                        <FormField
+                                            key={`${variantField.id}-${group.name}`}
+                                            control={form.control}
+                                            name={`variants.${index}.options.${group.name}`}
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>{group.name}</FormLabel>
+                                                    <Select onValueChange={field.onChange} value={field.value} disabled={isEditMode}>
+                                                        <FormControl><SelectTrigger><SelectValue placeholder={`Select ${group.name.toLowerCase()}`} /></SelectTrigger></FormControl>
+                                                        <SelectContent>
+                                                            {group.options.filter(o => o.value).map((option) => (
+                                                                <SelectItem key={option.value} value={option.value}>{option.value}</SelectItem>
+                                                            ))}
+                                                        </SelectContent>
+                                                    </Select>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                    );
+                                })}
 
                                 <FormField control={form.control} name={`variants.${index}.price`} render={({ field }) => (
                                     <FormItem><FormLabel>Price</FormLabel><FormControl><Input type="text" placeholder="99.99" {...field} /></FormControl><FormMessage /></FormItem>
