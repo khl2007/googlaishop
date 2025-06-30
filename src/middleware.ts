@@ -1,6 +1,7 @@
 
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { randomBytes } from 'node:crypto';
 
 const STATE_CHANGING_METHODS = ['POST', 'PUT', 'DELETE', 'PATCH'];
 
@@ -32,9 +33,7 @@ export function middleware(request: NextRequest) {
   
   // Set CSRF token on the response if it doesn't exist on the request
   if (!request.cookies.has('csrf_token')) {
-    // Use Web Crypto API for Edge runtime compatibility
-    const random = crypto.getRandomValues(new Uint8Array(32));
-    const token = Array.from(random).map(b => b.toString(16).padStart(2, '0')).join('');
+    const token = randomBytes(32).toString('hex');
 
     response.cookies.set({
       name: 'csrf_token',
