@@ -501,7 +501,7 @@ function OptionValuesArray({ groupIndex, isEditMode }: { groupIndex: number, isE
                     <FormLabel className="text-xs">Color (Optional)</FormLabel>
                     <FormControl>
                     <div className="flex items-center gap-2">
-                        <Input type="color" {...field} value={field.value ?? ''} className="w-12 h-10 p-1" disabled={isEditMode} />
+                        <Input type="color" {...field} value={field.value || '#ffffff'} className="w-12 h-10 p-1" disabled={isEditMode} />
                         <Input type="text" placeholder="#RRGGBB" {...field} value={field.value ?? ''} disabled={isEditMode} />
                     </div>
                     </FormControl>
