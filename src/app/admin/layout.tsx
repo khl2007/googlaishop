@@ -11,7 +11,7 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
-import { Home, ShoppingCart, Users, Package, BarChart3, Tags, Store, Settings } from "lucide-react";
+import { Home, ShoppingCart, Users, Package, BarChart3, Tags, Store, Settings, CreditCard } from "lucide-react";
 import Link from "next/link";
 import { AdminPageHeader } from "@/components/admin/page-header";
 import { LogoutButton } from "@/components/logout-button";
@@ -93,6 +93,14 @@ export default function AdminLayout({
                 <Link href="/admin/analytics">
                   <BarChart3 />
                   Analytics
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+             <SidebarMenuItem>
+              <SidebarMenuButton asChild>
+                <Link href="/admin/payments">
+                  <CreditCard />
+                  Payment Methods
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>

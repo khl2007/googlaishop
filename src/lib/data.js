@@ -364,3 +364,50 @@ export async function getSettings() {
         });
     });
 }
+
+export async function getPaymentMethods() {
+    const db = getDatabase();
+    return new Promise((resolve, reject) => {
+        db.all('SELECT * FROM payment_methods ORDER BY id', (err, rows) => {
+            if (err) {
+                console.error('Database error in getPaymentMethods:', err);
+                return reject(new Error('Failed to fetch payment methods.'));
+            }
+            // Parse config JSON string into an object
+            const methods = rows.map(row => ({
+                ...row,
+                config: row.config ? JSON.parse(row.config) : {},
+            }));
+            resolve(methods);
+        });
+    });
+}
+
+export async function updatePaymentMethods(methods) {
+    const db = getDatabase();
+    const sql = `UPDATE payment_methods SET enabled = ?, config = ? WHERE provider = ?`;
+    const stmt = db.prepare(sql);
+
+    return new Promise((resolve, reject) => {
+        db.serialize(() => {
+            db.run("BEGIN TRANSACTION", (err) => {
+                if (err) return reject(err);
+            });
+
+            methods.forEach(method => {
+                stmt.run(method.enabled, JSON.stringify(method.config), method.provider, function (err) {
+                    if (err) {
+                        db.run("ROLLBACK");
+                        return reject(err);
+                    }
+                });
+            });
+            stmt.finalize();
+
+            db.run("COMMIT", (err) => {
+                if (err) return reject(err);
+                resolve();
+            });
+        });
+    });
+}

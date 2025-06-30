@@ -38,6 +38,7 @@ function seedDatabase() {
     db.run(`CREATE TABLE IF NOT EXISTS role_permissions (role_id INTEGER, permission_id INTEGER, FOREIGN KEY(role_id) REFERENCES roles(id), FOREIGN KEY(permission_id) REFERENCES permissions(id), UNIQUE(role_id, permission_id))`);
     db.run(`CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT UNIQUE, password TEXT, fullName TEXT, role_id INTEGER, phoneNumber TEXT, country TEXT, city TEXT, logo TEXT, FOREIGN KEY(role_id) REFERENCES roles(id))`);
     db.run(`CREATE TABLE IF NOT EXISTS settings (id INTEGER PRIMARY KEY DEFAULT 1, websiteTitle TEXT, websiteLogo TEXT, timeZone TEXT, country TEXT)`);
+    db.run(`CREATE TABLE IF NOT EXISTS payment_methods (id INTEGER PRIMARY KEY, provider TEXT UNIQUE NOT NULL, enabled BOOLEAN DEFAULT 0, config TEXT)`);
 
     // Seed roles
     const insertRoleStmt = db.prepare('INSERT OR IGNORE INTO roles (name) VALUES (?)');
@@ -52,6 +53,17 @@ function seedDatabase() {
     });
     insertSettingsStmt.finalize();
     console.log('Settings seeded.');
+    
+    // Seed Payment Methods
+    const paymentMethods = [
+      { provider: 'cash', enabled: 1, config: JSON.stringify({ description: 'Pay with cash upon delivery.' }) },
+      { provider: 'stripe', enabled: 0, config: JSON.stringify({ publishableKey: '', secretKey: '' }) },
+      { provider: 'paypal', enabled: 0, config: JSON.stringify({ clientId: '' }) }
+    ];
+    const insertPaymentStmt = db.prepare('INSERT OR IGNORE INTO payment_methods (provider, enabled, config) VALUES (?, ?, ?)');
+    paymentMethods.forEach(pm => insertPaymentStmt.run(pm.provider, pm.enabled, pm.config));
+    insertPaymentStmt.finalize();
+    console.log('Payment methods seeded.');
 
     // Seed permissions
     const insertPermissionStmt = db.prepare('INSERT OR IGNORE INTO permissions (action, subject) VALUES (?, ?)');
