@@ -79,7 +79,7 @@ body {
     @apply border-border;
   }
   html {
-    font-size: 90%;
+    font-size: 104%;
   }
   body {
     @apply bg-background text-foreground;
