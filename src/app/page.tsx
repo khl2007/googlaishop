@@ -11,7 +11,7 @@ export default async function Home() {
       <HeroSlider />
       
       <section className="my-12 md:my-24">
-        <h2 className="mb-8 px-4 sm:px-0 font-headline text-3xl font-bold tracking-tight">Featured Products</h2>
+        <h2 className="mb-2 px-4 sm:px-0 font-headline text-3xl font-bold tracking-tight">Featured Products</h2>
         <div className="flex gap-6 overflow-x-auto pb-4 px-4 sm:px-0 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
           {featuredProducts.map((product) => (
             <div key={product.id} className="w-64 flex-shrink-0">
