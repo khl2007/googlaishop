@@ -134,7 +134,10 @@ export function ProductDetailsClient({ product, user }: ProductDetailsClientProp
       
       {/* Mobile Add to Cart Bar */}
       {showAddToCart && (
-        <div className="md:hidden fixed bottom-16 left-0 z-40 w-full border-t bg-background p-4 shadow-[0_-2px_4px_rgba(0,0,0,0.1)]">
+        <div
+          className="md:hidden fixed left-0 z-60 w-full border-t bg-background p-4 shadow-[0_-2px_4px_rgba(0,0,0,0.1)]"
+          style={{ bottom: 'calc(4rem + env(safe-area-inset-bottom, 0px))' }}
+        >
           <div className="flex items-center gap-4">
             <div className="flex items-center rounded-md border">
               <Button variant="ghost" size="icon" className="h-11 rounded-r-none" onClick={() => handleQuantityChange(quantity - 1)} disabled={quantity <= 1}>
