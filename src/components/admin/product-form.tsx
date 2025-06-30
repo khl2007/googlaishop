@@ -35,8 +35,22 @@ const optionGroupSchema = z.object({
 const variantSchema = z.object({
   id: z.string().optional(),
   options: z.record(z.string()).optional(),
-  price: z.preprocess((a) => parseFloat(z.string().parse(a)), z.number().positive("Price must be positive.")),
-  stock: z.preprocess((a) => parseInt(z.string().parse(a), 10), z.number().int().min(0, "Stock can't be negative.")),
+  price: z.preprocess((val) => {
+    if (typeof val === "string" && val.trim() === "") return undefined;
+    if (typeof val === "number") return val;
+    return Number(val);
+  }, z.coerce.number({
+    required_error: "Price is required.",
+    invalid_type_error: "Price must be a number."
+  }).positive({ message: "Price must be positive." })),
+  stock: z.preprocess((val) => {
+    if (typeof val === "string" && val.trim() === "") return undefined;
+     if (typeof val === "number") return val;
+    return Number(val);
+  }, z.coerce.number({
+    required_error: "Stock is required.",
+    invalid_type_error: "Stock must be a number."
+  }).int().min(0, "Stock can't be negative.")),
   image: z.string().optional().or(z.literal('')),
 });
 
@@ -53,8 +67,8 @@ const formSchema = z.object({
   isFeatured: z.boolean().default(false),
   isOnOffer: z.boolean().default(false),
   weight: z.preprocess(
-    (a) => (a === "" || a === undefined) ? undefined : parseFloat(z.string().parse(a)),
-    z.number().min(0).optional()
+    (val) => (val === "" ? undefined : val),
+    z.coerce.number().min(0).optional()
   ),
   dimensions: z.string().optional(),
 }).superRefine((data, ctx) => {
@@ -103,9 +117,9 @@ export function ProductForm({ product, categories, vendors }: ProductFormProps) 
           id: v.id,
           ...v,
           options: typeof v.options === 'string' ? JSON.parse(v.options) : v.options,
-          price: v.price || 0,
+          price: v.price || undefined,
           stock: v.stock || 0,
-      })) || [{ options: {}, price: 0, stock: 0 }],
+      })) || [{ options: {}, price: undefined, stock: 0 }],
       tags: product?.tags || "",
       isFeatured: product?.isFeatured || false,
       isOnOffer: product?.isOnOffer || false,
@@ -334,7 +348,7 @@ export function ProductForm({ product, categories, vendors }: ProductFormProps) 
                         </Card>
                     ))}
                     {!isEditMode && (
-                    <Button type="button" variant="outline" onClick={() => appendVariant({ options: {}, price: 0, stock: 0, image: '' })}>
+                    <Button type="button" variant="outline" onClick={() => appendVariant({ options: {}, price: undefined, stock: 0, image: '' })}>
                         <PlusCircle className="mr-2 h-4 w-4" /> Add Variant
                     </Button>
                     )}
@@ -525,3 +539,5 @@ function OptionValuesArray({ groupIndex, isEditMode }: { groupIndex: number, isE
     </div>
   );
 }
+
+    
