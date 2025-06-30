@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 import { headers } from 'next/headers';
 import './globals.css';
@@ -19,6 +19,12 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: 'Zain Inspired E-Shop',
   description: 'A modern e-commerce platform inspired by Zain.',
+};
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover',
 };
 
 export default async function RootLayout({

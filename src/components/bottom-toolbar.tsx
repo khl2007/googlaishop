@@ -47,8 +47,8 @@ export function BottomToolbar({ user }: BottomToolbarProps) {
   }
 
   return (
-    <div className="md:hidden fixed bottom-0 left-0 z-50 w-full h-16 bg-background border-t border-border">
-      <div className="flex justify-around h-full items-center">
+    <div className="md:hidden fixed bottom-0 left-0 z-50 w-full bg-background border-t border-border pb-[env(safe-area-inset-bottom)]">
+      <div className="flex justify-around h-16 items-center">
         {navItems.map((item) => (
           <Link
             key={item.label}
