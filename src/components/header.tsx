@@ -98,7 +98,7 @@ export function Header({ user }: HeaderProps) {
         ? "border-border bg-background/80 backdrop-blur-sm" 
         : "border-transparent bg-[linear-gradient(to_left,#18101a,#431d4f_50%,#2d1d60_60%,#432066)]"
     )}>
-      <div className="container flex h-16 max-w-7xl items-center justify-between">
+      <div className="container flex h-16 max-w-7xl items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           {pathname !== '/' && (
             <Button
@@ -132,12 +132,12 @@ export function Header({ user }: HeaderProps) {
           </nav>
         </div>
 
-        <div className="flex items-center gap-2">
-            <form onSubmit={handleSearch} className="flex items-center gap-1">
+        <div className="flex flex-1 items-center justify-end gap-2 md:flex-initial">
+            <form onSubmit={handleSearch} className="flex flex-1 items-center gap-1 md:flex-initial">
                 <Input 
                     placeholder="Search..." 
                     className={cn(
-                        "h-9 transition-all duration-300 w-24 md:w-32 focus-within:w-32 md:focus-within:w-48", 
+                        "h-9 w-full transition-all duration-300 md:w-32 focus-within:w-full md:focus-within:w-48", 
                         scrolled 
                             ? "bg-background" 
                             : "bg-white/20 text-primary-foreground placeholder:text-primary-foreground/70 border-primary-foreground/50"
