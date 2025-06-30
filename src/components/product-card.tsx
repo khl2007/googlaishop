@@ -6,9 +6,10 @@ import { Button } from "./ui/button";
 
 interface ProductCardProps {
   product: Product;
+  showButton?: boolean;
 }
 
-export function ProductCard({ product }: ProductCardProps) {
+export function ProductCard({ product, showButton = true }: ProductCardProps) {
   const firstVariant = product.variants[0];
 
   // If a product has no variants, don't render it. This prevents crashes.
@@ -38,11 +39,13 @@ export function ProductCard({ product }: ProductCardProps) {
           From ${firstVariant.price.toFixed(2)}
         </p>
       </CardContent>
-      <CardFooter className="p-4 pt-0">
-         <Button asChild className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
-            <Link href={`/products/${product.slug}`}>View Product</Link>
-        </Button>
-      </CardFooter>
+      {showButton && (
+        <CardFooter className="p-4 pt-0">
+           <Button asChild className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
+              <Link href={`/products/${product.slug}`}>View Product</Link>
+          </Button>
+        </CardFooter>
+      )}
     </Card>
   );
 }
