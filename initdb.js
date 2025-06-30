@@ -13,6 +13,7 @@ db.serialize(() => {
   db.run("DROP TABLE IF EXISTS roles");
   db.run("DROP TABLE IF EXISTS settings");
   db.run("DROP TABLE IF EXISTS payment_methods");
+  db.run("DROP TABLE IF EXISTS areas");
   db.run("DROP TABLE IF EXISTS cities");
 
 
@@ -58,6 +59,7 @@ db.serialize(() => {
       street TEXT NOT NULL,
       apartment TEXT,
       city TEXT NOT NULL,
+      area TEXT,
       state TEXT,
       zip TEXT NOT NULL,
       country TEXT NOT NULL,
@@ -69,6 +71,8 @@ db.serialize(() => {
   // Create cities table
   db.run("CREATE TABLE cities (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, country_name TEXT NOT NULL, UNIQUE(name, country_name))");
 
+  // Create areas table
+  db.run("CREATE TABLE areas (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, city_id INTEGER NOT NULL, UNIQUE(name, city_id), FOREIGN KEY(city_id) REFERENCES cities(id) ON DELETE CASCADE)");
 
   // Keep other tables
   db.run("CREATE TABLE categories (id TEXT PRIMARY KEY, name TEXT, slug TEXT UNIQUE, image TEXT, parentId TEXT, FOREIGN KEY(parentId) REFERENCES categories(id) ON DELETE SET NULL)");

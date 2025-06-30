@@ -20,6 +20,7 @@ const formSchema = z.object({
   street: z.string().min(3, "Street address is required."),
   apartment: z.string().optional(),
   city: z.string().min(2, "City is required."),
+  area: z.string().optional(),
   state: z.string().optional(),
   zip: z.string().min(3, "ZIP/Postal code is required."),
   country: z.string().min(2, "Country is required."),
@@ -45,6 +46,7 @@ export function AddressForm({ address, userId, returnPath }: AddressFormProps) {
       street: address?.street || "",
       apartment: address?.apartment || "",
       city: address?.city || "",
+      area: address?.area || "",
       state: address?.state || "",
       zip: address?.zip || "",
       country: address?.country || "",
@@ -123,14 +125,19 @@ export function AddressForm({ address, userId, returnPath }: AddressFormProps) {
             <FormField control={form.control} name="city" render={({ field }) => (
                 <FormItem><FormLabel>City</FormLabel><FormControl><Input placeholder="Anytown" {...field} /></FormControl><FormMessage /></FormItem>
             )}/>
+            <FormField control={form.control} name="area" render={({ field }) => (
+                <FormItem><FormLabel>Area / District (optional)</FormLabel><FormControl><Input placeholder="e.g. Downtown" {...field} /></FormControl><FormMessage /></FormItem>
+            )}/>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
              <FormField control={form.control} name="state" render={({ field }) => (
                 <FormItem><FormLabel>State / Province (optional)</FormLabel><FormControl><Input placeholder="CA" {...field} /></FormControl><FormMessage /></FormItem>
             )}/>
-        </div>
-         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <FormField control={form.control} name="zip" render={({ field }) => (
                 <FormItem><FormLabel>ZIP / Postal Code</FormLabel><FormControl><Input placeholder="12345" {...field} /></FormControl><FormMessage /></FormItem>
             )}/>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
              <FormField control={form.control} name="country" render={({ field }) => (
                 <FormItem><FormLabel>Country</FormLabel><FormControl><Input placeholder="USA" {...field} /></FormControl><FormMessage /></FormItem>
             )}/>

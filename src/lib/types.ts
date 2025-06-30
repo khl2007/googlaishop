@@ -62,6 +62,7 @@ export type Address = {
   street: string;
   apartment?: string;
   city: string;
+  area?: string | null;
   state?: string;
   zip: string;
   country: string;

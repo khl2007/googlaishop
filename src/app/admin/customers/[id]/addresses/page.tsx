@@ -20,6 +20,7 @@ const addressFormSchema = z.object({
   street: z.string().min(3, "Street address is required."),
   apartment: z.string().optional(),
   city: z.string().min(2, "City is required."),
+  area: z.string().optional(),
   state: z.string().optional(),
   zip: z.string().min(3, "ZIP/Postal code is required."),
   country: z.string().min(2, "Country is required."),
@@ -43,6 +44,7 @@ export default function AdminCustomerAddressesPage({ params }: { params: { id: s
       street: "",
       apartment: "",
       city: "",
+      area: "",
       state: "",
       zip: "",
       country: "",
@@ -70,7 +72,7 @@ export default function AdminCustomerAddressesPage({ params }: { params: { id: s
   }, [customerId]);
 
   const openDialog = (address?: Address) => {
-    form.reset(address || { fullName: "", street: "", apartment: "", city: "", state: "", zip: "", country: "" });
+    form.reset(address || { fullName: "", street: "", apartment: "", city: "", area: "", state: "", zip: "", country: "" });
     setIsDialogOpen(true);
   };
 
@@ -146,7 +148,7 @@ export default function AdminCustomerAddressesPage({ params }: { params: { id: s
                 {address.isPrimary && <span className="mb-2 block text-xs font-bold text-primary">PRIMARY</span>}
                 <p className="font-semibold">{address.fullName}</p>
                 <p className="text-sm text-muted-foreground">{address.street}{address.apartment ? `, ${address.apartment}` : ''}</p>
-                <p className="text-sm text-muted-foreground">{address.city}, {address.zip}</p>
+                <p className="text-sm text-muted-foreground">{address.city}{address.area ? `, ${address.area}` : ''}, {address.zip}</p>
                 <p className="text-sm text-muted-foreground">{address.country}</p>
               </CardContent>
               <CardFooter className="flex justify-end gap-2 bg-muted/50 p-3">
@@ -183,13 +185,18 @@ export default function AdminCustomerAddressesPage({ params }: { params: { id: s
                 <FormField control={form.control} name="city" render={({ field }) => (
                     <FormItem><FormLabel>City</FormLabel><FormControl><Input placeholder="Anytown" {...field} /></FormControl><FormMessage /></FormItem>
                 )}/>
+                <FormField control={form.control} name="area" render={({ field }) => (
+                    <FormItem><FormLabel>Area / District (Optional)</FormLabel><FormControl><Input placeholder="e.g. Downtown" {...field} /></FormControl><FormMessage /></FormItem>
+                )}/>
+              </div>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                  <FormField control={form.control} name="zip" render={({ field }) => (
                     <FormItem><FormLabel>ZIP / Postal</FormLabel><FormControl><Input placeholder="12345" {...field} /></FormControl><FormMessage /></FormItem>
                 )}/>
+                 <FormField control={form.control} name="country" render={({ field }) => (
+                    <FormItem><FormLabel>Country</FormLabel><FormControl><Input placeholder="United States" {...field} /></FormControl><FormMessage /></FormItem>
+                )}/>
               </div>
-               <FormField control={form.control} name="country" render={({ field }) => (
-                  <FormItem><FormLabel>Country</FormLabel><FormControl><Input placeholder="United States" {...field} /></FormControl><FormMessage /></FormItem>
-              )}/>
               <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
                 {form.formState.isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                 Save Address

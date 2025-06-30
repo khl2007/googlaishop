@@ -270,20 +270,20 @@ export async function getPrimaryAddressByUserId(userId) {
 
 export async function upsertPrimaryAddress(userId, addressData) {
     const db = getDatabase();
-    const { fullName, street, apartment, city, state, zip, country } = addressData;
+    const { fullName, street, apartment, city, area, state, zip, country } = addressData;
 
     const existingAddress = await getPrimaryAddressByUserId(userId);
 
     return new Promise((resolve, reject) => {
         if (existingAddress) {
-            const sql = `UPDATE addresses SET fullName = ?, street = ?, apartment = ?, city = ?, state = ?, zip = ?, country = ? WHERE id = ?`;
-            db.run(sql, [fullName, street, apartment, city, state, zip, country, existingAddress.id], function(err) {
+            const sql = `UPDATE addresses SET fullName = ?, street = ?, apartment = ?, city = ?, area = ?, state = ?, zip = ?, country = ? WHERE id = ?`;
+            db.run(sql, [fullName, street, apartment, city, area, state, zip, country, existingAddress.id], function(err) {
                 if (err) reject(err);
                 resolve(this);
             });
         } else {
-            const sql = `INSERT INTO addresses (user_id, fullName, street, apartment, city, state, zip, country, isPrimary) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)`;
-            db.run(sql, [userId, fullName, street, apartment, city, state, zip, country], function(err) {
+            const sql = `INSERT INTO addresses (user_id, fullName, street, apartment, city, area, state, zip, country, isPrimary) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)`;
+            db.run(sql, [userId, fullName, street, apartment, city, area, state, zip, country], function(err) {
                 if (err) reject(err);
                 resolve(this);
             });
@@ -306,7 +306,7 @@ export async function getAddressesByUserId(userId) {
 
 export async function addUserAddress(userId, addressData) {
     const db = getDatabase();
-    const { fullName, street, apartment, city, state, zip, country } = addressData;
+    const { fullName, street, apartment, city, area, state, zip, country } = addressData;
 
     const existingAddresses = await getAddressesByUserId(userId);
     const isFirstAddress = existingAddresses.length === 0;
@@ -314,8 +314,8 @@ export async function addUserAddress(userId, addressData) {
     const isPrimary = isFirstAddress ? 1 : 0;
 
     return new Promise((resolve, reject) => {
-        const sql = `INSERT INTO addresses (user_id, fullName, street, apartment, city, state, zip, country, isPrimary) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
-        db.run(sql, [userId, fullName, street, apartment, city, state, zip, country, isPrimary], function(err) {
+        const sql = `INSERT INTO addresses (user_id, fullName, street, apartment, city, area, state, zip, country, isPrimary) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+        db.run(sql, [userId, fullName, street, apartment, city, area, state, zip, country, isPrimary], function(err) {
             if (err) return reject(err);
             
             const newAddressId = this.lastID;
@@ -329,10 +329,10 @@ export async function addUserAddress(userId, addressData) {
 
 export async function updateUserAddress(addressId, userId, addressData) {
     const db = getDatabase();
-    const { fullName, street, apartment, city, state, zip, country } = addressData;
+    const { fullName, street, apartment, city, area, state, zip, country } = addressData;
     return new Promise((resolve, reject) => {
-        const sql = `UPDATE addresses SET fullName = ?, street = ?, apartment = ?, city = ?, state = ?, zip = ?, country = ? WHERE id = ? AND user_id = ?`;
-        db.run(sql, [fullName, street, apartment, city, state, zip, country, addressId, userId], function(err) {
+        const sql = `UPDATE addresses SET fullName = ?, street = ?, apartment = ?, city = ?, area = ?, state = ?, zip = ?, country = ? WHERE id = ? AND user_id = ?`;
+        db.run(sql, [fullName, street, apartment, city, area, state, zip, country, addressId, userId], function(err) {
             if (err) return reject(err);
             if (this.changes === 0) return reject(new Error("Address not found or permission denied."));
             resolve(this);
@@ -462,6 +462,21 @@ export async function getCitiesByCountry(countryName) {
     });
 }
 
+export async function getCityById(cityId) {
+    const db = getDatabase();
+    return new Promise((resolve, reject) => {
+        const sql = `SELECT * FROM cities WHERE id = ?`;
+        db.get(sql, [cityId], (err, row) => {
+            if (err) {
+                console.error('Database error in getCityById:', err);
+                return reject(new Error('Failed to fetch city.'));
+            }
+            resolve(row);
+        });
+    });
+}
+
+
 export async function addCity(name, country_name) {
     const db = getDatabase();
     return new Promise((resolve, reject) => {
@@ -497,6 +512,60 @@ export async function deleteCity(id) {
         db.run(sql, [id], function(err) {
             if (err) return reject(err);
             if (this.changes === 0) return reject(new Error("City not found."));
+            resolve(this);
+        });
+    });
+}
+
+export async function getAreasByCityId(cityId) {
+    const db = getDatabase();
+    return new Promise((resolve, reject) => {
+        const sql = `SELECT * FROM areas WHERE city_id = ? ORDER BY name`;
+        db.all(sql, [cityId], (err, rows) => {
+            if (err) {
+                console.error('Database error in getAreasByCityId:', err);
+                return reject(new Error('Failed to fetch areas.'));
+            }
+            resolve(rows);
+        });
+    });
+}
+
+export async function addArea(name, cityId) {
+    const db = getDatabase();
+    return new Promise((resolve, reject) => {
+        const sql = 'INSERT INTO areas (name, city_id) VALUES (?, ?)';
+        db.run(sql, [name, cityId], function(err) {
+            if (err) {
+                if (err.code === 'SQLITE_CONSTRAINT') {
+                    return reject(new Error('This area already exists for this city.'));
+                }
+                return reject(err);
+            }
+            resolve({ id: this.lastID, name, city_id: cityId });
+        });
+    });
+}
+
+export async function updateArea(id, name) {
+    const db = getDatabase();
+    return new Promise((resolve, reject) => {
+        const sql = 'UPDATE areas SET name = ? WHERE id = ?';
+        db.run(sql, [name, id], function(err) {
+            if (err) return reject(err);
+            if (this.changes === 0) return reject(new Error("Area not found."));
+            resolve(this);
+        });
+    });
+}
+
+export async function deleteArea(id) {
+    const db = getDatabase();
+    return new Promise((resolve, reject) => {
+        const sql = 'DELETE FROM areas WHERE id = ?';
+        db.run(sql, [id], function(err) {
+            if (err) return reject(err);
+            if (this.changes === 0) return reject(new Error("Area not found."));
             resolve(this);
         });
     });
