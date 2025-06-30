@@ -13,6 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Home, ShoppingCart, Users, Package, BarChart3, LogOut, Tags, Store, Settings } from "lucide-react";
 import Link from "next/link";
+import { AdminPageHeader } from "@/components/admin/page-header";
 
 export default function AdminLayout({
   children,
@@ -64,9 +65,17 @@ export default function AdminLayout({
             </SidebarMenuItem>
             <SidebarMenuItem>
               <SidebarMenuButton asChild>
+                <Link href="/admin/customers">
+                  <Users />
+                  Customers
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton asChild>
                 <Link href="/admin/users">
                   <Users />
-                  Users
+                  All Users
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
@@ -106,7 +115,7 @@ export default function AdminLayout({
       <SidebarInset>
         <header className="flex h-14 items-center gap-4 border-b bg-muted/40 px-6">
             <SidebarTrigger />
-            <h1 className="flex-1 text-lg font-semibold">Dashboard</h1>
+            <AdminPageHeader />
         </header>
         <main className="flex-1 p-6">{children}</main>
       </SidebarInset>
