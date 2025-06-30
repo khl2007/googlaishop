@@ -93,16 +93,27 @@ function seedDatabase() {
         insertRolePermissionStmt.finalize();
         console.log('Role permissions seeded.');
 
+        // Seed Users
+        const insertUserStmt = db.prepare("INSERT OR IGNORE INTO users (username, password, fullName, role_id, phoneNumber, country, city, logo) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+        
         // Seed Admin User
         const adminEmail = 'admin@example.com';
         const adminPassword = 'adminpassword';
         const adminFullName = 'Admin User';
         const hashedPassword = bcrypt.hashSync(adminPassword, 10);
         const adminRoleId = roleMap.get('admin');
-
-        const insertUserStmt = db.prepare("INSERT OR IGNORE INTO users (username, password, fullName, role_id, phoneNumber, country, city, logo) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
         insertUserStmt.run(adminEmail, hashedPassword, adminFullName, adminRoleId, '555-0100', 'Adminland', 'Admin City', null, (err) => {
           if (err) console.error('Error inserting admin user:', err.message);
+        });
+
+        // Seed Customer User
+        const customerEmail = 'customer@example.com';
+        const customerPassword = 'customerpassword';
+        const customerFullName = 'Test Customer';
+        const hashedCustomerPassword = bcrypt.hashSync(customerPassword, 10);
+        const customerRoleId = roleMap.get('customer');
+        insertUserStmt.run(customerEmail, hashedCustomerPassword, customerFullName, customerRoleId, '555-0102', 'Customerland', 'Customer City', null, (err) => {
+            if (err) console.error('Error inserting customer user:', err.message);
         });
         
         // Seed Vendor User
@@ -117,7 +128,6 @@ function seedDatabase() {
                 console.error('Error inserting vendor user:', err.message);
                 seedProductsAndCategories(null); // Proceed without a vendor if insertion fails
             } else {
-                const vendorId = this.lastID;
                 console.log('Vendor user seeding attempted.');
                 // We need to find the ID of the vendor we just inserted.
                 db.get("SELECT id FROM users WHERE username = ?", [vendorEmail], (err, row) => {
