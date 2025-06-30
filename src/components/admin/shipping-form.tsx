@@ -19,7 +19,7 @@ import { Switch } from "../ui/switch";
 
 const overrideSchema = z.object({
   type: z.enum(['city', 'area']),
-  locationId: z.coerce.number(),
+  locationId: z.coerce.number().min(1, "Please select a location."),
   cost: z.coerce.number().min(0, "Cost must be a positive number."),
 });
 
@@ -31,6 +31,7 @@ const formSchema = z.discriminatedUnion("cost_type", [
     logo: z.string().url().optional().or(z.literal('')),
     enabled: z.boolean().default(false),
     cost_per_kg: z.coerce.number({ required_error: "Cost per KG is required." }).min(0, "Cost cannot be negative."),
+    overrides: z.array(overrideSchema).optional(), // Keep overrides here to not lose data
   }),
   // Schema for when cost_type is 'city' or 'area'
   z.object({
@@ -74,12 +75,12 @@ export function ShippingForm({ method, cities, areas }: ShippingFormProps) {
       default_cost: method?.default_cost ?? undefined,
       cost_per_kg: parsedConfig.cost_per_kg ?? undefined,
       overrides: parsedConfig.overrides || [],
-    } as any, // Use 'as any' to bypass initial discriminated union type check for defaultValues
+    } as any, 
   });
 
   const { fields, append, remove } = useFieldArray({
     control: form.control,
-    name: "overrides" as any, // Use 'as any' because overrides doesn't exist on all union members
+    name: "overrides" as any, 
   });
   
   const watchedCostType = form.watch("cost_type");
@@ -87,24 +88,17 @@ export function ShippingForm({ method, cities, areas }: ShippingFormProps) {
   const [logoPreview, setLogoPreview] = React.useState<string | null>(method?.logo || null);
 
   React.useEffect(() => {
-    // This effect should only run on subsequent renders when the cost_type actually changes.
     if (isInitialRender.current) {
       isInitialRender.current = false;
       return;
     }
-
-    // When cost type changes, reset irrelevant fields to prevent validation issues
+    
     if (watchedCostType === 'weight') {
       setValue('default_cost', undefined as any);
       clearErrors('default_cost' as any);
-      setValue('overrides', [] as any);
-      clearErrors('overrides' as any);
-    } else { // 'city' or 'area'
+    } else {
       setValue('cost_per_kg', undefined as any);
       clearErrors('cost_per_kg' as any);
-      // Also clear overrides when switching between city/area or to them from weight.
-      setValue('overrides', [] as any);
-      clearErrors('overrides' as any);
     }
   }, [watchedCostType, setValue, clearErrors]);
 
@@ -115,9 +109,9 @@ export function ShippingForm({ method, cities, areas }: ShippingFormProps) {
     if (data.cost_type === 'weight') {
         config = { cost_per_kg: data.cost_per_kg };
         finalDefaultCost = null;
-    } else { // 'city' or 'area'
-        const filteredOverrides = (data.overrides || []).filter(o => o.type === data.cost_type);
-        config = { overrides: filteredOverrides };
+    } else {
+        const relevantOverrides = (data.overrides || []).filter(o => o.type === data.cost_type);
+        config = { overrides: relevantOverrides };
         finalDefaultCost = data.default_cost;
     }
 
@@ -169,7 +163,7 @@ export function ShippingForm({ method, cities, areas }: ShippingFormProps) {
                 <FormField control={form.control} name="title" render={({ field }) => (
                     <FormItem><FormLabel>Title</FormLabel><FormControl><Input placeholder="e.g., Express Shipping" {...field} /></FormControl><FormMessage /></FormItem>
                 )} />
-                <FormField control={form.control} name="logo" render={({ field: { onChange, value, ...fieldProps }}) => (
+                 <FormField control={form.control} name="logo" render={({ field: { onChange, value, ...fieldProps }}) => (
                     <FormItem>
                         <FormLabel>Logo</FormLabel>
                         {logoPreview && (
@@ -238,12 +232,12 @@ export function ShippingForm({ method, cities, areas }: ShippingFormProps) {
                     </FormItem>
                 )} />
 
-                {watchedCostType === 'weight' && (
+                {watchedCostType === 'weight' && 'cost_per_kg' in form.watch() && (
                     <FormField control={form.control} name="cost_per_kg" render={({ field }) => (
                         <FormItem><FormLabel>Cost per KG</FormLabel><FormControl><Input type="number" step="0.01" placeholder="2.50" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
                     )} />
                 )}
-                {(watchedCostType === 'city' || watchedCostType === 'area') && (
+                {(watchedCostType === 'city' || watchedCostType === 'area') && 'default_cost' in form.watch() && (
                     <>
                         <FormField control={form.control} name="default_cost" render={({ field }) => (
                             <FormItem><FormLabel>Default Cost</FormLabel><FormControl><Input type="number" step="0.01" placeholder="10.00" {...field} value={field.value ?? ''} /></FormControl>
@@ -266,12 +260,14 @@ export function ShippingForm({ method, cities, areas }: ShippingFormProps) {
                                                             {watchedCostType === 'area' && areas.map(a => <SelectItem key={a.id} value={String(a.id)}>{a.name}, {a.city_name}</SelectItem>)}
                                                         </SelectContent>
                                                     </Select>
+                                                     <FormMessage />
                                                 </FormItem>
                                             )} />
                                             <FormField control={form.control} name={`overrides.${index}.cost`} render={({ field: inputField }) => (
                                                 <FormItem>
                                                     <FormLabel>Cost</FormLabel>
                                                     <FormControl><Input type="number" step="0.01" placeholder="5.00" {...inputField} value={inputField.value ?? ''} /></FormControl>
+                                                    <FormMessage />
                                                 </FormItem>
                                             )} />
                                             <Button type="button" variant="destructive" size="icon" onClick={() => remove(index)}><Trash className="h-4 w-4" /></Button>
