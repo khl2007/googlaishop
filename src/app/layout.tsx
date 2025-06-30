@@ -6,6 +6,9 @@ import { cn } from '@/lib/utils';
 import { Toaster } from '@/components/ui/toaster';
 import { Providers } from '@/components/providers';
 import { getUser } from '@/lib/session';
+import { Header } from '@/components/header';
+import { Footer } from '@/components/footer';
+import { BottomToolbar } from '@/components/bottom-toolbar';
 import { PageTransitionWrapper } from '@/components/page-transition-wrapper';
 
 const inter = Inter({
@@ -45,9 +48,16 @@ export default async function RootLayout({
       <head />
       <body className={cn('min-h-screen font-body antialiased overflow-x-hidden', inter.variable)}>
         <Providers>
-          <PageTransitionWrapper user={user} showHeaderAndFooter={showHeaderAndFooter}>
-            {children}
-          </PageTransitionWrapper>
+          <div className="relative flex min-h-dvh flex-col">
+            {showHeaderAndFooter && <Header user={user} />}
+            <main className="flex flex-1 pb-16 md:pb-0">
+              <PageTransitionWrapper>
+                {children}
+              </PageTransitionWrapper>
+            </main>
+            {showHeaderAndFooter && <Footer />}
+            {showHeaderAndFooter && <BottomToolbar user={user} />}
+          </div>
           <Toaster />
         </Providers>
       </body>
