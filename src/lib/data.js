@@ -761,26 +761,28 @@ export async function getAllHomeSections() {
 }
 
 export async function getActiveHomeSections() {
-    const db = getDatabase();
-    return new Promise((resolve) => {
-        db.all('SELECT * FROM home_sections WHERE isActive = 1 ORDER BY "order" ASC', (err, rows) => {
-            if (err) {
-                console.error("Database error in getActiveHomeSections:", err.message);
-                return resolve([]);
-            }
-            try {
-                const sections = rows.map(row => ({
-                    ...row,
-                    isActive: !!row.isActive,
-                    config: row.config ? JSON.parse(row.config) : null
-                }));
-                resolve(sections);
-            } catch (parseError) {
-                console.error("Error parsing home section config:", parseError.message);
-                resolve([]);
-            }
-        });
-    });
+  const db = getDatabase();
+  return new Promise((resolve) => {
+      db.all('SELECT * FROM home_sections WHERE isActive = 1 ORDER BY "order" ASC', (err, rows) => {
+          if (err) {
+              console.error("Database error in getActiveHomeSections:", err.message);
+              // Instead of rejecting, resolve with an empty array to prevent crashing the page.
+              return resolve([]);
+          }
+          try {
+              const sections = rows.map(row => ({
+                  ...row,
+                  isActive: !!row.isActive,
+                  config: row.config ? JSON.parse(row.config) : null
+              }));
+              resolve(sections);
+          } catch (parseError) {
+              console.error("Error parsing home section config:", parseError.message);
+              // Resolve with an empty array if parsing fails.
+              resolve([]);
+          }
+      });
+  });
 }
 
 export async function createHomeSection(data) {
@@ -844,6 +846,42 @@ export async function deleteHomeSection(id) {
         });
     });
 }
+
+export async function duplicateHomeSection(id) {
+    const db = getDatabase();
+    
+    // 1. Get the section to duplicate
+    const sectionToDuplicate = await new Promise((resolve, reject) => {
+        db.get('SELECT * FROM home_sections WHERE id = ?', [id], (err, row) => {
+            if (err) reject(new Error('Failed to find section to duplicate.'));
+            else if (!row) reject(new Error('Section not found.'));
+            else resolve(row);
+        });
+    });
+
+    // 2. Get the highest current order
+    const maxOrderRow = await new Promise((resolve, reject) => {
+        db.get('SELECT MAX("order") as maxOrder FROM home_sections', (err, row) => {
+            if (err) reject(err);
+            else resolve(row);
+        });
+    });
+    const newOrder = (maxOrderRow?.maxOrder || 0) + 1;
+    
+    // 3. Create the new section object
+    const newSectionData = {
+        title: `Copy of ${sectionToDuplicate.title}`,
+        type: sectionToDuplicate.type,
+        config: sectionToDuplicate.config, // It's already a JSON string
+        style: sectionToDuplicate.style,
+        order: newOrder,
+        isActive: false // Default to inactive
+    };
+
+    // 4. Use the existing create function
+    return createHomeSection(newSectionData);
+}
+
 
 export async function getAllProductTags() {
     const db = getDatabase();

@@ -6,7 +6,7 @@ import type { HomeSection } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { PlusCircle, Loader2, GripVertical, Trash, Edit, CheckCircle, XCircle } from 'lucide-react';
+import { PlusCircle, Loader2, GripVertical, Trash, Edit, CheckCircle, XCircle, Copy } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { getCsrfToken } from '@/lib/csrf';
 
@@ -15,6 +15,7 @@ import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, v
 import { CSS } from '@dnd-kit/utilities';
 
 import { HomeSectionForm } from '@/components/admin/home-section-form';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface FormOptions {
   categories: { value: string; label: string }[];
@@ -22,7 +23,7 @@ interface FormOptions {
   products: { value: string; label: string }[];
 }
 
-function SortableSectionItem({ section, onEdit, onDelete }: { section: HomeSection, onEdit: (section: HomeSection) => void, onDelete: (section: HomeSection) => void }) {
+function SortableSectionItem({ section, onEdit, onDelete, onDuplicate }: { section: HomeSection, onEdit: (section: HomeSection) => void, onDelete: (section: HomeSection) => void, onDuplicate: (section: HomeSection) => void }) {
     const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: section.id });
     const style = {
         transform: CSS.Transform.toString(transform),
@@ -39,6 +40,19 @@ function SortableSectionItem({ section, onEdit, onDelete }: { section: HomeSecti
             </div>
             <div className="flex items-center gap-2">
                 {section.isActive ? <CheckCircle className="h-5 w-5 text-green-500" /> : <XCircle className="h-5 w-5 text-red-500" />}
+                
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => onDuplicate(section)}>
+                            <Copy className="h-4 w-4" />
+                            <span className="sr-only">Duplicate Section</span>
+                        </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                        <p>Duplicate</p>
+                    </TooltipContent>
+                </Tooltip>
+
                 <Button variant="outline" size="sm" onClick={() => onEdit(section)}><Edit className="mr-2 h-4 w-4" />Edit</Button>
                 <Button variant="destructive" size="sm" onClick={() => onDelete(section)}><Trash className="mr-2 h-4 w-4" />Delete</Button>
             </div>
@@ -137,6 +151,21 @@ export default function HomeSectionsPage() {
              toast({ title: 'Error', description: error.message, variant: 'destructive' });
         }
     };
+
+    const handleDuplicate = async (section: HomeSection) => {
+        try {
+            const res = await fetch(`/api/admin/home-sections/${section.id}/duplicate`, { 
+                method: 'POST',
+                headers: { 'x-csrf-token': getCsrfToken() },
+            });
+            if (!res.ok) throw new Error('Failed to duplicate section');
+            const newSection = await res.json();
+            setSections(prev => [...prev, newSection]);
+            toast({ title: 'Success', description: `Section "${section.title}" duplicated.` });
+        } catch (error: any) {
+             toast({ title: 'Error', description: error.message, variant: 'destructive' });
+        }
+    };
     
     const onFormSubmit = (newOrUpdatedSection: HomeSection) => {
         if (currentSection) { // Update
@@ -179,13 +208,15 @@ export default function HomeSectionsPage() {
             </CardHeader>
             <CardContent>
                 <div className="space-y-4">
-                    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-                        <SortableContext items={sectionIds} strategy={verticalListSortingStrategy}>
-                            {sections.map(section => (
-                                <SortableSectionItem key={section.id} section={section} onEdit={handleEdit} onDelete={handleDelete} />
-                            ))}
-                        </SortableContext>
-                    </DndContext>
+                    <TooltipProvider>
+                        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                            <SortableContext items={sectionIds} strategy={verticalListSortingStrategy}>
+                                {sections.map(section => (
+                                    <SortableSectionItem key={section.id} section={section} onEdit={handleEdit} onDelete={handleDelete} onDuplicate={handleDuplicate} />
+                                ))}
+                            </SortableContext>
+                        </DndContext>
+                    </TooltipProvider>
                      {sections.length === 0 && <p className="text-muted-foreground text-center py-8">No sections created yet.</p>}
                 </div>
 
