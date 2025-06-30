@@ -1,7 +1,7 @@
 import { CategoryForm } from "@/components/admin/category-form";
 import { getAllCategories } from "@/lib/data";
 
-export default function NewCategoryPage() {
+export default async function NewCategoryPage() {
   const categories = await getAllCategories();
 
   return (
