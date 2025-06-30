@@ -1,7 +1,6 @@
 
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { randomBytes } from 'node:crypto';
 
 const STATE_CHANGING_METHODS = ['POST', 'PUT', 'DELETE', 'PATCH'];
 
@@ -33,7 +32,7 @@ export function middleware(request: NextRequest) {
   
   // Set CSRF token on the response if it doesn't exist on the request
   if (!request.cookies.has('csrf_token')) {
-    const token = randomBytes(32).toString('hex');
+    const token = crypto.randomUUID();
 
     response.cookies.set({
       name: 'csrf_token',
