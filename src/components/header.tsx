@@ -22,7 +22,7 @@ import {
 import { useState, useEffect, useMemo } from "react";
 import { useCart } from "@/hooks/use-cart";
 import Image from "next/image";
-import { Input } from "./ui/input";
+import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import type { User } from "@/lib/types";
 import { UserNav } from "./user-nav";
