@@ -25,7 +25,7 @@ export function ProductDetailsClient({ product, user }: ProductDetailsClientProp
     addToCart(product, selectedVariant, quantity);
   };
 
-  const isCustomer = !user || user.role === 'customer';
+  const showAddToCart = !(user && ['admin', 'vendor', 'delivery'].includes(user.role));
 
   const handleQuantityChange = (newQuantity: number) => {
     if (isNaN(newQuantity) || newQuantity < 1) {
@@ -98,7 +98,7 @@ export function ProductDetailsClient({ product, user }: ProductDetailsClientProp
 
                     {/* Desktop Add to Cart */}
                     <div className="mt-auto pt-8 hidden md:block">
-                        {isCustomer && (
+                        {showAddToCart && (
                         <div className="flex items-center gap-4">
                             <div className="flex items-center rounded-md border">
                             <Button variant="ghost" size="icon" className="rounded-r-none" onClick={() => handleQuantityChange(quantity - 1)} disabled={quantity <= 1}>
@@ -133,7 +133,7 @@ export function ProductDetailsClient({ product, user }: ProductDetailsClientProp
       </div>
       
       {/* Mobile Add to Cart Bar */}
-      {isCustomer && (
+      {showAddToCart && (
         <div className="md:hidden fixed bottom-16 left-0 z-40 w-full border-t bg-background p-4 shadow-[0_-2px_4px_rgba(0,0,0,0.1)]">
           <div className="flex items-center gap-4">
             <div className="flex items-center rounded-md border">
