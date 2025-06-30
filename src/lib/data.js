@@ -760,7 +760,7 @@ export async function getAllHomeSections() {
     });
 }
 
-export async function getActiveHomeSections() {
+export const getActiveHomeSections = cache(async () => {
   const db = getDatabase();
   return new Promise((resolve) => {
       db.all('SELECT * FROM home_sections WHERE isActive = 1 ORDER BY "order" ASC', (err, rows) => {
@@ -783,7 +783,8 @@ export async function getActiveHomeSections() {
           }
       });
   });
-}
+}, ['home-sections'], { tags: ['home-sections'] });
+
 
 export async function createHomeSection(data) {
     const db = getDatabase();

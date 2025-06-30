@@ -1,6 +1,7 @@
 
 import { NextResponse } from 'next/server';
 import { getAllHomeSections, createHomeSection, updateHomeSectionsOrder, getAllCategories, getAllProductTags, getAllProducts } from '@/lib/data';
+import { revalidateTag } from 'next/cache';
 
 export async function GET() {
   try {
@@ -29,6 +30,7 @@ export async function POST(request) {
   const data = await request.json();
   try {
     const newSection = await createHomeSection(data);
+    revalidateTag('home-sections');
     return NextResponse.json(newSection, { status: 201 });
   } catch (error) {
     return NextResponse.json({ message: 'Failed to create section', error: error.message }, { status: 500 });
@@ -42,6 +44,7 @@ export async function PUT(request) {
     }
     try {
         await updateHomeSectionsOrder(orderedIds);
+        revalidateTag('home-sections');
         return NextResponse.json({ message: 'Sections reordered successfully.' });
     } catch (error) {
         return NextResponse.json({ message: 'Failed to reorder sections.', error: error.message }, { status: 500 });
