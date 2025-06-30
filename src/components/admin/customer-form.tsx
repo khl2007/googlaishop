@@ -52,8 +52,12 @@ export function CustomerForm({ customer, roles }: CustomerFormProps) {
   const { toast } = useToast();
   const isEditMode = !!customer;
 
-  const form = useForm<z.infer<typeof (isEditMode ? updateSchema : createSchema)>>({
-    resolver: zodResolver(isEditMode ? updateSchema : createSchema),
+  // Define the schema and type based on edit mode for clarity and stability
+  const formSchema = isEditMode ? updateSchema : createSchema;
+  type CustomerFormValues = z.infer<typeof formSchema>;
+
+  const form = useForm<CustomerFormValues>({
+    resolver: zodResolver(formSchema),
     defaultValues: {
       fullName: customer?.fullName || "",
       username: customer?.username || "",
@@ -64,7 +68,7 @@ export function CustomerForm({ customer, roles }: CustomerFormProps) {
     },
   });
   
-  const onFormSubmit: SubmitHandler<z.infer<typeof baseSchema & { password?: string }>> = async (data) => {
+  const onFormSubmit: SubmitHandler<CustomerFormValues> = async (data) => {
     const customerRole = roles.find(role => role.name === 'customer');
     if (!customerRole) {
         toast({ title: "Error", description: "Customer role not found.", variant: "destructive" });
@@ -76,7 +80,7 @@ export function CustomerForm({ customer, roles }: CustomerFormProps) {
         role_id: customerRole.id 
     };
 
-    if (!data.password && isEditMode) {
+    if (isEditMode && !data.password) {
       delete payload.password;
     }
 
