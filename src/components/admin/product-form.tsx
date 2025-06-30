@@ -35,22 +35,14 @@ const optionGroupSchema = z.object({
 const variantSchema = z.object({
   id: z.string().optional(),
   options: z.record(z.string()).optional(),
-  price: z.preprocess((val) => {
-    if (typeof val === "string" && val.trim() === "") return undefined;
-    if (typeof val === "number") return val;
-    return Number(val);
-  }, z.coerce.number({
+  price: z.coerce.number({
     required_error: "Price is required.",
     invalid_type_error: "Price must be a number."
-  }).positive({ message: "Price must be positive." })),
-  stock: z.preprocess((val) => {
-    if (typeof val === "string" && val.trim() === "") return undefined;
-     if (typeof val === "number") return val;
-    return Number(val);
-  }, z.coerce.number({
+  }).positive({ message: "Price must be positive." }),
+  stock: z.coerce.number({
     required_error: "Stock is required.",
     invalid_type_error: "Stock must be a number."
-  }).int().min(0, "Stock can't be negative.")),
+  }).int().min(0, "Stock can't be negative."),
   image: z.string().optional().or(z.literal('')),
 });
 
@@ -111,14 +103,14 @@ export function ProductForm({ product, categories, vendors }: ProductFormProps) 
       slug: product?.slug || "",
       description: product?.description || "",
       categoryId: product?.categoryId || "",
-      vendorId: product?.vendorId?.toString() || "",
+      vendorId: product?.vendorId?.toString() ?? "",
       optionGroups: product?.optionGroups ? JSON.parse(product.optionGroups) : [],
       variants: product?.variants.map(v => ({
           id: v.id,
           ...v,
           options: typeof v.options === 'string' ? JSON.parse(v.options) : v.options,
-          price: v.price || undefined,
-          stock: v.stock || 0,
+          price: v.price ?? undefined,
+          stock: v.stock ?? 0,
       })) || [{ options: {}, price: undefined, stock: 0 }],
       tags: product?.tags || "",
       isFeatured: product?.isFeatured || false,
@@ -539,5 +531,7 @@ function OptionValuesArray({ groupIndex, isEditMode }: { groupIndex: number, isE
     </div>
   );
 }
+
+    
 
     
