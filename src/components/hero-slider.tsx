@@ -2,11 +2,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious, type CarouselApi } from "@/components/ui/carousel";
 import Image from "next/image";
 import Link from "next/link";
-import { Button } from "./ui/button";
-import { ArrowRight } from "lucide-react";
 import Autoplay from "embla-carousel-autoplay";
 import type { Slide } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -14,6 +12,22 @@ import { Skeleton } from "@/components/ui/skeleton";
 export function HeroSlider() {
     const [slides, setSlides] = useState<Slide[]>([]);
     const [loading, setLoading] = useState(true);
+    const [api, setApi] = useState<CarouselApi>();
+    const [current, setCurrent] = useState(0);
+
+    useEffect(() => {
+        if (!api) return;
+        
+        const onSelect = () => {
+            setCurrent(api.selectedScrollSnap());
+        };
+        api.on("select", onSelect);
+        onSelect(); // Set initial value
+        
+        return () => {
+            api.off("select", onSelect);
+        };
+    }, [api]);
 
     useEffect(() => {
         const fetchSlides = async () => {
@@ -63,49 +77,38 @@ export function HeroSlider() {
                 plugins={[
                     Autoplay({
                       delay: 5000,
-                      stopOnInteraction: false,
+                      stopOnInteraction: true,
                     }),
                 ]}
                 opts={{
+                    align: "center",
                     loop: true,
                 }}
+                setApi={setApi}
             >
-                <CarouselContent>
+                <CarouselContent className="-ml-4">
                     {slides.map((slide, index) => (
-                        <CarouselItem key={slide.id}>
-                            <div className="relative aspect-[16/7] w-full overflow-hidden rounded-xl">
+                        <CarouselItem key={slide.id} className="pl-4 md:basis-5/6">
+                             <Link href={slide.link || '#'} className="block relative aspect-[16/7] w-full transition-all duration-300 ease-in-out"
+                                style={{
+                                    transform: `scale(${current === index ? 1 : 0.9})`, 
+                                    opacity: current === index ? 1 : 0.7 
+                                }}
+                             >
                                 <Image
                                     src={slide.image}
                                     alt={slide.title}
                                     fill
-                                    className="object-cover"
+                                    className="object-cover rounded-xl"
                                     priority={index === 0}
                                     data-ai-hint="hero slider"
                                 />
-                                <div className="absolute inset-0 bg-gradient-to-r from-black/60 to-black/20" />
-                                <div className="absolute inset-0 flex items-center justify-start p-8 md:p-16 lg:p-24">
-                                    <div className="max-w-md text-left text-white">
-                                        <h1 className="mb-4 font-headline text-3xl font-extrabold tracking-tight md:text-4xl lg:text-5xl">
-                                            {slide.title}
-                                        </h1>
-                                        <p className="mb-8 text-md text-white/90 md:text-lg">
-                                            {slide.description}
-                                        </p>
-                                        {slide.link && slide.buttonText && (
-                                            <Button asChild size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90">
-                                                <Link href={slide.link}>
-                                                    {slide.buttonText} <ArrowRight className="ml-2 h-5 w-5" />
-                                                </Link>
-                                            </Button>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
+                            </Link>
                         </CarouselItem>
                     ))}
                 </CarouselContent>
-                <CarouselPrevious className="absolute left-4 top-1/2 -translate-y-1/2 text-white bg-black/30 hover:bg-black/50 border-none" />
-                <CarouselNext className="absolute right-4 top-1/2 -translate-y-1/2 text-white bg-black/30 hover:bg-black/50 border-none" />
+                <CarouselPrevious className="absolute left-2 top-1/2 -translate-y-1/2 text-white bg-black/30 hover:bg-black/50 border-none z-10" />
+                <CarouselNext className="absolute right-2 top-1/2 -translate-y-1/2 text-white bg-black/30 hover:bg-black/50 border-none z-10" />
             </Carousel>
         </section>
     );
