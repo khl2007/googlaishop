@@ -265,12 +265,11 @@ export function Header({ user }: HeaderProps) {
                               >
                                   <Minus className="h-4 w-4" />
                               </Button>
-                              <Input
-                                  readOnly
-                                  type="text"
-                                  value={item.quantity}
-                                  className="h-8 w-10 border-transparent bg-transparent text-center text-sm font-medium focus-visible:ring-0 focus-visible:ring-offset-0"
-                              />
+                              <span
+                                className="h-8 w-10 flex items-center justify-center bg-transparent text-center text-sm font-medium"
+                              >
+                                {item.quantity}
+                              </span>
                               <Button
                                   type="button"
                                   variant="ghost"
