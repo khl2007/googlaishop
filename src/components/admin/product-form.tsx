@@ -14,19 +14,19 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
 import type { Product, Category } from "@/lib/types";
-import { Loader2, PlusCircle, Trash } from "lucide-react";
+import { Loader2, PlusCircle, Trash, Trash2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Switch } from "../ui/switch";
 import { getCsrfToken } from "@/lib/csrf";
 
+// Simpler schema, only validating price and stock are provided numbers.
 const variantSchema = z.object({
   id: z.string().optional(),
-  options: z.any().optional(), // Validation for options is disabled
-  price: z.coerce.number({ required_error: "Price is required", invalid_type_error: "Price must be a number." }).min(0.01, "Price must be positive."),
-  stock: z.coerce.number({ required_error: "Stock is required", invalid_type_error: "Stock must be a number." }).int("Stock must be a whole number.").min(0, "Stock cannot be negative."),
+  options: z.any().optional(),
+  price: z.coerce.number({ required_error: "Price is required" }).min(0.01),
+  stock: z.coerce.number({ required_error: "Stock is required" }).int().min(0),
   image: z.string().optional().or(z.literal('')),
 });
-
 
 const formSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters."),
@@ -34,8 +34,8 @@ const formSchema = z.object({
   description: z.string().min(10, "Description must be at least 10 characters."),
   categoryId: z.string().min(1, "Please select a category."),
   vendorId: z.string().min(1, "Please select a vendor."),
-  optionGroups: z.any().optional(), // Validation for option groups is disabled
-  variants: z.array(variantSchema).min(1, "At least one product variant is required."),
+  optionGroups: z.any().optional(), // Validation disabled
+  variants: z.array(variantSchema).min(1, "At least one product variant is required."), // Basic validation on variants array
   tags: z.string().optional(),
   isFeatured: z.boolean().default(false),
   isOnOffer: z.boolean().default(false),
@@ -80,13 +80,15 @@ export function ProductForm({ product, categories, vendors }: ProductFormProps) 
           options: typeof v.options === 'string' ? JSON.parse(v.options) : v.options,
           price: v.price,
           stock: v.stock,
-      })) || [{ options: {}, price: '', stock: '', image: '' }],
+      })) || [{ options: {}, price: 0, stock: 0, image: '' }],
       tags: product?.tags || "",
       isFeatured: !!product?.isFeatured,
       isOnOffer: !!product?.isOnOffer,
-      weight: product?.weight,
+      weight: product?.weight ?? undefined,
       dimensions: product?.dimensions || "",
     },
+    mode: 'onSubmit', // Validate only on submit
+    reValidateMode: 'onChange',
   });
 
   const { fields: groupFields, append: appendGroup, remove: removeGroup } = useFieldArray({
@@ -106,9 +108,8 @@ export function ProductForm({ product, categories, vendors }: ProductFormProps) 
 
   const handleRemoveGroup = (index: number) => {
     const groupToRemove = form.getValues(`optionGroups.${index}`);
-    removeGroup(index); // Remove the group from the form state
+    removeGroup(index); 
     
-    // Clean up the corresponding option from all variants
     if (groupToRemove && groupToRemove.name) {
       const currentVariants = form.getValues('variants');
       currentVariants.forEach((variant, variantIndex) => {
@@ -287,10 +288,10 @@ export function ProductForm({ product, categories, vendors }: ProductFormProps) 
                                 })}
 
                                 <FormField control={form.control} name={`variants.${index}.price`} render={({ field }) => (
-                                    <FormItem><FormLabel>Price</FormLabel><FormControl><Input type="number" step="0.01" placeholder="99.99" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
+                                    <FormItem><FormLabel>Price</FormLabel><FormControl><Input type="number" step="0.01" placeholder="99.99" {...field} /></FormControl><FormMessage /></FormItem>
                                 )}/>
                                 <FormField control={form.control} name={`variants.${index}.stock`} render={({ field }) => (
-                                    <FormItem><FormLabel>Stock</FormLabel><FormControl><Input type="number" placeholder="100" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
+                                    <FormItem><FormLabel>Stock</FormLabel><FormControl><Input type="number" placeholder="100" {...field} /></FormControl><FormMessage /></FormItem>
                                 )}/>
                                 <FormField control={form.control} name={`variants.${index}.image`} render={({ field: { onChange, value, ...rest } }) => {
                                     const fileInputRef = React.useRef<HTMLInputElement>(null);
@@ -304,7 +305,7 @@ export function ProductForm({ product, categories, vendors }: ProductFormProps) 
                                                         onChange("");
                                                         if (fileInputRef.current) fileInputRef.current.value = "";
                                                     }}>
-                                                        <Trash className="h-4 w-4 text-destructive" />
+                                                        <Trash2 className="h-4 w-4 text-destructive" />
                                                     </Button>
                                                 </div>
                                             )}
@@ -332,7 +333,7 @@ export function ProductForm({ product, categories, vendors }: ProductFormProps) 
                         </Card>
                     ))}
                     {!isEditMode && (
-                    <Button type="button" variant="outline" onClick={() => appendVariant({ options: {}, price: '', stock: '', image: '' })}>
+                    <Button type="button" variant="outline" onClick={() => appendVariant({ options: {}, price: 0, stock: 0, image: '' })}>
                         <PlusCircle className="mr-2 h-4 w-4" /> Add Variant
                     </Button>
                     )}
@@ -405,7 +406,7 @@ export function ProductForm({ product, categories, vendors }: ProductFormProps) 
                 <CardHeader><CardTitle>Shipping</CardTitle></CardHeader>
                 <CardContent className="space-y-4">
                     <FormField control={form.control} name="weight" render={({ field }) => (
-                        <FormItem><FormLabel>Weight (kg)</FormLabel><FormControl><Input type="number" step="0.01" placeholder="0.5" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
+                        <FormItem><FormLabel>Weight (kg)</FormLabel><FormControl><Input type="number" step="0.01" placeholder="0.5" {...field} /></FormControl><FormMessage /></FormItem>
                     )} />
                     <FormField control={form.control} name="dimensions" render={({ field }) => (
                         <FormItem><FormLabel>Dimensions (L x W x H)</FormLabel><FormControl><Input placeholder="e.g. 20cm x 15cm x 5cm" {...field} /></FormControl><FormMessage /></FormItem>
@@ -479,7 +480,7 @@ function OptionValuesArray({ groupIndex, isEditMode }: { groupIndex: number, isE
                                 onChange={(e) => {
                                 const file = e.target.files?.[0];
                                 if (file) {
-                                    const reader = new FileReader();
+                                    const reader = a new FileReader();
                                     reader.onloadend = () => onChange(reader.result as string);
                                     reader.readAsDataURL(file);
                                 }
