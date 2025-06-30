@@ -76,7 +76,7 @@ export function HeroSlider() {
                 className="w-full"
                 plugins={[
                     Autoplay({
-                      delay: 5000,
+                      delay: 8000,
                       stopOnInteraction: true,
                     }),
                 ]}
@@ -86,13 +86,13 @@ export function HeroSlider() {
                 }}
                 setApi={setApi}
             >
-                <CarouselContent className="-ml-4">
+                <CarouselContent className="-ml-6">
                     {slides.map((slide, index) => (
-                        <CarouselItem key={slide.id} className="pl-4 md:basis-5/6">
-                             <Link href={slide.link || '#'} className="block relative aspect-[16/7] w-full transition-all duration-300 ease-in-out"
+                        <CarouselItem key={slide.id} className="pl-6 md:basis-5/6">
+                             <Link href={slide.link || '#'} className="block relative aspect-[16/7] w-full transition-all duration-500 ease-in-out"
                                 style={{
-                                    transform: `scale(${current === index ? 1 : 0.9})`, 
-                                    opacity: current === index ? 1 : 0.7 
+                                    transform: `scale(${current === index ? 1 : 0.85})`, 
+                                    opacity: current === index ? 1 : 0.5 
                                 }}
                              >
                                 <Image
