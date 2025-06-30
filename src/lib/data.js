@@ -665,3 +665,79 @@ export async function getProductWeights(productIds) {
         });
     });
 }
+
+// Slide Management
+export async function getAllSlides() {
+    const db = getDatabase();
+    return new Promise((resolve, reject) => {
+        db.all('SELECT * FROM slides ORDER BY "order" ASC', (err, rows) => {
+            if (err) {
+                console.error('Database error in getAllSlides:', err);
+                return reject(new Error('Failed to fetch slides.'));
+            }
+            resolve(rows.map(row => ({ ...row, isActive: !!row.isActive })));
+        });
+    });
+}
+
+export async function getActiveSlides() {
+    const db = getDatabase();
+    return new Promise((resolve, reject) => {
+        db.all('SELECT * FROM slides WHERE isActive = 1 ORDER BY "order" ASC', (err, rows) => {
+            if (err) {
+                console.error('Database error in getActiveSlides:', err);
+                return reject(new Error('Failed to fetch active slides.'));
+            }
+            resolve(rows.map(row => ({ ...row, isActive: !!row.isActive })));
+        });
+    });
+}
+
+export async function getSlideById(id) {
+    const db = getDatabase();
+    return new Promise((resolve, reject) => {
+        db.get('SELECT * FROM slides WHERE id = ?', [id], (err, row) => {
+            if (err) {
+                console.error('Database error in getSlideById:', err);
+                return reject(new Error('Failed to fetch slide.'));
+            }
+            resolve(row ? { ...row, isActive: !!row.isActive } : null);
+        });
+    });
+}
+
+export async function createSlide(data) {
+    const db = getDatabase();
+    const { title, description, image, link, buttonText, isActive, order } = data;
+    return new Promise((resolve, reject) => {
+        const sql = 'INSERT INTO slides (title, description, image, link, buttonText, isActive, "order") VALUES (?, ?, ?, ?, ?, ?, ?)';
+        db.run(sql, [title, description, image, link, buttonText, isActive ? 1 : 0, order], function (err) {
+            if (err) return reject(err);
+            resolve({ id: this.lastID });
+        });
+    });
+}
+
+export async function updateSlide(id, data) {
+    const db = getDatabase();
+    const { title, description, image, link, buttonText, isActive, order } = data;
+    return new Promise((resolve, reject) => {
+        const sql = 'UPDATE slides SET title = ?, description = ?, image = ?, link = ?, buttonText = ?, isActive = ?, "order" = ? WHERE id = ?';
+        db.run(sql, [title, description, image, link, buttonText, isActive ? 1 : 0, order, id], function (err) {
+            if (err) return reject(err);
+            if (this.changes === 0) return reject(new Error("Slide not found or no changes made."));
+            resolve(this);
+        });
+    });
+}
+
+export async function deleteSlide(id) {
+    const db = getDatabase();
+    return new Promise((resolve, reject) => {
+        db.run('DELETE FROM slides WHERE id = ?', [id], function (err) {
+            if (err) return reject(err);
+            if (this.changes === 0) return reject(new Error("Slide not found."));
+            resolve(this);
+        });
+    });
+}

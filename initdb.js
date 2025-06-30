@@ -16,6 +16,7 @@ db.serialize(() => {
   db.run("DROP TABLE IF EXISTS areas");
   db.run("DROP TABLE IF EXISTS cities");
   db.run("DROP TABLE IF EXISTS shipping_methods");
+  db.run("DROP TABLE IF EXISTS slides");
 
 
   // Create roles table
@@ -74,6 +75,20 @@ db.serialize(() => {
 
   // Create areas table
   db.run("CREATE TABLE areas (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, city_id INTEGER NOT NULL, UNIQUE(name, city_id), FOREIGN KEY(city_id) REFERENCES cities(id) ON DELETE CASCADE)");
+
+  // Create slides table
+  db.run(`
+    CREATE TABLE slides (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      title TEXT NOT NULL,
+      description TEXT,
+      image TEXT NOT NULL,
+      link TEXT,
+      buttonText TEXT,
+      isActive BOOLEAN DEFAULT 0,
+      "order" INTEGER DEFAULT 0
+    )
+  `);
 
   // Keep other tables
   db.run("CREATE TABLE categories (id TEXT PRIMARY KEY, name TEXT, slug TEXT UNIQUE, image TEXT, parentId TEXT, FOREIGN KEY(parentId) REFERENCES categories(id) ON DELETE SET NULL)");

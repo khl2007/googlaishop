@@ -44,6 +44,7 @@ function seedDatabase() {
     db.run(`CREATE TABLE IF NOT EXISTS cities (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, country_name TEXT NOT NULL, UNIQUE(name, country_name))`);
     db.run(`CREATE TABLE IF NOT EXISTS areas (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, city_id INTEGER NOT NULL, UNIQUE(name, city_id), FOREIGN KEY(city_id) REFERENCES cities(id) ON DELETE CASCADE)`);
     db.run(`CREATE TABLE IF NOT EXISTS shipping_methods (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL, logo TEXT, cost_type TEXT NOT NULL, default_cost REAL, config TEXT, enabled BOOLEAN DEFAULT 0)`);
+    db.run(`CREATE TABLE IF NOT EXISTS slides (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL, description TEXT, image TEXT NOT NULL, link TEXT, buttonText TEXT, isActive BOOLEAN DEFAULT 0, "order" INTEGER DEFAULT 0)`);
 
 
     // Seed roles
@@ -99,6 +100,17 @@ function seedDatabase() {
     shippingMethods.forEach(sm => insertShippingStmt.run(sm.title, sm.logo, sm.cost_type, sm.default_cost, sm.config, sm.enabled));
     insertShippingStmt.finalize();
     console.log('Shipping methods seeded.');
+
+    // Seed Slides
+    const slides = [
+        { title: 'New AuraPhone X', description: 'Experience the future in your hands.', image: 'https://placehold.co/1200x500/3b82f6/ffffff.png', link: '/products/auraphone-x', buttonText: 'Shop Now', isActive: 1, order: 1 },
+        { title: 'ZenBook Pro Launch', description: 'Power and elegance combined.', image: 'https://placehold.co/1200x500/10b981/ffffff.png', link: '/products/zenbook-pro', buttonText: 'Explore', isActive: 1, order: 2 },
+        { title: 'Huge Sale on Accessories', description: 'Up to 50% off on selected items.', image: 'https://placehold.co/1200x500/f59e0b/ffffff.png', link: '/categories/accessories', buttonText: 'View Deals', isActive: 0, order: 3 },
+    ];
+    const insertSlideStmt = db.prepare('INSERT OR IGNORE INTO slides (title, description, image, link, buttonText, isActive, "order") VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
+    slides.forEach(s => insertSlideStmt.run(s.title, s.description, s.image, s.link, s.buttonText, s.isActive, s.order));
+    insertSlideStmt.finalize();
+    console.log('Slides seeded.');
 
 
     // Seed Cities
