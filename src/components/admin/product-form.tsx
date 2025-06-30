@@ -37,20 +37,15 @@ const optionGroupSchema = z.object({
 const variantSchema = z.object({
   id: z.string().optional(),
   options: z.record(z.string()).optional(),
-  price: z.preprocess(
-    (val) => (val === "" || val == null ? undefined : val),
-    z.coerce.number({
-        required_error: "Price is required.",
-        invalid_type_error: "Price must be a number."
-    }).positive({ message: "Price must be positive." })
-  ),
-  stock: z.preprocess(
-    (val) => (val === "" || val == null ? undefined : val),
-    z.coerce.number({
-        required_error: "Stock is required.",
-        invalid_type_error: "Stock must be a number."
-    }).int().min(0, { message: "Stock can't be negative."})
-  ),
+  price: z.string().min(1, "Price is required.").refine(val => !isNaN(parseFloat(val)) && parseFloat(val) > 0, {
+    message: "Price must be a positive number.",
+  }),
+  stock: z.string().min(1, "Stock is required.").refine(val => {
+    const num = parseInt(val, 10);
+    return !isNaN(num) && String(num) === val && num >= 0;
+  }, {
+    message: "Stock must be a non-negative whole number.",
+  }),
   image: z.string().optional().or(z.literal('')),
 });
 
@@ -66,10 +61,9 @@ const formSchema = z.object({
   tags: z.string().optional(),
   isFeatured: z.boolean().default(false),
   isOnOffer: z.boolean().default(false),
-  weight: z.preprocess(
-    (val) => (val === '' || val == null ? undefined : val),
-    z.coerce.number({ invalid_type_error: "Weight must be a number."}).min(0).optional()
-  ),
+  weight: z.string().optional().refine(val => val === '' || val === undefined || (!isNaN(parseFloat(val)) && parseFloat(val) >= 0), {
+      message: "Weight must be a positive number.",
+  }),
   dimensions: z.string().optional(),
 }).superRefine((data, ctx) => {
     if (data.optionGroups && data.optionGroups.length > 0) {
@@ -118,13 +112,13 @@ export function ProductForm({ product, categories, vendors }: ProductFormProps) 
           ...v,
           id: v.id,
           options: typeof v.options === 'string' ? JSON.parse(v.options) : v.options,
-          price: v.price ?? undefined,
-          stock: v.stock ?? 0,
-      })) || [{ options: {}, price: undefined, stock: 0, image: '' }],
+          price: v.price != null ? String(v.price) : '',
+          stock: v.stock != null ? String(v.stock) : '',
+      })) || [{ options: {}, price: '', stock: '', image: '' }],
       tags: product?.tags || "",
       isFeatured: !!product?.isFeatured,
       isOnOffer: !!product?.isOnOffer,
-      weight: product?.weight ?? undefined,
+      weight: product?.weight != null ? String(product.weight) : '',
       dimensions: product?.dimensions || "",
     },
     mode: 'onBlur',
@@ -150,6 +144,7 @@ export function ProductForm({ product, categories, vendors }: ProductFormProps) 
         ...data,
         vendorId: parseInt(data.vendorId),
         optionGroups: data.optionGroups ? JSON.stringify(data.optionGroups) : "[]",
+        weight: data.weight ? parseFloat(data.weight) : undefined,
         variants: data.variants.map(v => {
             const optionValues = v.options ? Object.values(v.options) : [];
             const variantName = optionValues.length > 0 ? optionValues.join(' / ') : data.name;
@@ -157,7 +152,9 @@ export function ProductForm({ product, categories, vendors }: ProductFormProps) 
                 ...v,
                 id: v.id,
                 name: variantName,
-                options: JSON.stringify(v.options || {})
+                options: JSON.stringify(v.options || {}),
+                price: parseFloat(v.price),
+                stock: parseInt(v.stock, 10),
             }
         })
     };
@@ -305,10 +302,10 @@ export function ProductForm({ product, categories, vendors }: ProductFormProps) 
                                 ))}
 
                                 <FormField control={form.control} name={`variants.${index}.price`} render={({ field }) => (
-                                    <FormItem><FormLabel>Price</FormLabel><FormControl><Input type="number" step="0.01" placeholder="99.99" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
+                                    <FormItem><FormLabel>Price</FormLabel><FormControl><Input type="number" step="0.01" placeholder="99.99" {...field} /></FormControl><FormMessage /></FormItem>
                                 )}/>
                                 <FormField control={form.control} name={`variants.${index}.stock`} render={({ field }) => (
-                                    <FormItem><FormLabel>Stock</FormLabel><FormControl><Input type="number" placeholder="100" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
+                                    <FormItem><FormLabel>Stock</FormLabel><FormControl><Input type="number" placeholder="100" {...field} /></FormControl><FormMessage /></FormItem>
                                 )}/>
                                 <FormField control={form.control} name={`variants.${index}.image`} render={({ field: { onChange, value, ...rest } }) => {
                                     const fileInputRef = React.useRef<HTMLInputElement>(null);
@@ -350,7 +347,7 @@ export function ProductForm({ product, categories, vendors }: ProductFormProps) 
                         </Card>
                     ))}
                     {!isEditMode && (
-                    <Button type="button" variant="outline" onClick={() => appendVariant({ options: {}, price: undefined, stock: 0, image: '' })}>
+                    <Button type="button" variant="outline" onClick={() => appendVariant({ options: {}, price: '', stock: '', image: '' })}>
                         <PlusCircle className="mr-2 h-4 w-4" /> Add Variant
                     </Button>
                     )}
@@ -423,7 +420,7 @@ export function ProductForm({ product, categories, vendors }: ProductFormProps) 
                 <CardHeader><CardTitle>Shipping</CardTitle></CardHeader>
                 <CardContent className="space-y-4">
                     <FormField control={form.control} name="weight" render={({ field }) => (
-                        <FormItem><FormLabel>Weight (kg)</FormLabel><FormControl><Input type="number" step="0.01" placeholder="0.5" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
+                        <FormItem><FormLabel>Weight (kg)</FormLabel><FormControl><Input type="number" step="0.01" placeholder="0.5" {...field} /></FormControl><FormMessage /></FormItem>
                     )} />
                     <FormField control={form.control} name="dimensions" render={({ field }) => (
                         <FormItem><FormLabel>Dimensions (L x W x H)</FormLabel><FormControl><Input placeholder="e.g. 20cm x 15cm x 5cm" {...field} /></FormControl><FormMessage /></FormItem>
