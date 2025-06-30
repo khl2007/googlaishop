@@ -38,12 +38,18 @@ const variantSchema = z.object({
   id: z.string().optional(),
   options: z.record(z.string()).optional(),
   price: z.preprocess(
-    (val) => (val === "" ? undefined : val),
-    z.coerce.number({ required_error: "Price is required." }).min(0, "Price must be non-negative.")
+    (val) => (val === '' || val == null ? undefined : parseFloat(String(val))),
+    z.number({
+        required_error: "Price is required.",
+        invalid_type_error: "Price must be a number.",
+    }).min(0, "Price must be non-negative.")
   ),
   stock: z.preprocess(
-    (val) => (val === "" ? undefined : val),
-    z.coerce.number({ required_error: "Stock is required." }).int("Stock must be a whole number.").min(0, "Stock must be non-negative.")
+    (val) => (val === '' || val == null ? undefined : parseInt(String(val), 10)),
+    z.number({
+        required_error: "Stock is required.",
+        invalid_type_error: "Stock must be a whole number.",
+    }).int("Stock must be an integer.").min(0, "Stock must be non-negative.")
   ),
   image: z.string().optional().or(z.literal('')),
 });
@@ -58,25 +64,22 @@ const formSchema = z.object({
   optionGroups: z.array(optionGroupSchema).optional(),
   variants: z.array(variantSchema).min(1, "At least one product variant is required."),
   tags: z.string().optional(),
-  isFeatured: z.union([z.boolean(), z.number()]).transform(v => !!v).default(false),
-  isOnOffer: z.union([z.boolean(), z.number()]).transform(v => !!v).default(false),
+  isFeatured: z.boolean().default(false),
+  isOnOffer: z.boolean().default(false),
   weight: z.preprocess(
-      (val) => (val === "" || val === null ? undefined : val),
-      z.coerce.number({ invalid_type_error: "Weight must be a number." }).min(0, "Weight must be non-negative.").optional()
+      (val) => (val === "" || val == null ? undefined : parseFloat(String(val))),
+      z.number({ invalid_type_error: "Weight must be a number." }).min(0, "Weight must be non-negative.").optional()
   ),
   dimensions: z.string().optional(),
 }).superRefine((data, ctx) => {
     if (data.optionGroups && data.optionGroups.length > 0) {
         data.optionGroups.forEach((group) => {
-            // Only validate for groups that have a name, which prevents validation on new, empty groups
             if (group.name) {
                 data.variants.forEach((variant, vIndex) => {
-                    // Check if the variant has a selected option for this group
                     if (!variant.options || !variant.options[group.name] || variant.options[group.name] === '') {
                         ctx.addIssue({
                             code: z.ZodIssueCode.custom,
                             message: "Required",
-                            // This path correctly points to the specific dropdown in the form
                             path: [`variants`, vIndex, `options`, group.name],
                         });
                     }
@@ -117,13 +120,13 @@ export function ProductForm({ product, categories, vendors }: ProductFormProps) 
           ...v,
           id: v.id,
           options: typeof v.options === 'string' ? JSON.parse(v.options) : v.options,
-          price: v.price != null ? String(v.price) : '',
-          stock: v.stock != null ? String(v.stock) : '',
-      })) || [{ options: {}, price: '', stock: '', image: '' }],
+          price: v.price,
+          stock: v.stock,
+      })) || [{ options: {}, price: undefined, stock: undefined, image: '' }],
       tags: product?.tags || "",
       isFeatured: !!product?.isFeatured,
       isOnOffer: !!product?.isOnOffer,
-      weight: product?.weight != null ? String(product.weight) : '',
+      weight: product?.weight,
       dimensions: product?.dimensions || "",
     },
     mode: 'onBlur',
@@ -144,12 +147,29 @@ export function ProductForm({ product, categories, vendors }: ProductFormProps) 
 
   const isSubmitting = form.formState.isSubmitting;
 
+  const handleRemoveGroup = (index: number) => {
+    const groupToRemove = form.getValues(`optionGroups.${index}`);
+    removeGroup(index); // Remove the group from the form state
+    
+    // Clean up the corresponding option from all variants
+    if (groupToRemove && groupToRemove.name) {
+      const currentVariants = form.getValues('variants');
+      currentVariants.forEach((variant, variantIndex) => {
+        if (variant.options && groupToRemove.name in variant.options) {
+          const newOptions = { ...variant.options };
+          delete newOptions[groupToRemove.name];
+          form.setValue(`variants.${variantIndex}.options`, newOptions, { shouldValidate: true });
+        }
+      });
+    }
+  };
+
+
   const onSubmit: SubmitHandler<ProductFormValues> = async (data) => {
     const transformedData = {
         ...data,
         vendorId: parseInt(data.vendorId),
         optionGroups: data.optionGroups ? JSON.stringify(data.optionGroups) : "[]",
-        weight: data.weight,
         variants: data.variants.map(v => {
             const optionValues = v.options ? Object.values(v.options) : [];
             const variantName = optionValues.length > 0 ? optionValues.join(' / ') : data.name;
@@ -158,8 +178,6 @@ export function ProductForm({ product, categories, vendors }: ProductFormProps) 
                 id: v.id,
                 name: variantName,
                 options: JSON.stringify(v.options || {}),
-                price: v.price,
-                stock: v.stock,
             }
         })
     };
@@ -232,7 +250,7 @@ export function ProductForm({ product, categories, vendors }: ProductFormProps) 
                     <CardHeader className="flex flex-row items-center justify-between py-4">
                     <h3 className="font-semibold">Option Group</h3>
                     {!isEditMode && (
-                        <Button type="button" variant="ghost" size="icon" onClick={() => removeGroup(groupIndex)}>
+                        <Button type="button" variant="ghost" size="icon" onClick={() => handleRemoveGroup(groupIndex)}>
                             <Trash className="h-4 w-4 text-destructive" />
                         </Button>
                     )}
@@ -285,7 +303,7 @@ export function ProductForm({ product, categories, vendors }: ProductFormProps) 
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                                 {watchedGroups && watchedGroups.map((group) => {
-                                    if (!group.name) return null; // Don't render if group name is not set
+                                    if (!group.name) return null;
                                     return (
                                         <FormField
                                             key={`${variantField.id}-${group.name}`}
@@ -310,10 +328,10 @@ export function ProductForm({ product, categories, vendors }: ProductFormProps) 
                                 })}
 
                                 <FormField control={form.control} name={`variants.${index}.price`} render={({ field }) => (
-                                    <FormItem><FormLabel>Price</FormLabel><FormControl><Input type="text" placeholder="99.99" {...field} /></FormControl><FormMessage /></FormItem>
+                                    <FormItem><FormLabel>Price</FormLabel><FormControl><Input type="number" step="0.01" placeholder="99.99" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
                                 )}/>
                                 <FormField control={form.control} name={`variants.${index}.stock`} render={({ field }) => (
-                                    <FormItem><FormLabel>Stock</FormLabel><FormControl><Input type="text" placeholder="100" {...field} /></FormControl><FormMessage /></FormItem>
+                                    <FormItem><FormLabel>Stock</FormLabel><FormControl><Input type="number" placeholder="100" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
                                 )}/>
                                 <FormField control={form.control} name={`variants.${index}.image`} render={({ field: { onChange, value, ...rest } }) => {
                                     const fileInputRef = React.useRef<HTMLInputElement>(null);
@@ -355,7 +373,7 @@ export function ProductForm({ product, categories, vendors }: ProductFormProps) 
                         </Card>
                     ))}
                     {!isEditMode && (
-                    <Button type="button" variant="outline" onClick={() => appendVariant({ options: {}, price: '', stock: '', image: '' })}>
+                    <Button type="button" variant="outline" onClick={() => appendVariant({ options: {}, price: undefined, stock: undefined, image: '' })}>
                         <PlusCircle className="mr-2 h-4 w-4" /> Add Variant
                     </Button>
                     )}
@@ -428,7 +446,7 @@ export function ProductForm({ product, categories, vendors }: ProductFormProps) 
                 <CardHeader><CardTitle>Shipping</CardTitle></CardHeader>
                 <CardContent className="space-y-4">
                     <FormField control={form.control} name="weight" render={({ field }) => (
-                        <FormItem><FormLabel>Weight (kg)</FormLabel><FormControl><Input type="text" placeholder="0.5" {...field} /></FormControl><FormMessage /></FormItem>
+                        <FormItem><FormLabel>Weight (kg)</FormLabel><FormControl><Input type="number" step="0.01" placeholder="0.5" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
                     )} />
                     <FormField control={form.control} name="dimensions" render={({ field }) => (
                         <FormItem><FormLabel>Dimensions (L x W x H)</FormLabel><FormControl><Input placeholder="e.g. 20cm x 15cm x 5cm" {...field} /></FormControl><FormMessage /></FormItem>
@@ -522,7 +540,7 @@ function OptionValuesArray({ groupIndex, isEditMode }: { groupIndex: number, isE
                     <FormLabel className="text-xs">Color (Optional)</FormLabel>
                     <FormControl>
                     <div className="flex items-center gap-2">
-                        <Input type="color" onChange={field.onChange} value={field.value || '#FFFFFF'} className="w-12 h-10 p-1" disabled={isEditMode} />
+                        <Input type="color" onChange={field.onChange} value={field.value || '#ffffff'} className="w-12 h-10 p-1" disabled={isEditMode} />
                         <Input type="text" placeholder="#RRGGBB" {...field} value={field.value ?? ''} disabled={isEditMode} />
                     </div>
                     </FormControl>
@@ -546,5 +564,7 @@ function OptionValuesArray({ groupIndex, isEditMode }: { groupIndex: number, isE
     </div>
   );
 }
+
+    
 
     
