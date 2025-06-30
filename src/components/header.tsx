@@ -19,7 +19,7 @@ import {
   Search,
   Share2,
 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useCart } from "@/hooks/use-cart";
 import Image from "next/image";
 import { Input } from "./ui/input";
@@ -47,6 +47,48 @@ export function Header({ user }: HeaderProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const isCustomer = !user || user.role === 'customer';
   const [scrolled, setScrolled] = useState(false);
+
+  // New state and effect for typing animation
+  const [placeholder, setPlaceholder] = useState('');
+  const placeholders = useMemo(() => ["Search for AuraPhone X...", "Find ZenBook Pro...", "Explore accessories..."], []);
+
+  useEffect(() => {
+    let currentPlaceholderIndex = 0;
+    let currentCharIndex = 0;
+    let isDeleting = false;
+    let timeoutId: NodeJS.Timeout;
+
+    const type = () => {
+        const currentWord = placeholders[currentPlaceholderIndex];
+        const typingSpeed = 150;
+        const deletingSpeed = 100;
+        const delayBetweenWords = 2000;
+
+        if (isDeleting) {
+            setPlaceholder(currentWord.substring(0, currentCharIndex - 1));
+            currentCharIndex--;
+        } else {
+            setPlaceholder(currentWord.substring(0, currentCharIndex + 1));
+            currentCharIndex++;
+        }
+
+        if (!isDeleting && currentCharIndex === currentWord.length) {
+            isDeleting = true;
+            timeoutId = setTimeout(type, delayBetweenWords);
+        } else if (isDeleting && currentCharIndex === 0) {
+            isDeleting = false;
+            currentPlaceholderIndex = (currentPlaceholderIndex + 1) % placeholders.length;
+            timeoutId = setTimeout(type, 500);
+        } else {
+            timeoutId = setTimeout(type, isDeleting ? deletingSpeed : typingSpeed);
+        }
+    };
+
+    type();
+
+    return () => clearTimeout(timeoutId);
+  }, [placeholders]);
+
 
   useEffect(() => {
     const handleScroll = () => {
@@ -135,7 +177,7 @@ export function Header({ user }: HeaderProps) {
         <div className="flex flex-1 items-center justify-end gap-2 md:flex-initial">
             <form onSubmit={handleSearch} className="flex flex-1 items-center gap-1 md:flex-initial">
                 <Input 
-                    placeholder="Search..." 
+                    placeholder={placeholder}
                     className={cn(
                         "h-9 w-full transition-all duration-300 md:w-32 focus-within:w-full md:focus-within:w-48", 
                         scrolled 
