@@ -4,15 +4,14 @@ import type { NextRequest } from 'next/server';
 
 const STATE_CHANGING_METHODS = ['POST', 'PUT', 'DELETE', 'PATCH'];
 
-export const runtime = 'nodejs';
-
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set('x-next-pathname', pathname);
 
+  const isSecure = request.nextUrl.protocol === 'https:';
+
   // CSRF Protection
-  // Exempt login/register from the check as user might not have a token on first visit
   const isCsrfExempt = pathname.startsWith('/api/auth/login') || pathname.startsWith('/api/auth/register');
   if (STATE_CHANGING_METHODS.includes(request.method) && !isCsrfExempt) {
     const csrfTokenFromHeader = request.headers.get('x-csrf-token');
@@ -30,7 +29,6 @@ export function middleware(request: NextRequest) {
     },
   });
   
-  // Set CSRF token on the response if it doesn't exist on the request
   if (!request.cookies.has('csrf_token')) {
     const token = crypto.randomUUID();
 
@@ -39,7 +37,7 @@ export function middleware(request: NextRequest) {
       value: token,
       path: '/',
       sameSite: 'strict',
-      secure: process.env.NODE_ENV === 'production',
+      secure: isSecure,
       httpOnly: false, // Must be readable by client JS for this pattern
     });
   }
