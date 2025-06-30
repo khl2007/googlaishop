@@ -11,9 +11,10 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
-import { Home, ShoppingCart, Users, Package, BarChart3, LogOut, Tags, Store, Settings } from "lucide-react";
+import { Home, ShoppingCart, Users, Package, BarChart3, Tags, Store, Settings } from "lucide-react";
 import Link from "next/link";
 import { AdminPageHeader } from "@/components/admin/page-header";
+import { LogoutButton } from "@/components/logout-button";
 
 export default function AdminLayout({
   children,
@@ -106,10 +107,7 @@ export default function AdminLayout({
           </SidebarMenu>
         </SidebarContent>
         <SidebarFooter>
-          <Button variant="ghost" className="w-full justify-start gap-2">
-            <LogOut className="size-4" />
-            Logout
-          </Button>
+          <LogoutButton />
         </SidebarFooter>
       </Sidebar>
       <SidebarInset>

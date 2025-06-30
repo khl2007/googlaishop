@@ -11,8 +11,9 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
-import { Home, Package, ShoppingCart, LogOut } from "lucide-react";
+import { Home, Package, ShoppingCart } from "lucide-react";
 import Link from "next/link";
+import { LogoutButton } from "@/components/logout-button";
 
 export default function VendorLayout({
   children,
@@ -57,10 +58,7 @@ export default function VendorLayout({
           </SidebarMenu>
         </SidebarContent>
         <SidebarFooter>
-          <Button variant="ghost" className="w-full justify-start gap-2">
-            <LogOut className="size-4" />
-            Logout
-          </Button>
+          <LogoutButton />
         </SidebarFooter>
       </Sidebar>
       <SidebarInset>
