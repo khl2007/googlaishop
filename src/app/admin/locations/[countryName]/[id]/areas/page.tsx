@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useState } from 'react';
@@ -13,7 +12,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { MoreHorizontal, PlusCircle, Edit, Trash2, MapPinned } from 'lucide-react';
+import { MoreHorizontal, PlusCircle, Edit, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -22,30 +21,49 @@ import { Label } from '@/components/ui/label';
 import { Loader2 } from 'lucide-react';
 import Link from 'next/link';
 
-interface City {
+interface Area {
   id: number;
   name: string;
-  country_name: string;
+  city_id: number;
 }
 
-export default function ManageCitiesPage({ params }: { params: { countryName: string } }) {
+interface City {
+    id: number;
+    name: string;
+    country_name: string;
+}
+
+export default function ManageAreasPage({ params }: { params: { countryName: string, id: string } }) {
   const countryName = decodeURIComponent(params.countryName);
-  const [cities, setCities] = useState<City[]>([]);
+  const cityId = params.id;
+  
+  const [areas, setAreas] = useState<Area[]>([]);
+  const [city, setCity] = useState<City | null>(null);
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [currentCity, setCurrentCity] = useState<City | null>(null);
-  const [newCityName, setNewCityName] = useState('');
+  const [currentArea, setCurrentArea] = useState<Area | null>(null);
+  const [newAreaName, setNewAreaName] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
 
-  const fetchCities = async () => {
+  const fetchData = async () => {
     try {
       setLoading(true);
-      const res = await fetch(`/api/admin/cities?country=${encodeURIComponent(countryName)}`);
-      if (!res.ok) throw new Error('Failed to fetch cities');
-      const data = await res.json();
-      setCities(data);
+      const [areasRes, cityRes] = await Promise.all([
+        fetch(`/api/admin/cities/${cityId}/areas`),
+        fetch(`/api/admin/cities/${cityId}`) // You might need to create this simple API endpoint
+      ]);
+      
+      if (!areasRes.ok) throw new Error('Failed to fetch areas');
+      const areasData = await areasRes.json();
+      setAreas(areasData);
+
+      if (cityRes.ok) {
+          const cityData = await cityRes.json();
+          setCity(cityData);
+      }
+
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     } finally {
@@ -54,12 +72,12 @@ export default function ManageCitiesPage({ params }: { params: { countryName: st
   };
 
   useEffect(() => {
-    fetchCities();
-  }, [countryName]);
+    fetchData();
+  }, [cityId]);
   
-  const handleOpenDialog = (city: City | null = null) => {
-    setCurrentCity(city);
-    setNewCityName(city ? city.name : '');
+  const handleOpenDialog = (area: Area | null = null) => {
+    setCurrentArea(area);
+    setNewAreaName(area ? area.name : '');
     setIsDialogOpen(true);
   };
 
@@ -67,11 +85,9 @@ export default function ManageCitiesPage({ params }: { params: { countryName: st
     e.preventDefault();
     setIsSubmitting(true);
     
-    const url = currentCity ? `/api/admin/cities/${currentCity.id}` : '/api/admin/cities';
-    const method = currentCity ? 'PUT' : 'POST';
-    const body = currentCity 
-      ? JSON.stringify({ name: newCityName })
-      : JSON.stringify({ name: newCityName, country_name: countryName });
+    const url = currentArea ? `/api/admin/areas/${currentArea.id}` : `/api/admin/cities/${cityId}/areas`;
+    const method = currentArea ? 'PUT' : 'POST';
+    const body = JSON.stringify({ name: newAreaName });
 
     try {
       const res = await fetch(url, {
@@ -82,12 +98,12 @@ export default function ManageCitiesPage({ params }: { params: { countryName: st
 
       if (!res.ok) {
         const errorData = await res.json();
-        throw new Error(errorData.message || 'Failed to save city');
+        throw new Error(errorData.message || 'Failed to save area');
       }
       
-      toast({ title: "Success", description: `City ${currentCity ? 'updated' : 'added'} successfully.` });
+      toast({ title: "Success", description: `Area ${currentArea ? 'updated' : 'added'} successfully.` });
       setIsDialogOpen(false);
-      fetchCities();
+      fetchData();
     } catch (err: any) => {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     } finally {
@@ -96,21 +112,21 @@ export default function ManageCitiesPage({ params }: { params: { countryName: st
   };
 
   const handleDelete = async () => {
-    if (!currentCity) return;
+    if (!currentArea) return;
 
     try {
-      const res = await fetch(`/api/admin/cities/${currentCity.id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/admin/areas/${currentArea.id}`, { method: 'DELETE' });
       if (!res.ok) {
         const errorData = await res.json();
-        throw new Error(errorData.message || 'Failed to delete city');
+        throw new Error(errorData.message || 'Failed to delete area');
       }
-      toast({ title: "Success", description: "City deleted successfully." });
-      setCities(cities.filter(c => c.id !== currentCity.id));
+      toast({ title: "Success", description: "Area deleted successfully." });
+      setAreas(areas.filter(c => c.id !== currentArea.id));
     } catch (err: any) => {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     } finally {
       setIsDeleteDialogOpen(false);
-      setCurrentCity(null);
+      setCurrentArea(null);
     }
   };
 
@@ -119,15 +135,15 @@ export default function ManageCitiesPage({ params }: { params: { countryName: st
       <CardHeader>
         <div className="flex justify-between items-center">
             <div>
-                <CardTitle>Manage Cities for {countryName}</CardTitle>
+                <CardTitle>Manage Areas for {city?.name || '...'}</CardTitle>
                 <CardDescription>
-                    <Link href="/admin/locations" className="text-sm text-muted-foreground hover:text-primary underline">
-                        Back to all locations
+                    <Link href={`/admin/locations/${countryName}`} className="text-sm text-muted-foreground hover:text-primary underline">
+                        Back to cities in {countryName}
                     </Link>
                 </CardDescription>
             </div>
             <Button onClick={() => handleOpenDialog()}>
-                <PlusCircle className="mr-2 h-4 w-4" /> Add City
+                <PlusCircle className="mr-2 h-4 w-4" /> Add Area
             </Button>
         </div>
       </CardHeader>
@@ -139,14 +155,14 @@ export default function ManageCitiesPage({ params }: { params: { countryName: st
                 <Table>
                 <TableHeader>
                     <TableRow>
-                    <TableHead>City Name</TableHead>
+                    <TableHead>Area Name</TableHead>
                     <TableHead className="w-[100px] text-right">Actions</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    {cities.length > 0 ? cities.map((city) => (
-                    <TableRow key={city.id}>
-                        <TableCell className="font-medium">{city.name}</TableCell>
+                    {areas.length > 0 ? areas.map((area) => (
+                    <TableRow key={area.id}>
+                        <TableCell className="font-medium">{area.name}</TableCell>
                         <TableCell className="text-right">
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
@@ -156,21 +172,15 @@ export default function ManageCitiesPage({ params }: { params: { countryName: st
                             </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                                <DropdownMenuItem asChild>
-                                    <Link href={`/admin/locations/${countryName}/${city.id}/areas`}>
-                                        <MapPinned className="mr-2 h-4 w-4" />
-                                        Manage Areas
-                                    </Link>
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => handleOpenDialog(city)}><Edit className="mr-2 h-4 w-4" />Edit City</DropdownMenuItem>
-                                <DropdownMenuItem className="text-destructive" onClick={() => { setCurrentCity(city); setIsDeleteDialogOpen(true); }}><Trash2 className="mr-2 h-4 w-4" />Delete City</DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleOpenDialog(area)}><Edit className="mr-2 h-4 w-4" />Edit</DropdownMenuItem>
+                                <DropdownMenuItem className="text-destructive" onClick={() => { setCurrentArea(area); setIsDeleteDialogOpen(true); }}><Trash2 className="mr-2 h-4 w-4" />Delete</DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>
                         </TableCell>
                     </TableRow>
                     )) : (
                         <TableRow>
-                            <TableCell colSpan={2} className="h-24 text-center">No cities found for this country.</TableCell>
+                            <TableCell colSpan={2} className="h-24 text-center">No areas found for this city.</TableCell>
                         </TableRow>
                     )}
                 </TableBody>
@@ -180,29 +190,30 @@ export default function ManageCitiesPage({ params }: { params: { countryName: st
       </CardContent>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <form onSubmit={handleDialogSubmit}>
-        <DialogContent>
-              <DialogHeader>
-                  <DialogTitle>{currentCity ? 'Edit City' : 'Add New City'}</DialogTitle>
-                  <DialogDescription>
-                      Enter the name for the city in {countryName}.
-                  </DialogDescription>
-              </DialogHeader>
-              <div className="grid gap-4 py-4">
-                  <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="city-name" className="text-right">Name</Label>
-                      <Input id="city-name" value={newCityName} onChange={(e) => setNewCityName(e.target.value)} className="col-span-3" required />
-                  </div>
-              </div>
-              <DialogFooter>
-                  <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
-                  <Button type="submit" disabled={isSubmitting}>
-                      {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                      Save
-                  </Button>
-              </DialogFooter>
-        </DialogContent>
+        <form onSubmit={handleDialogSubmit}>
+          <DialogContent>
+            <DialogHeader>
+                <DialogTitle>{currentArea ? 'Edit Area' : 'Add New Area'}</DialogTitle>
+                <DialogDescription>
+                    Enter the name for the area in {city?.name}.
+                </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+                <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="area-name" className="text-right">Name</Label>
+                    <Input id="area-name" value={newAreaName} onChange={(e) => setNewAreaName(e.target.value)} className="col-span-3" required />
+                </div>
+            </div>
+            <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
+                <Button type="submit" disabled={isSubmitting}>
+                    {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Save
+                </Button>
+            </DialogFooter>
+          </DialogContent>
           </form>
+        </DialogContent>
       </Dialog>
 
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
@@ -210,11 +221,11 @@ export default function ManageCitiesPage({ params }: { params: { countryName: st
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the city &quot;{currentCity?.name}&quot; and all its associated areas.
+              This action cannot be undone. This will permanently delete the area &quot;{currentArea?.name}&quot;.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setCurrentCity(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel onClick={() => setCurrentArea(null)}>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
