@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import getDatabase from '@/lib/database';
 import { getSettings } from '@/lib/data';
+import { revalidateTag } from 'next/cache';
 
 // GET settings
 export async function GET() {
@@ -37,6 +38,9 @@ export async function PUT(request) {
         resolve(this);
       });
     });
+    
+    revalidateTag('settings');
+
     return NextResponse.json({ message: 'Settings updated successfully' });
   } catch (error) {
     return NextResponse.json({ message: 'Failed to update settings', error: error.message }, { status: 500 });

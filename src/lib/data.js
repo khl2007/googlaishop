@@ -1,5 +1,6 @@
 
 import getDatabase from '@/lib/database';
+import { unstable_cache as cache } from 'next/cache';
 
 export async function getProductBySlug(slug) {
   const db = getDatabase();
@@ -352,7 +353,7 @@ export async function deleteUserAddress(addressId, userId) {
     });
 }
 
-export async function getSettings() {
+export const getSettings = cache(async () => {
     const db = getDatabase();
     return new Promise((resolve, reject) => {
         db.get('SELECT * FROM settings WHERE id = 1', (err, row) => {
@@ -363,7 +364,10 @@ export async function getSettings() {
             resolve(row);
         });
     });
-}
+}, 
+['settings'],
+{ tags: ['settings'] }
+);
 
 export async function getPaymentMethods() {
     const db = getDatabase();
