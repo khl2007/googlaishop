@@ -20,6 +20,7 @@ import { z } from "zod";
 import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AddressAutocomplete } from "@/components/address-autocomplete";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const addressFormSchema = z.object({
   fullName: z.string().min(2, "Full name is required."),
@@ -57,6 +58,9 @@ export default function CheckoutPage() {
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
   const [loadingPaymentMethods, setLoadingPaymentMethods] = useState(true);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string>('');
+  
+  const [cities, setCities] = useState<string[]>([]);
+  const [isCitiesLoading, setIsCitiesLoading] = useState(true);
 
   const form = useForm<AddressFormValues>({
     resolver: zodResolver(addressFormSchema),
@@ -68,7 +72,7 @@ export default function CheckoutPage() {
       area: "",
       state: "",
       zip: "",
-      country: "",
+      country: "", // Will be set by useEffect
     },
   });
 
@@ -116,6 +120,34 @@ export default function CheckoutPage() {
         fetchPaymentMethods();
     }
   }, [cartItems.length]);
+  
+  useEffect(() => {
+    const fetchSettingsAndCities = async () => {
+        setIsCitiesLoading(true);
+        try {
+            const settingsRes = await fetch('/api/settings');
+            if (!settingsRes.ok) throw new Error("Failed to fetch settings");
+            const settingsData = await settingsRes.json();
+            
+            if (settingsData.country) {
+                form.setValue('country', settingsData.country);
+
+                const citiesRes = await fetch(`/api/cities?country=${encodeURIComponent(settingsData.country)}`);
+                if (!citiesRes.ok) throw new Error("Failed to fetch cities");
+                const citiesData = await citiesRes.json();
+                setCities(citiesData);
+            }
+        } catch (error: any) {
+            toast({ title: "Error", description: "Could not load country/city data.", variant: "destructive" });
+            setCities([]);
+        } finally {
+            setIsCitiesLoading(false);
+        }
+    };
+
+    fetchSettingsAndCities();
+  }, [form, toast]);
+
 
   useEffect(() => {
     if (cartItems.length === 0 && !useCart.length) {
@@ -177,7 +209,6 @@ export default function CheckoutPage() {
     form.setValue("city", address.city);
     form.setValue("state", address.state ?? "");
     form.setValue("zip", address.zip);
-    form.setValue("country", address.country);
     setIsAutocompleteOpen(false);
   };
 
@@ -260,12 +291,41 @@ export default function CheckoutPage() {
                                     <FormField control={form.control} name="fullName" render={({ field }) => (<FormItem><FormLabel>Full Name</FormLabel><FormControl><Input placeholder="John Doe" {...field} /></FormControl><FormMessage /></FormItem>)}/>
                                     <FormField control={form.control} name="street" render={({ field }) => (<FormItem><FormLabel>Street Address</FormLabel><FormControl><Input placeholder="123 Main St" {...field} /></FormControl><FormMessage /></FormItem>)}/>
                                     <FormField control={form.control} name="apartment" render={({ field }) => (<FormItem><FormLabel>Apartment, suite, etc. (optional)</FormLabel><FormControl><Input placeholder="Apt 4B" {...field} /></FormControl><FormMessage /></FormItem>)}/>
+                                    
+                                    <FormField control={form.control} name="country" render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Country</FormLabel>
+                                            <FormControl>
+                                                <Input {...field} readOnly disabled className="bg-muted/50" />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}/>
                                     <div className="grid grid-cols-3 gap-4">
-                                        <FormField control={form.control} name="city" render={({ field }) => (<FormItem className="col-span-2"><FormLabel>City</FormLabel><FormControl><Input placeholder="Anytown" {...field} /></FormControl><FormMessage /></FormItem>)}/>
+                                        <FormField control={form.control} name="city" render={({ field }) => (
+                                            <FormItem className="col-span-2">
+                                                <FormLabel>City</FormLabel>
+                                                <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isCitiesLoading || cities.length === 0}>
+                                                    <FormControl>
+                                                        <SelectTrigger>
+                                                            <SelectValue placeholder={isCitiesLoading ? "Loading cities..." : "Select a city"} />
+                                                        </SelectTrigger>
+                                                    </FormControl>
+                                                    <SelectContent>
+                                                        {cities.map((cityName) => (
+                                                            <SelectItem key={cityName} value={cityName}>
+                                                                {cityName}
+                                                            </SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}/>
                                         <FormField control={form.control} name="zip" render={({ field }) => (<FormItem><FormLabel>ZIP</FormLabel><FormControl><Input placeholder="12345" {...field} /></FormControl><FormMessage /></FormItem>)}/>
                                     </div>
                                     <FormField control={form.control} name="area" render={({ field }) => (<FormItem><FormLabel>Area / District (Optional)</FormLabel><FormControl><Input placeholder="e.g. Downtown" {...field} /></FormControl><FormMessage /></FormItem>)}/>
-                                    <FormField control={form.control} name="country" render={({ field }) => (<FormItem><FormLabel>Country</FormLabel><FormControl><Input placeholder="United States" {...field} /></FormControl><FormMessage /></FormItem>)}/>
+                                    
                                     <Button type="button" onClick={form.handleSubmit(onSaveAddress)} disabled={form.formState.isSubmitting}>{form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Save Address</Button>
                                 </div>
                             </Form>
