@@ -1,3 +1,4 @@
+
 "use client";
 
 import React from "react";
@@ -141,7 +142,7 @@ export function ShippingForm({ method, cities, areas }: ShippingFormProps) {
                 <FormField control={form.control} name="title" render={({ field }) => (
                     <FormItem><FormLabel>Title</FormLabel><FormControl><Input placeholder="e.g., Express Shipping" {...field} /></FormControl><FormMessage /></FormItem>
                 )} />
-                <FormField control={form.control} name="logo" render={({ field: { onChange, ...fieldProps }}) => (
+                <FormField control={form.control} name="logo" render={({ field: { onChange, value, ...fieldProps }}) => (
                     <FormItem>
                         <FormLabel>Logo</FormLabel>
                         {logoPreview && (
