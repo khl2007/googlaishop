@@ -1,6 +1,8 @@
 
 "use client";
 
+import React from "react";
+import Image from "next/image";
 import { useForm, type SubmitHandler } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -12,13 +14,13 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import type { Category } from "@/lib/types";
-import { Loader2 } from "lucide-react";
+import { Loader2, Trash2 } from "lucide-react";
 import { getCsrfToken } from "@/lib/csrf";
 
 const formSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters."),
   slug: z.string().min(2, "Slug must be at least 2 characters.").regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Slug must be lowercase and contain only letters, numbers, and hyphens."),
-  image: z.string().url("Must be a valid URL.").optional().or(z.literal('')),
+  image: z.string().optional().or(z.literal('')),
   isMainCategory: z.boolean().default(true),
   parentId: z.string().optional(),
 }).refine(data => {
@@ -43,6 +45,8 @@ interface CategoryFormProps {
 export function CategoryForm({ category, categories }: CategoryFormProps) {
   const router = useRouter();
   const { toast } = useToast();
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+  
   const form = useForm<CategoryFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -54,6 +58,7 @@ export function CategoryForm({ category, categories }: CategoryFormProps) {
     },
   });
   
+  const [imagePreview, setImagePreview] = React.useState<string | null>(category?.image || null);
   const isMainCategory = form.watch("isMainCategory");
   const isSubmitting = form.formState.isSubmitting;
   const isEditMode = !!category;
@@ -129,14 +134,43 @@ export function CategoryForm({ category, categories }: CategoryFormProps) {
         <FormField
           control={form.control}
           name="image"
-          render={({ field }) => (
+          render={({ field: { onChange, value, ...rest } }) => (
             <FormItem>
-              <FormLabel>Image URL</FormLabel>
+              <FormLabel>Image</FormLabel>
+              {imagePreview && (
+                <div className="relative w-40 h-40 border rounded-md p-2">
+                  <Image src={imagePreview} alt="Category preview" layout="fill" className="object-contain" />
+                  <Button type="button" variant="ghost" size="icon" className="absolute -top-3 -right-3 h-6 w-6 bg-background rounded-full" onClick={() => {
+                      onChange("");
+                      setImagePreview(null);
+                      if (fileInputRef.current) fileInputRef.current.value = "";
+                  }}>
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                  </Button>
+                </div>
+              )}
               <FormControl>
-                <Input placeholder="https://..." {...field} />
+                <Input
+                  {...rest}
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      const reader = new FileReader();
+                      reader.onloadend = () => {
+                        const dataUrl = reader.result as string;
+                        onChange(dataUrl);
+                        setImagePreview(dataUrl);
+                      };
+                      reader.readAsDataURL(file);
+                    }
+                  }}
+                />
               </FormControl>
               <FormDescription>
-                Provide a URL for the category image.
+                Upload an image for the category.
               </FormDescription>
               <FormMessage />
             </FormItem>

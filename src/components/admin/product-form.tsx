@@ -2,6 +2,7 @@
 "use client";
 
 import React from "react";
+import Image from "next/image";
 import { useForm, useFieldArray, type SubmitHandler, useFormContext } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -21,7 +22,7 @@ import { getCsrfToken } from "@/lib/csrf";
 const optionValueSchema = z.object({
   id: z.string().optional(),
   value: z.string().min(1, "Option value is required."),
-  image: z.string().url("Must be a valid URL.").optional().or(z.literal('')),
+  image: z.string().optional().or(z.literal('')),
   color_hex: z.string().optional(),
 });
 
@@ -38,7 +39,7 @@ const variantSchema = z.object({
   }).optional(),
   price: z.preprocess((a) => parseFloat(z.string().parse(a)), z.number().positive("Price must be positive.")),
   stock: z.preprocess((a) => parseInt(z.string().parse(a), 10), z.number().int().min(0, "Stock can't be negative.")),
-  image: z.string().url("Must be a valid URL.").optional().or(z.literal('')),
+  image: z.string().optional().or(z.literal('')),
 });
 
 
@@ -297,13 +298,42 @@ export function ProductForm({ product, categories, vendors }: ProductFormProps) 
                                 <FormField control={form.control} name={`variants.${index}.stock`} render={({ field }) => (
                                     <FormItem><FormLabel>Stock</FormLabel><FormControl><Input type="number" placeholder="100" {...field} /></FormControl><FormMessage /></FormItem>
                                 )}/>
-                                <FormField control={form.control} name={`variants.${index}.image`} render={({ field }) => (
-                                    <FormItem className={hasOptionGroups ? "md:col-span-2 lg:col-span-4" : "col-span-1 md:col-span-2 lg:col-span-4"}>
-                                        <FormLabel>Image URL (Optional)</FormLabel>
-                                        <FormControl><Input placeholder="https://..." {...field} /></FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}/>
+                                <FormField control={form.control} name={`variants.${index}.image`} render={({ field: { onChange, value, ...rest } }) => {
+                                    const fileInputRef = React.useRef<HTMLInputElement>(null);
+                                    return (
+                                        <FormItem className={hasOptionGroups ? "md:col-span-2 lg:col-span-4" : "col-span-1 md:col-span-2 lg:col-span-4"}>
+                                            <FormLabel>Image (Optional)</FormLabel>
+                                            {value && (
+                                                <div className="relative w-20 h-20 border rounded-md p-1">
+                                                    <Image src={value} alt="Variant preview" layout="fill" className="object-contain" />
+                                                    <Button type="button" variant="ghost" size="icon" className="absolute -top-3 -right-3 h-6 w-6 bg-background rounded-full" onClick={() => {
+                                                        onChange("");
+                                                        if (fileInputRef.current) fileInputRef.current.value = "";
+                                                    }}>
+                                                        <Trash className="h-4 w-4 text-destructive" />
+                                                    </Button>
+                                                </div>
+                                            )}
+                                            <FormControl>
+                                            <Input
+                                                {...rest}
+                                                ref={fileInputRef}
+                                                type="file"
+                                                accept="image/*"
+                                                onChange={(e) => {
+                                                const file = e.target.files?.[0];
+                                                if (file) {
+                                                    const reader = new FileReader();
+                                                    reader.onloadend = () => onChange(reader.result as string);
+                                                    reader.readAsDataURL(file);
+                                                }
+                                                }}
+                                            />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )
+                                }}/>
                             </div>
                         </Card>
                     ))}
@@ -429,15 +459,43 @@ function OptionValuesArray({ groupIndex, isEditMode }: { groupIndex: number, isE
             <FormField
                 control={control}
                 name={`optionGroups.${groupIndex}.options.${optionIndex}.image`}
-                render={({ field }) => (
-                <FormItem>
-                    <FormLabel className="text-xs">Image URL (Optional)</FormLabel>
-                    <FormControl>
-                    <Input placeholder="https://..." {...field} disabled={isEditMode} />
-                    </FormControl>
-                    <FormMessage />
-                </FormItem>
-                )}
+                render={({ field: { onChange, value, ...rest } }) => {
+                    const fileInputRef = React.useRef<HTMLInputElement>(null);
+                    return (
+                        <FormItem>
+                            <FormLabel className="text-xs">Image (Optional)</FormLabel>
+                            {value && (
+                                <div className="relative w-16 h-16 border rounded-md p-1">
+                                    <Image src={value} alt="Option preview" layout="fill" className="object-contain" />
+                                    <Button type="button" variant="ghost" size="icon" className="absolute -top-2 -right-2 h-5 w-5 bg-background rounded-full" onClick={() => {
+                                        onChange("");
+                                        if (fileInputRef.current) fileInputRef.current.value = "";
+                                    }}>
+                                        <Trash className="h-3 w-3 text-destructive" />
+                                    </Button>
+                                </div>
+                            )}
+                            <FormControl>
+                            <Input
+                                {...rest}
+                                ref={fileInputRef}
+                                type="file"
+                                accept="image/*"
+                                disabled={isEditMode}
+                                onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) {
+                                    const reader = new FileReader();
+                                    reader.onloadend = () => onChange(reader.result as string);
+                                    reader.readAsDataURL(file);
+                                }
+                                }}
+                            />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    );
+                }}
             />
             <FormField
                 control={control}
