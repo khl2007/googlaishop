@@ -35,14 +35,20 @@ const optionGroupSchema = z.object({
 const variantSchema = z.object({
   id: z.string().optional(),
   options: z.record(z.string()).optional(),
-  price: z.coerce.number({
-    required_error: "Price is required.",
-    invalid_type_error: "Price must be a number."
-  }).positive({ message: "Price must be positive." }),
-  stock: z.coerce.number({
-    required_error: "Stock is required.",
-    invalid_type_error: "Stock must be a number."
-  }).int().min(0, "Stock can't be negative."),
+  price: z.preprocess(
+    (val) => (String(val).trim() === '' ? undefined : val),
+    z.coerce.number({
+        required_error: "Price is required.",
+        invalid_type_error: "Price must be a number."
+    }).positive({ message: "Price must be positive." })
+  ),
+  stock: z.preprocess(
+    (val) => (String(val).trim() === '' ? undefined : val),
+    z.coerce.number({
+        required_error: "Stock is required.",
+        invalid_type_error: "Stock must be a number."
+    }).int().min(0, { message: "Stock can't be negative."})
+  ),
   image: z.string().optional().or(z.literal('')),
 });
 
@@ -59,7 +65,7 @@ const formSchema = z.object({
   isFeatured: z.boolean().default(false),
   isOnOffer: z.boolean().default(false),
   weight: z.preprocess(
-    (val) => (val === "" || val === null ? undefined : val),
+    (val) => (String(val).trim() === '' ? undefined : val),
     z.coerce.number({ invalid_type_error: "Weight must be a number."}).min(0).optional()
   ),
   dimensions: z.string().optional(),
@@ -106,8 +112,8 @@ export function ProductForm({ product, categories, vendors }: ProductFormProps) 
       vendorId: product?.vendorId?.toString() ?? "",
       optionGroups: product?.optionGroups ? JSON.parse(product.optionGroups) : [],
       variants: product?.variants.map(v => ({
-          id: v.id,
           ...v,
+          id: v.id,
           options: typeof v.options === 'string' ? JSON.parse(v.options) : v.options,
           price: v.price ?? undefined,
           stock: v.stock ?? 0,
@@ -295,10 +301,10 @@ export function ProductForm({ product, categories, vendors }: ProductFormProps) 
                                 ))}
 
                                 <FormField control={form.control} name={`variants.${index}.price`} render={({ field }) => (
-                                    <FormItem><FormLabel>Price</FormLabel><FormControl><Input type="number" step="0.01" placeholder="99.99" {...field} /></FormControl><FormMessage /></FormItem>
+                                    <FormItem><FormLabel>Price</FormLabel><FormControl><Input type="number" step="0.01" placeholder="99.99" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
                                 )}/>
                                 <FormField control={form.control} name={`variants.${index}.stock`} render={({ field }) => (
-                                    <FormItem><FormLabel>Stock</FormLabel><FormControl><Input type="number" placeholder="100" {...field} /></FormControl><FormMessage /></FormItem>
+                                    <FormItem><FormLabel>Stock</FormLabel><FormControl><Input type="number" placeholder="100" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
                                 )}/>
                                 <FormField control={form.control} name={`variants.${index}.image`} render={({ field: { onChange, value, ...rest } }) => {
                                     const fileInputRef = React.useRef<HTMLInputElement>(null);
@@ -413,7 +419,7 @@ export function ProductForm({ product, categories, vendors }: ProductFormProps) 
                 <CardHeader><CardTitle>Shipping</CardTitle></CardHeader>
                 <CardContent className="space-y-4">
                     <FormField control={form.control} name="weight" render={({ field }) => (
-                        <FormItem><FormLabel>Weight (kg)</FormLabel><FormControl><Input type="number" step="0.01" placeholder="0.5" {...field} /></FormControl><FormMessage /></FormItem>
+                        <FormItem><FormLabel>Weight (kg)</FormLabel><FormControl><Input type="number" step="0.01" placeholder="0.5" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
                     )} />
                     <FormField control={form.control} name="dimensions" render={({ field }) => (
                         <FormItem><FormLabel>Dimensions (L x W x H)</FormLabel><FormControl><Input placeholder="e.g. 20cm x 15cm x 5cm" {...field} /></FormControl><FormMessage /></FormItem>
