@@ -23,7 +23,9 @@ const optionValueSchema = z.object({
   id: z.string().optional(),
   value: z.string().min(1, "Option value is required."),
   image: z.string().optional().or(z.literal('')),
-  color_hex: z.string().optional(),
+  color_hex: z.string().optional().or(z.literal('')).refine(val => !val || /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(val), {
+    message: "Invalid hex color format.",
+  }),
 });
 
 const optionGroupSchema = z.object({
@@ -36,14 +38,14 @@ const variantSchema = z.object({
   id: z.string().optional(),
   options: z.record(z.string()).optional(),
   price: z.preprocess(
-    (val) => (String(val).trim() === '' ? undefined : val),
+    (val) => (val === "" || val == null ? undefined : val),
     z.coerce.number({
         required_error: "Price is required.",
         invalid_type_error: "Price must be a number."
     }).positive({ message: "Price must be positive." })
   ),
   stock: z.preprocess(
-    (val) => (String(val).trim() === '' ? undefined : val),
+    (val) => (val === "" || val == null ? undefined : val),
     z.coerce.number({
         required_error: "Stock is required.",
         invalid_type_error: "Stock must be a number."
@@ -65,21 +67,22 @@ const formSchema = z.object({
   isFeatured: z.boolean().default(false),
   isOnOffer: z.boolean().default(false),
   weight: z.preprocess(
-    (val) => (String(val).trim() === '' ? undefined : val),
+    (val) => (val === '' || val == null ? undefined : val),
     z.coerce.number({ invalid_type_error: "Weight must be a number."}).min(0).optional()
   ),
   dimensions: z.string().optional(),
 }).superRefine((data, ctx) => {
     if (data.optionGroups && data.optionGroups.length > 0) {
-        data.variants.forEach((variant, index) => {
-            const selectedOptionsCount = variant.options ? Object.keys(variant.options).length : 0;
-            if (selectedOptionsCount !== data.optionGroups.length) {
-                ctx.addIssue({
-                    code: z.ZodIssueCode.custom,
-                    message: "All option groups must have a value selected.",
-                    path: [`variants`, index, 'options'],
-                });
-            }
+        data.variants.forEach((variant, vIndex) => {
+            data.optionGroups?.forEach(group => {
+                if (!variant.options || !variant.options[group.name]) {
+                    ctx.addIssue({
+                        code: z.ZodIssueCode.custom,
+                        message: "Required",
+                        path: [`variants`, vIndex, `options.${group.name}`],
+                    });
+                }
+            });
         });
     }
 });
@@ -124,6 +127,7 @@ export function ProductForm({ product, categories, vendors }: ProductFormProps) 
       weight: product?.weight ?? undefined,
       dimensions: product?.dimensions || "",
     },
+    mode: 'onBlur',
   });
 
   const { fields: groupFields, append: appendGroup, remove: removeGroup } = useFieldArray({
@@ -286,7 +290,7 @@ export function ProductForm({ product, categories, vendors }: ProductFormProps) 
                                         render={({ field }) => (
                                             <FormItem>
                                                 <FormLabel>{group.name}</FormLabel>
-                                                <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isEditMode}>
+                                                <Select onValueChange={field.onChange} value={field.value} disabled={isEditMode}>
                                                     <FormControl><SelectTrigger><SelectValue placeholder={`Select ${group.name.toLowerCase()}`} /></SelectTrigger></FormControl>
                                                     <SelectContent>
                                                         {group.options.filter(o => o.value).map((option) => (
@@ -363,7 +367,7 @@ export function ProductForm({ product, categories, vendors }: ProductFormProps) 
                 <CardContent className="space-y-4">
                     <FormField control={form.control} name="vendorId" render={({ field }) => (
                         <FormItem><FormLabel>Vendor</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <Select onValueChange={field.onChange} value={field.value}>
                             <FormControl><SelectTrigger><SelectValue placeholder="Select a vendor" /></SelectTrigger></FormControl>
                             <SelectContent>{vendors.map((v) => (<SelectItem key={v.id} value={String(v.id)}>{v.fullName}</SelectItem>))}</SelectContent>
                         </Select>
@@ -372,7 +376,7 @@ export function ProductForm({ product, categories, vendors }: ProductFormProps) 
                     )} />
                      <FormField control={form.control} name="categoryId" render={({ field }) => (
                         <FormItem><FormLabel>Category</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <Select onValueChange={field.onChange} value={field.value}>
                             <FormControl><SelectTrigger><SelectValue placeholder="Select a category" /></SelectTrigger></FormControl>
                             <SelectContent>{categories.map((c) => (<SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>))}</SelectContent>
                         </Select>
@@ -513,7 +517,7 @@ function OptionValuesArray({ groupIndex, isEditMode }: { groupIndex: number, isE
                     <FormLabel className="text-xs">Color (Optional)</FormLabel>
                     <FormControl>
                     <div className="flex items-center gap-2">
-                        <Input type="color" onChange={field.onChange} value={field.value || '#ffffff'} className="w-12 h-10 p-1" disabled={isEditMode} />
+                        <Input type="color" onChange={field.onChange} value={field.value || '#FFFFFF'} className="w-12 h-10 p-1" disabled={isEditMode} />
                         <Input type="text" placeholder="#RRGGBB" {...field} value={field.value ?? ''} disabled={isEditMode} />
                     </div>
                     </FormControl>
