@@ -15,6 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import type { Address } from "@/lib/types";
 import { Loader2, Plus, Edit, Trash2, Home, Search } from "lucide-react";
 import { AddressAutocomplete } from "@/components/address-autocomplete";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const addressFormSchema = z.object({
   id: z.number().optional(),
@@ -38,6 +39,10 @@ export default function AddressesPage() {
   const [addressToDelete, setAddressToDelete] = useState<Address | null>(null);
   const [isAutocompleteOpen, setIsAutocompleteOpen] = useState(false);
   const { toast } = useToast();
+
+  const [cities, setCities] = useState<string[]>([]);
+  const [isCitiesLoading, setIsCitiesLoading] = useState(true);
+  const [defaultCountry, setDefaultCountry] = useState('');
 
   const form = useForm<AddressFormValues>({
     resolver: zodResolver(addressFormSchema),
@@ -71,8 +76,43 @@ export default function AddressesPage() {
     fetchAddresses();
   }, []);
 
+  useEffect(() => {
+    const fetchPrerequisites = async () => {
+        setIsCitiesLoading(true);
+        try {
+            const settingsRes = await fetch('/api/settings');
+            if (!settingsRes.ok) throw new Error("Failed to fetch settings");
+            const settingsData = await settingsRes.json();
+            
+            if (settingsData.country) {
+                setDefaultCountry(settingsData.country);
+                const citiesRes = await fetch(`/api/cities?country=${encodeURIComponent(settingsData.country)}`);
+                if (!citiesRes.ok) throw new Error("Failed to fetch cities");
+                const citiesData = await citiesRes.json();
+                setCities(citiesData);
+            }
+        } catch (error: any) {
+            toast({ title: "Error", description: "Could not load country/city data.", variant: "destructive" });
+            setCities([]);
+        } finally {
+            setIsCitiesLoading(false);
+        }
+    };
+    fetchPrerequisites();
+  }, [toast]);
+
+
   const openDialog = (address?: Address) => {
-    form.reset(address || { fullName: "", street: "", apartment: "", city: "", area: "", state: "", zip: "", country: "" });
+    form.reset(address || { 
+      fullName: "", 
+      street: "", 
+      apartment: "", 
+      city: "", 
+      area: "", 
+      state: "", 
+      zip: "", 
+      country: defaultCountry
+    });
     setIsDialogOpen(true);
   };
 
@@ -205,19 +245,54 @@ export default function AddressesPage() {
                   <FormItem><FormLabel>Apt, Suite, etc. (Optional)</FormLabel><FormControl><Input placeholder="Apt 4B" {...field} /></FormControl><FormMessage /></FormItem>
               )}/>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <FormField control={form.control} name="city" render={({ field }) => (
-                    <FormItem><FormLabel>City</FormLabel><FormControl><Input placeholder="Anytown" {...field} /></FormControl><FormMessage /></FormItem>
-                )}/>
+                <FormField
+                  control={form.control}
+                  name="country"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Country</FormLabel>
+                      <FormControl>
+                        <Input {...field} readOnly disabled className="bg-muted/50" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="city"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>City</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value}
+                        disabled={isCitiesLoading || cities.length === 0}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder={isCitiesLoading ? "Loading..." : "Select a city"} />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {cities.map((cityName) => (
+                            <SelectItem key={cityName} value={cityName}>
+                              {cityName}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <FormField control={form.control} name="area" render={({ field }) => (
                     <FormItem><FormLabel>Area / District (Optional)</FormLabel><FormControl><Input placeholder="e.g. Downtown" {...field} /></FormControl><FormMessage /></FormItem>
                 )}/>
-              </div>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                  <FormField control={form.control} name="zip" render={({ field }) => (
                     <FormItem><FormLabel>ZIP / Postal</FormLabel><FormControl><Input placeholder="12345" {...field} /></FormControl><FormMessage /></FormItem>
-                )}/>
-                 <FormField control={form.control} name="country" render={({ field }) => (
-                    <FormItem><FormLabel>Country</FormLabel><FormControl><Input placeholder="United States" {...field} /></FormControl><FormMessage /></FormItem>
                 )}/>
               </div>
               <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
