@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useForm, type SubmitHandler } from "react-hook-form";
@@ -12,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import type { Category } from "@/lib/types";
 import { Loader2 } from "lucide-react";
+import { getCsrfToken } from "@/lib/csrf";
 
 const formSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters."),
@@ -67,7 +69,10 @@ export function CategoryForm({ category, categories }: CategoryFormProps) {
         isEditMode ? `/api/admin/categories/${category.id}` : "/api/admin/categories",
         {
           method: isEditMode ? "PUT" : "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { 
+            "Content-Type": "application/json",
+            "x-csrf-token": getCsrfToken(),
+          },
           body: JSON.stringify(payload),
         }
       );

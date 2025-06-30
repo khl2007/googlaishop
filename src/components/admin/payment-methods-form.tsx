@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useForm, type SubmitHandler, useFieldArray } from "react-hook-form";
@@ -12,6 +13,7 @@ import { Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Switch } from "../ui/switch";
+import { getCsrfToken } from "@/lib/csrf";
 
 const paymentMethodSchema = z.object({
   id: z.number(),
@@ -67,7 +69,10 @@ export function PaymentMethodsForm({ paymentMethods }: PaymentMethodsFormProps) 
     try {
       const response = await fetch("/api/admin/payments", {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+            "Content-Type": "application/json",
+            "x-csrf-token": getCsrfToken(),
+        },
         body: JSON.stringify(payload),
       });
 

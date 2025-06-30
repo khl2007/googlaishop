@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState } from 'react';
@@ -11,6 +12,7 @@ import { MoreHorizontal, PlusCircle, CheckCircle, XCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { ShippingMethod } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
+import { getCsrfToken } from '@/lib/csrf';
 
 export default function ShippingMethodsPage() {
   const [methods, setMethods] = useState<ShippingMethod[]>([]);
@@ -44,6 +46,9 @@ export default function ShippingMethodsPage() {
     try {
       const res = await fetch(`/api/admin/shipping/${methodToDelete.id}`, {
         method: 'DELETE',
+        headers: {
+            'x-csrf-token': getCsrfToken(),
+        },
       });
       if (!res.ok) {
         const errorData = await res.json();

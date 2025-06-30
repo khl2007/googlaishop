@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState } from "react";
@@ -13,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import type { Address } from "@/lib/types";
 import { Loader2, Plus, Edit, Trash2, Home } from "lucide-react";
+import { getCsrfToken } from "@/lib/csrf";
 
 const addressFormSchema = z.object({
   id: z.number().optional(),
@@ -86,7 +88,10 @@ export default function AdminCustomerAddressesPage({ params }: { params: { id: s
     try {
       const res = await fetch(url, {
         method,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+            'Content-Type': 'application/json',
+            'x-csrf-token': getCsrfToken(),
+        },
         body: JSON.stringify(data),
       });
 
@@ -106,7 +111,12 @@ export default function AdminCustomerAddressesPage({ params }: { params: { id: s
   const handleDelete = async () => {
     if (!addressToDelete) return;
     try {
-      const res = await fetch(`/api/admin/users/${customerId}/addresses/${addressToDelete.id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/admin/users/${customerId}/addresses/${addressToDelete.id}`, { 
+        method: 'DELETE',
+        headers: {
+            'x-csrf-token': getCsrfToken(),
+        }
+      });
       if (!res.ok) {
         const errorData = await res.json();
         throw new Error(errorData.message || 'Failed to delete address');

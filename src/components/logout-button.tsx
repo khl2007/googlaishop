@@ -1,8 +1,10 @@
+
 "use client";
 
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { LogOut } from "lucide-react";
+import { getCsrfToken } from "@/lib/csrf";
 
 export function LogoutButton() {
   const { toast } = useToast();
@@ -10,6 +12,10 @@ export function LogoutButton() {
   const handleLogout = async () => {
     const res = await fetch("/api/auth/logout", {
       method: "POST",
+      headers: {
+        'Content-Type': 'application/json',
+        'x-csrf-token': getCsrfToken(),
+      },
     });
 
     if (res.ok) {

@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
+import { getCsrfToken } from "@/lib/csrf";
 
 interface UserProfile {
     id: number;
@@ -61,7 +62,10 @@ export function ProfileForm({ user }: ProfileFormProps) {
     try {
       const response = await fetch('/api/user/profile', {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+            "Content-Type": "application/json",
+            "x-csrf-token": getCsrfToken(),
+        },
         body: JSON.stringify(payload),
       });
 

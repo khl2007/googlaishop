@@ -14,6 +14,7 @@ import type { Address } from "@/lib/types";
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "../ui/dialog";
 import { AddressAutocomplete } from "../address-autocomplete";
+import { getCsrfToken } from "@/lib/csrf";
 
 const formSchema = z.object({
   fullName: z.string().min(2, "Full name is required."),
@@ -69,7 +70,10 @@ export function AddressForm({ address, userId, returnPath }: AddressFormProps) {
     try {
       const response = await fetch(`/api/admin/users/${userId}/address`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+            "Content-Type": "application/json",
+            "x-csrf-token": getCsrfToken(),
+        },
         body: JSON.stringify(data),
       });
 

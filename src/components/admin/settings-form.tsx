@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useForm, type SubmitHandler } from "react-hook-form";
@@ -11,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
+import { getCsrfToken } from "@/lib/csrf";
 
 const formSchema = z.object({
   websiteTitle: z.string().min(2, "Website title must be at least 2 characters."),
@@ -54,7 +56,10 @@ export function SettingsForm({ settings, timezones, countries }: SettingsFormPro
     try {
       const response = await fetch("/api/admin/settings", {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+            "Content-Type": "application/json",
+            "x-csrf-token": getCsrfToken(),
+        },
         body: JSON.stringify(data),
       });
 

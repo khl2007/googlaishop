@@ -21,6 +21,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Loader2 } from 'lucide-react';
 import Link from 'next/link';
+import { getCsrfToken } from '@/lib/csrf';
 
 interface City {
   id: number;
@@ -77,7 +78,10 @@ export default function ManageCitiesPage({ params }: { params: { countryName: st
     try {
       const res = await fetch(url, {
         method,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+            'Content-Type': 'application/json',
+            'x-csrf-token': getCsrfToken(),
+        },
         body,
       });
 
@@ -100,7 +104,12 @@ export default function ManageCitiesPage({ params }: { params: { countryName: st
     if (!currentCity) return;
 
     try {
-      const res = await fetch(`/api/admin/cities/${currentCity.id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/admin/cities/${currentCity.id}`, { 
+        method: 'DELETE',
+        headers: {
+            'x-csrf-token': getCsrfToken(),
+        },
+      });
       if (!res.ok) {
         const errorData = await res.json();
         throw new Error(errorData.message || 'Failed to delete city');

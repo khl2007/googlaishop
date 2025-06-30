@@ -16,6 +16,7 @@ import type { Product, Category } from "@/lib/types";
 import { Loader2, PlusCircle, Trash } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Switch } from "../ui/switch";
+import { getCsrfToken } from "@/lib/csrf";
 
 const optionValueSchema = z.object({
   id: z.string().optional(),
@@ -153,7 +154,10 @@ export function ProductForm({ product, categories, vendors }: ProductFormProps) 
         isEditMode ? `/api/admin/products/${product.id}` : "/api/admin/products",
         {
           method: isEditMode ? "PUT" : "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { 
+            "Content-Type": "application/json",
+            "x-csrf-token": getCsrfToken(),
+          },
           body: JSON.stringify(transformedData),
         }
       );

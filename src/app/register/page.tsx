@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { getCsrfToken } from "@/lib/csrf";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -74,7 +75,9 @@ export default function RegisterPage() {
     try {
       const res = await fetch("/api/auth/register", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+            "Content-Type": "application/json",
+        },
         body: JSON.stringify({ fullName, email, password, role, phoneNumber, country, city }),
       });
 

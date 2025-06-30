@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useForm, type SubmitHandler } from "react-hook-form";
@@ -10,6 +11,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
+import { getCsrfToken } from "@/lib/csrf";
 
 interface Role {
   id: number;
@@ -84,7 +86,10 @@ export function UserForm({ user, roles }: UserFormProps) {
         isEditMode ? `/api/admin/users/${user.id}` : "/api/admin/users",
         {
           method: isEditMode ? "PUT" : "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { 
+            "Content-Type": "application/json",
+            "x-csrf-token": getCsrfToken(),
+          },
           body: JSON.stringify(payload),
         }
       );

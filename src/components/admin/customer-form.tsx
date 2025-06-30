@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2, Home } from "lucide-react";
 import type { Role } from "@/lib/types";
 import Link from "next/link";
+import { getCsrfToken } from "@/lib/csrf";
 
 interface CustomerData {
     id: number;
@@ -89,7 +90,10 @@ export function CustomerForm({ customer, roles }: CustomerFormProps) {
         isEditMode ? `/api/admin/users/${customer.id}` : "/api/admin/users",
         {
           method: isEditMode ? "PUT" : "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { 
+            "Content-Type": "application/json",
+            "x-csrf-token": getCsrfToken(),
+          },
           body: JSON.stringify(payload),
         }
       );

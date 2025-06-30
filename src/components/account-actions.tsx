@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { ChevronRight, CreditCard, LogOut, MapPin, Settings } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { getCsrfToken } from "@/lib/csrf";
 
 export function AccountActions() {
   const router = useRouter();
@@ -14,6 +15,10 @@ export function AccountActions() {
   const handleLogout = async () => {
     const res = await fetch("/api/auth/logout", {
       method: "POST",
+      headers: {
+        'Content-Type': 'application/json',
+        'x-csrf-token': getCsrfToken(),
+      },
     });
 
     if (res.ok) {

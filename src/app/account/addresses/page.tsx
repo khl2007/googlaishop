@@ -16,6 +16,7 @@ import type { Address } from "@/lib/types";
 import { Loader2, Plus, Edit, Trash2, Home, Search, Star } from "lucide-react";
 import { AddressAutocomplete } from "@/components/address-autocomplete";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { getCsrfToken } from "@/lib/csrf";
 
 const addressFormSchema = z.object({
   id: z.number().optional(),
@@ -125,7 +126,10 @@ export default function AddressesPage() {
     try {
       const res = await fetch(url, {
         method,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+            'Content-Type': 'application/json',
+            'x-csrf-token': getCsrfToken(),
+        },
         body: JSON.stringify(data),
       });
 
@@ -145,7 +149,12 @@ export default function AddressesPage() {
   const handleDelete = async () => {
     if (!addressToDelete) return;
     try {
-      const res = await fetch(`/api/user/addresses/${addressToDelete.id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/user/addresses/${addressToDelete.id}`, { 
+        method: 'DELETE',
+        headers: {
+            'x-csrf-token': getCsrfToken(),
+        }
+      });
       if (!res.ok) {
         const errorData = await res.json();
         throw new Error(errorData.message || 'Failed to delete address');
@@ -163,7 +172,12 @@ export default function AddressesPage() {
   const handleSetPrimary = async (addressId: number) => {
     setIsSettingPrimary(addressId);
     try {
-        const res = await fetch(`/api/user/addresses/${addressId}/set-primary`, { method: 'PUT' });
+        const res = await fetch(`/api/user/addresses/${addressId}/set-primary`, { 
+            method: 'PUT',
+            headers: {
+                'x-csrf-token': getCsrfToken(),
+            }
+        });
         if (!res.ok) {
             const errorData = await res.json();
             throw new Error(errorData.message || 'Failed to set primary address');

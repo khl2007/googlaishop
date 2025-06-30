@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState } from 'react';
@@ -10,6 +11,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { MoreHorizontal, PlusCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { Category } from '@/lib/types';
+import { getCsrfToken } from '@/lib/csrf';
 
 export default function CategoriesPage() {
   const [categories, setCategories] = useState<Category[]>([]);
@@ -43,6 +45,9 @@ export default function CategoriesPage() {
     try {
       const res = await fetch(`/api/admin/categories/${categoryToDelete.id}`, {
         method: 'DELETE',
+        headers: {
+            'x-csrf-token': getCsrfToken(),
+        }
       });
       if (!res.ok) {
         const errorData = await res.json();

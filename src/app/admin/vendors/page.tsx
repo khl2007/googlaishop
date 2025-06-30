@@ -10,6 +10,7 @@ import { MoreHorizontal, PlusCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
+import { getCsrfToken } from '@/lib/csrf';
 
 interface Vendor {
   id: number;
@@ -50,6 +51,9 @@ export default function VendorsPage() {
     try {
       const res = await fetch(`/api/admin/users/${vendorToDelete.id}`, {
         method: 'DELETE',
+        headers: {
+            'x-csrf-token': getCsrfToken(),
+        }
       });
       if (!res.ok) {
         const errorData = await res.json();

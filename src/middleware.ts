@@ -1,28 +1,59 @@
 
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { randomBytes } from 'crypto';
+
+const STATE_CHANGING_METHODS = ['POST', 'PUT', 'DELETE', 'PATCH'];
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set('x-next-pathname', pathname);
 
-  const sessionCookie = request.cookies.get('user_session');
+  // CSRF Protection
+  // Exempt login/register from the check as user might not have a token on first visit
+  const isCsrfExempt = pathname.startsWith('/api/auth/login') || pathname.startsWith('/api/auth/register');
+  if (STATE_CHANGING_METHODS.includes(request.method) && !isCsrfExempt) {
+    const csrfTokenFromHeader = request.headers.get('x-csrf-token');
+    const csrfTokenFromCookie = request.cookies.get('csrf_token')?.value;
 
+    if (!csrfTokenFromHeader || !csrfTokenFromCookie || csrfTokenFromHeader !== csrfTokenFromCookie) {
+      console.warn(`Invalid CSRF token for ${request.method} ${pathname}`);
+      return NextResponse.json({ message: 'Invalid CSRF token' }, { status: 403 });
+    }
+  }
+
+  const response = NextResponse.next({
+    request: {
+      headers: requestHeaders,
+    },
+  });
+  
+  // Set CSRF token on the response if it doesn't exist on the request
+  if (!request.cookies.has('csrf_token')) {
+    const token = randomBytes(32).toString('hex');
+    response.cookies.set({
+      name: 'csrf_token',
+      value: token,
+      path: '/',
+      sameSite: 'strict',
+      secure: process.env.NODE_ENV === 'production',
+      httpOnly: false, // Must be readable by client JS for this pattern
+    });
+  }
+  
+  // Authentication and Authorization
+  const sessionCookie = request.cookies.get('user_session');
   let user = null;
   if (sessionCookie?.value) {
     try {
       user = JSON.parse(sessionCookie.value);
     } catch (e) {
-      // Corrupted cookie, treat as logged out
       console.error('Failed to parse session cookie', e);
-      const response = NextResponse.next({
-        request: {
-          headers: requestHeaders,
-        },
-      });
-      response.cookies.delete('user_session'); // Clear the corrupted cookie
-      return response;
+      const loginUrl = new URL('/login', request.url);
+      const clearCookieResponse = NextResponse.redirect(loginUrl);
+      clearCookieResponse.cookies.delete('user_session');
+      return clearCookieResponse;
     }
   }
 
@@ -34,45 +65,19 @@ export function middleware(request: NextRequest) {
   
   const isPrivilegedUser = user && ['admin', 'vendor', 'delivery'].includes(user.role);
 
-  // Prevent admin, vendor, or delivery from accessing cart and checkout
   if (isPrivilegedUser && (pathname.startsWith('/cart') || pathname.startsWith('/checkout'))) {
-      return NextResponse.redirect(new URL('/', request.url));
+    return NextResponse.redirect(new URL('/', request.url));
   }
 
+  if (pathname.startsWith('/admin') && (!user || user.role !== 'admin')) return redirectToLogin();
+  if (pathname.startsWith('/vendor') && (!user || user.role !== 'vendor')) return redirectToLogin();
+  if (pathname.startsWith('/delivery') && (!user || user.role !== 'delivery')) return redirectToLogin();
+  if ((pathname.startsWith('/checkout') || pathname.startsWith('/account')) && !user) return redirectToLogin();
 
-  if (pathname.startsWith('/admin')) {
-    if (!user || user.role !== 'admin') {
-      return redirectToLogin();
-    }
-  }
-
-  if (pathname.startsWith('/vendor')) {
-    if (!user || user.role !== 'vendor') {
-      return redirectToLogin();
-    }
-  }
-  
-  if (pathname.startsWith('/delivery')) {
-    if (!user || user.role !== 'delivery') {
-      return redirectToLogin();
-    }
-  }
-
-  if (pathname.startsWith('/checkout') || pathname.startsWith('/account')) {
-    if (!user) {
-      return redirectToLogin();
-    }
-  }
-
-  return NextResponse.next({
-    request: {
-      headers: requestHeaders,
-    },
-  });
+  return response;
 }
 
 export const config = {
-  // We need to match all paths to make the pathname available everywhere,
-  // but we should exclude static assets and API routes to avoid unnecessary processing.
-  matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)'],
+  // Match all paths except static files and images. This now includes API routes.
+  matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
 };

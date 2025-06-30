@@ -21,6 +21,7 @@ import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AddressAutocomplete } from "@/components/address-autocomplete";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { getCsrfToken } from "@/lib/csrf";
 
 const addressFormSchema = z.object({
   fullName: z.string().min(2, "Full name is required."),
@@ -177,7 +178,10 @@ export default function CheckoutPage() {
     try {
         const res = await fetch('/api/user/addresses', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+                'Content-Type': 'application/json',
+                'x-csrf-token': getCsrfToken(),
+            },
             body: JSON.stringify(data),
         });
         if (!res.ok) throw new Error("Failed to save address");
@@ -201,7 +205,10 @@ export default function CheckoutPage() {
         try {
           const res = await fetch('/api/shipping-cost', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+                'Content-Type': 'application/json',
+                'x-csrf-token': getCsrfToken(),
+            },
             body: JSON.stringify({ addressId: parseInt(selectedAddressId), cartItems }),
           });
           if (!res.ok) {

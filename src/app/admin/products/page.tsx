@@ -12,6 +12,7 @@ import { MoreHorizontal, PlusCircle, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { Product } from '@/lib/types';
 import { Checkbox } from '@/components/ui/checkbox';
+import { getCsrfToken } from '@/lib/csrf';
 
 export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -46,6 +47,9 @@ export default function ProductsPage() {
     try {
       const res = await fetch(`/api/admin/products/${productToDelete.id}`, {
         method: 'DELETE',
+        headers: {
+            'x-csrf-token': getCsrfToken(),
+        },
       });
       if (!res.ok) {
         const errorData = await res.json();
@@ -65,7 +69,10 @@ export default function ProductsPage() {
     try {
       const res = await fetch(`/api/admin/products`, {
         method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+            'Content-Type': 'application/json',
+            'x-csrf-token': getCsrfToken(),
+        },
         body: JSON.stringify({ ids: selectedProductIds }),
       });
       if (!res.ok) {

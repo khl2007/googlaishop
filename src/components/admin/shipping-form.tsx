@@ -16,6 +16,7 @@ import type { ShippingMethod } from "@/lib/types";
 import { Loader2, PlusCircle, Trash, Trash2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../ui/card";
 import { Switch } from "../ui/switch";
+import { getCsrfToken } from "@/lib/csrf";
 
 const overrideSchema = z.object({
   type: z.enum(['city', 'area']),
@@ -129,7 +130,10 @@ export function ShippingForm({ method, cities, areas }: ShippingFormProps) {
         isEditMode ? `/api/admin/shipping/${method.id}` : "/api/admin/shipping",
         {
           method: isEditMode ? "PUT" : "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { 
+            "Content-Type": "application/json",
+            "x-csrf-token": getCsrfToken(),
+          },
           body: JSON.stringify(payload),
         }
       );

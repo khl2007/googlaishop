@@ -14,6 +14,7 @@ import type { Role } from "@/lib/types";
 import Link from "next/link";
 import React from "react";
 import Image from "next/image";
+import { getCsrfToken } from "@/lib/csrf";
 
 interface VendorData {
     id: number;
@@ -82,7 +83,10 @@ export function VendorForm({ vendor, roles }: VendorFormProps) {
         isEditMode ? `/api/admin/users/${vendor.id}` : "/api/admin/users",
         {
           method: isEditMode ? "PUT" : "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { 
+            "Content-Type": "application/json",
+            "x-csrf-token": getCsrfToken(),
+          },
           body: JSON.stringify(payload),
         }
       );
