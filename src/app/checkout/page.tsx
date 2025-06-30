@@ -126,23 +126,20 @@ export default function CheckoutPage() {
     }
   }, [cartItems.length, router]);
   
-  const handleAddNewAddress: React.FormEventHandler<HTMLFormElement> = async (e) => {
-    e.preventDefault();
-    await form.handleSubmit(async (data) => {
-        try {
-            const res = await fetch('/api/user/addresses', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data),
-            });
-            if (!res.ok) throw new Error("Failed to save address");
-            toast({ title: "Success", description: "Address saved successfully." });
-            form.reset();
-            await fetchAddresses();
-        } catch (error: any) {
-            toast({ title: "Error", description: error.message, variant: "destructive" });
-        }
-    })(e);
+  const onSaveAddress = async (data: AddressFormValues) => {
+    try {
+        const res = await fetch('/api/user/addresses', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data),
+        });
+        if (!res.ok) throw new Error("Failed to save address");
+        toast({ title: "Success", description: "Address saved successfully." });
+        form.reset();
+        await fetchAddresses();
+    } catch (error: any) {
+        toast({ title: "Error", description: error.message, variant: "destructive" });
+    }
   };
   
   const handlePlaceOrder = (e: React.FormEvent) => {
@@ -249,7 +246,7 @@ export default function CheckoutPage() {
                     {isAddingNewAddress && (
                         <div className="pt-6 mt-6 border-t">
                             <Form {...form}>
-                                <form onSubmit={handleAddNewAddress} className="space-y-4">
+                                <div className="space-y-4">
                                     <div className="flex justify-end">
                                         <Dialog open={isAutocompleteOpen} onOpenChange={setIsAutocompleteOpen}>
                                             <DialogTrigger asChild>
@@ -266,8 +263,8 @@ export default function CheckoutPage() {
                                         <FormField control={form.control} name="zip" render={({ field }) => (<FormItem><FormLabel>ZIP</FormLabel><FormControl><Input placeholder="12345" {...field} /></FormControl><FormMessage /></FormItem>)}/>
                                     </div>
                                     <FormField control={form.control} name="country" render={({ field }) => (<FormItem><FormLabel>Country</FormLabel><FormControl><Input placeholder="United States" {...field} /></FormControl><FormMessage /></FormItem>)}/>
-                                    <Button type="submit" disabled={form.formState.isSubmitting}>{form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Save Address</Button>
-                                </form>
+                                    <Button type="button" onClick={form.handleSubmit(onSaveAddress)} disabled={form.formState.isSubmitting}>{form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Save Address</Button>
+                                </div>
                             </Form>
                         </div>
                     )}
