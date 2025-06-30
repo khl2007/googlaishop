@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -20,6 +20,21 @@ export default function RegisterPage() {
   const [country, setCountry] = useState("");
   const [city, setCity] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchDefaultCountry = async () => {
+      try {
+        const response = await fetch('/api/settings');
+        if (response.ok) {
+          const settings = await response.json();
+          setCountry(settings.country || "");
+        }
+      } catch (error) {
+        console.error("Failed to fetch settings for default country:", error);
+      }
+    };
+    fetchDefaultCountry();
+  }, []);
 
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -123,11 +138,11 @@ export default function RegisterPage() {
                     <Label htmlFor="country">Country</Label>
                     <Input 
                         id="country" 
-                        placeholder="Your Country" 
+                        placeholder="Loading..." 
                         required 
                         value={country}
                         onChange={(e) => setCountry(e.target.value)}
-                        disabled={isLoading}
+                        disabled={true}
                     />
                 </div>
                 <div className="grid gap-2">
