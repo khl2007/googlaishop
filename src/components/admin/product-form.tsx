@@ -34,9 +34,7 @@ const optionGroupSchema = z.object({
 
 const variantSchema = z.object({
   id: z.string().optional(),
-  options: z.record(z.string()).refine(val => Object.keys(val).length > 0, {
-    message: "At least one option must be selected for the variant.",
-  }).optional(),
+  options: z.record(z.string()).optional(),
   price: z.preprocess((a) => parseFloat(z.string().parse(a)), z.number().positive("Price must be positive.")),
   stock: z.preprocess((a) => parseInt(z.string().parse(a), 10), z.number().int().min(0, "Stock can't be negative.")),
   image: z.string().optional().or(z.literal('')),
@@ -59,6 +57,19 @@ const formSchema = z.object({
     z.number().min(0).optional()
   ),
   dimensions: z.string().optional(),
+}).superRefine((data, ctx) => {
+    if (data.optionGroups && data.optionGroups.length > 0) {
+        data.variants.forEach((variant, index) => {
+            const selectedOptionsCount = variant.options ? Object.keys(variant.options).length : 0;
+            if (selectedOptionsCount !== data.optionGroups.length) {
+                ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    message: "All option groups must have a value selected.",
+                    path: [`variants`, index, 'options'],
+                });
+            }
+        });
+    }
 });
 
 type ProductFormValues = z.infer<typeof formSchema>;
@@ -119,21 +130,6 @@ export function ProductForm({ product, categories, vendors }: ProductFormProps) 
   const isSubmitting = form.formState.isSubmitting;
 
   const onSubmit: SubmitHandler<ProductFormValues> = async (data) => {
-    // Manually check if any variant has empty options
-    if (data.optionGroups && data.optionGroups.length > 0) {
-        for (const variant of data.variants) {
-            if (!variant.options || Object.keys(variant.options).length !== data.optionGroups.length) {
-                toast({
-                    title: "Incomplete Variant",
-                    description: "Please select an option for each group in all variants.",
-                    variant: "destructive",
-                });
-                return;
-            }
-        }
-    }
-
-
     const transformedData = {
         ...data,
         vendorId: parseInt(data.vendorId),
