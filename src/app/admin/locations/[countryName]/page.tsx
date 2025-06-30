@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, use } from 'react';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import {
@@ -29,7 +29,8 @@ interface City {
 }
 
 export default function ManageCitiesPage({ params }: { params: { countryName: string } }) {
-  const countryName = decodeURIComponent(params.countryName);
+  const resolvedParams = use(params);
+  const countryName = decodeURIComponent(resolvedParams.countryName);
   const [cities, setCities] = useState<City[]>([]);
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
