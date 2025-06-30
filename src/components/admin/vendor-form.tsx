@@ -7,11 +7,13 @@ import { z } from "zod";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Home } from "lucide-react";
+import { Loader2, Home, Trash } from "lucide-react";
 import type { Role } from "@/lib/types";
 import Link from "next/link";
+import React from "react";
+import Image from "next/image";
 
 interface VendorData {
     id: number;
@@ -31,7 +33,7 @@ const formSchema = z.object({
   phoneNumber: z.string().min(5, "Phone number is required."),
   country: z.string().min(2, "Country is required."),
   city: z.string().min(2, "City is required."),
-  logo: z.string().url("Must be a valid URL").optional().or(z.literal('')),
+  logo: z.string().optional().or(z.literal('')),
 });
 
 type VendorFormValues = z.infer<typeof formSchema>;
@@ -44,6 +46,8 @@ interface VendorFormProps {
 export function VendorForm({ vendor, roles }: VendorFormProps) {
   const router = useRouter();
   const { toast } = useToast();
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+
   const form = useForm<VendorFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -55,6 +59,8 @@ export function VendorForm({ vendor, roles }: VendorFormProps) {
       logo: vendor?.logo || "",
     },
   });
+
+  const [logoPreview, setLogoPreview] = React.useState<string | null>(vendor?.logo || null);
   
   const isSubmitting = form.formState.isSubmitting;
   const isEditMode = !!vendor;
@@ -117,19 +123,65 @@ export function VendorForm({ vendor, roles }: VendorFormProps) {
             </FormItem>
           )}
         />
-        <FormField
-          control={form.control}
-          name="logo"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Company Logo URL</FormLabel>
-              <FormControl>
-                <Input placeholder="https://example.com/logo.png" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+
+        <FormItem>
+            <FormLabel>Company Logo</FormLabel>
+            {logoPreview && (
+                <div className="relative mt-2 h-32 w-32">
+                    <Image
+                        src={logoPreview}
+                        alt="Logo preview"
+                        fill
+                        className="rounded-md border object-contain"
+                    />
+                    <Button
+                        type="button"
+                        variant="destructive"
+                        size="icon"
+                        className="absolute -top-2 -right-2 h-6 w-6 rounded-full"
+                        onClick={() => {
+                            form.setValue('logo', '');
+                            setLogoPreview(null);
+                            if (fileInputRef.current) {
+                                fileInputRef.current.value = '';
+                            }
+                        }}
+                    >
+                        <Trash className="h-3 w-3" />
+                    </Button>
+                </div>
+            )}
+            <FormControl>
+                <Input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                            if (file.size > 2 * 1024 * 1024) { // 2MB
+                                toast({
+                                    title: "File too large",
+                                    description: "Please upload an image smaller than 2MB.",
+                                    variant: "destructive",
+                                });
+                                return;
+                            }
+                            const reader = new FileReader();
+                            reader.onloadend = () => {
+                                const dataUrl = reader.result as string;
+                                form.setValue('logo', dataUrl, { shouldValidate: true });
+                                setLogoPreview(dataUrl);
+                            };
+                            reader.readAsDataURL(file);
+                        }
+                    }}
+                />
+            </FormControl>
+            <FormDescription>Upload an image file (PNG, JPG, etc.). Max 2MB.</FormDescription>
+            <FormMessage>{form.formState.errors.logo?.message}</FormMessage>
+        </FormItem>
+        
          <FormField
           control={form.control}
           name="username"
