@@ -1,3 +1,4 @@
+
 const sqlite3 = require('sqlite3').verbose();
 const fs = require('fs');
 const bcrypt = require('bcrypt');
@@ -94,7 +95,7 @@ function seedDatabase() {
           enabled: 1
       }
     ];
-    const insertShippingStmt = db.prepare('INSERT OR IGNORE INTO shipping_methods (title, logo, cost_type, default_cost, config, enabled) VALUES (?, ?, ?, ?, ?, ?, ?)');
+    const insertShippingStmt = db.prepare('INSERT OR IGNORE INTO shipping_methods (title, logo, cost_type, default_cost, config, enabled) VALUES (?, ?, ?, ?, ?, ?)');
     shippingMethods.forEach(sm => insertShippingStmt.run(sm.title, sm.logo, sm.cost_type, sm.default_cost, sm.config, sm.enabled));
     insertShippingStmt.finalize();
     console.log('Shipping methods seeded.');
@@ -268,3 +269,5 @@ function seedDatabase() {
     });
   }
 }
+
+  
