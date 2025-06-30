@@ -18,6 +18,8 @@ import {
   ArrowLeft,
   Search,
   Share2,
+  Minus,
+  Plus,
 } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
 import { useCart } from "@/hooks/use-cart";
@@ -159,7 +161,7 @@ export function Header({ user }: HeaderProps) {
             pathname === '/' ? "flex md:flex" : "hidden md:flex"
           )}>
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6 text-primary"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path></svg>
-            <span className={cn("hidden font-bold font-headline text-xl md:inline", scrolled ? "text-foreground" : "text-primary-foreground")}>Zain</span>
+            <span className={cn("hidden font-bold font-headline text-lg md:inline", scrolled ? "text-foreground" : "text-primary-foreground")}>Zain</span>
           </Link>
           <nav className="hidden items-center gap-4 md:flex">
             {navLinks.map((link) => (
@@ -233,7 +235,10 @@ export function Header({ user }: HeaderProps) {
       </div>
 
       <Sheet open={isCartOpen} onOpenChange={setIsCartOpen}>
-        <SheetContent className="flex w-full flex-col sm:max-w-md">
+        <SheetContent 
+          className="flex w-full flex-col sm:max-w-md"
+          onOpenAutoFocus={(e) => e.preventDefault()}
+        >
           <SheetHeader>
             <SheetTitle>Shopping Cart ({cartCount})</SheetTitle>
           </SheetHeader>
@@ -248,14 +253,34 @@ export function Header({ user }: HeaderProps) {
                         <h3 className="font-semibold">{item.name}</h3>
                         <p className="text-sm text-muted-foreground">{item.variantName}</p>
                         <p className="text-sm font-medium">${item.price.toFixed(2)}</p>
-                        <div className="mt-2 flex items-center gap-2">
-                           <Input
-                              type="number"
-                              min="1"
-                              value={item.quantity}
-                              onChange={(e) => updateQuantity(item.variantId, parseInt(e.target.value))}
-                              className="h-8 w-16"
-                            />
+                        <div className="mt-2 flex items-center">
+                          <div className="flex items-center rounded-md border border-input">
+                              <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 rounded-r-none"
+                                  onClick={() => updateQuantity(item.variantId, item.quantity - 1)}
+                                  disabled={item.quantity <= 1}
+                              >
+                                  <Minus className="h-4 w-4" />
+                              </Button>
+                              <Input
+                                  readOnly
+                                  type="text"
+                                  value={item.quantity}
+                                  className="h-8 w-10 border-transparent bg-transparent text-center text-sm font-medium focus-visible:ring-0 focus-visible:ring-offset-0"
+                              />
+                              <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 rounded-l-none"
+                                  onClick={() => updateQuantity(item.variantId, item.quantity + 1)}
+                              >
+                                  <Plus className="h-4 w-4" />
+                              </Button>
+                          </div>
                         </div>
                       </div>
                       <Button variant="ghost" size="icon" onClick={() => removeFromCart(item.variantId)}>
