@@ -19,28 +19,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Switch } from "../ui/switch";
 import { getCsrfToken } from "@/lib/csrf";
 
-const optionValueSchema = z.object({
-  id: z.string().optional(),
-  value: z.string().min(1, "Option value is required."),
-  image: z.string().optional().or(z.literal('')),
-  color_hex: z.string().optional().or(z.literal('')).refine(val => !val || val === '' || /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(val), {
-    message: "Invalid hex color format.",
-  }),
-});
-
-const optionGroupSchema = z.object({
-  id: z.string().optional(),
-  name: z.string().min(1, "Group name cannot be empty."),
-  options: z.array(optionValueSchema).min(1, "At least one option is required."),
-});
-
 const variantSchema = z.object({
   id: z.string().optional(),
-  options: z.record(z.string()).optional(),
-  // Price and stock are now handled as flexible types at this level.
-  // The required/number validation is moved to the superRefine block.
-  price: z.any().optional(),
-  stock: z.any().optional(),
+  options: z.any().optional(), // Validation for options is disabled
+  price: z.coerce.number({ required_error: "Price is required", invalid_type_error: "Price must be a number." }).min(0.01, "Price must be positive."),
+  stock: z.coerce.number({ required_error: "Stock is required", invalid_type_error: "Stock must be a number." }).int("Stock must be a whole number.").min(0, "Stock cannot be negative."),
   image: z.string().optional().or(z.literal('')),
 });
 
@@ -51,9 +34,8 @@ const formSchema = z.object({
   description: z.string().min(10, "Description must be at least 10 characters."),
   categoryId: z.string().min(1, "Please select a category."),
   vendorId: z.string().min(1, "Please select a vendor."),
-  optionGroups: z.array(optionGroupSchema).optional(),
-  // The .min(1) is removed here and handled inside superRefine for better error control.
-  variants: z.array(variantSchema),
+  optionGroups: z.any().optional(), // Validation for option groups is disabled
+  variants: z.array(variantSchema).min(1, "At least one product variant is required."),
   tags: z.string().optional(),
   isFeatured: z.boolean().default(false),
   isOnOffer: z.boolean().default(false),
@@ -62,67 +44,6 @@ const formSchema = z.object({
       z.coerce.number({ invalid_type_error: "Weight must be a number." }).min(0, "Weight must be non-negative.").optional()
   ),
   dimensions: z.string().optional(),
-}).superRefine((data, ctx) => {
-    // 1. Manually check if there is at least one variant.
-    if (data.variants.length === 0) {
-        ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            message: "At least one product variant is required.",
-            // This error isn't attached to a specific field, but it will prevent submission.
-            path: ["variants"],
-        });
-        return;
-    }
-
-    // 2. Iterate over each variant to validate its contents.
-    data.variants.forEach((variant, vIndex) => {
-        // Validate Price
-        if (variant.price == null || String(variant.price).trim() === '') {
-            ctx.addIssue({
-                code: z.ZodIssueCode.custom,
-                message: "Price is required.",
-                path: [`variants`, vIndex, `price`],
-            });
-        } else if (isNaN(Number(variant.price))) {
-             ctx.addIssue({
-                code: z.ZodIssueCode.custom,
-                message: "Must be a number.",
-                path: [`variants`, vIndex, `price`],
-            });
-        }
-
-        // Validate Stock
-        if (variant.stock == null || String(variant.stock).trim() === '') {
-             ctx.addIssue({
-                code: z.ZodIssueCode.custom,
-                message: "Stock is required.",
-                path: [`variants`, vIndex, `stock`],
-            });
-        } else if (isNaN(Number(variant.stock)) || !Number.isInteger(Number(variant.stock))) {
-            ctx.addIssue({
-                code: z.ZodIssueCode.custom,
-                message: "Must be a whole number.",
-                path: [`variants`, vIndex, `stock`],
-            });
-        }
-
-        // 3. Conditionally validate variant options if option groups exist.
-        if (data.optionGroups && data.optionGroups.length > 0) {
-            data.optionGroups.forEach((group) => {
-                // Only validate if the group is fully formed (has a name and at least one defined option).
-                if (group.name && group.options?.some(opt => opt.value)) {
-                    if (!variant.options || !variant.options[group.name]) {
-                        // Add an issue to the specific dropdown that is missing a selection.
-                        ctx.addIssue({
-                            code: z.ZodIssueCode.custom,
-                            message: "Required",
-                            path: [`variants`, vIndex, `options`, group.name],
-                        });
-                    }
-                }
-            });
-        }
-    });
 });
 
 
