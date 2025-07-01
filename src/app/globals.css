@@ -84,25 +84,4 @@ body {
   body {
     @apply bg-background text-foreground;
   }
-  
-  /* WYSIWYG Editor Styles */
-  .ql-toolbar {
-    @apply rounded-t-md border-input;
-  }
-  .ql-container {
-    @apply rounded-b-md border-input text-base;
-  }
-  .ql-editor {
-    @apply min-h-[200px] text-base;
-  }
-
-  /* Rendered WYSIWYG Content Styles */
-  .wysiwyg-content h1 { @apply text-2xl font-bold my-4; }
-  .wysiwyg-content h2 { @apply text-xl font-bold my-4; }
-  .wysiwyg-content h3 { @apply text-lg font-bold my-4; }
-  .wysiwyg-content p { @apply mb-4; }
-  .wysiwyg-content ul { @apply list-disc list-inside mb-4 space-y-1; }
-  .wysiwyg-content ol { @apply list-decimal list-inside mb-4 space-y-1; }
-  .wysiwyg-content a { @apply text-primary underline hover:no-underline; }
-  .wysiwyg-content blockquote { @apply border-l-4 border-border pl-4 italic my-4; }
 }

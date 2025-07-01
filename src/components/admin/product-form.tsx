@@ -19,7 +19,6 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "../ui/card
 import { Switch } from "../ui/switch";
 import { getCsrfToken } from "@/lib/csrf";
 import { getCrossProduct, cn } from "@/lib/utils";
-import { WysiwygEditor } from "@/components/wysiwyg-editor";
 
 const variantSchema = z.object({
   id: z.string().optional(),
@@ -240,7 +239,11 @@ export function ProductForm({ product, categories, vendors }: ProductFormProps) 
                         <FormItem>
                             <FormLabel>Full Description</FormLabel>
                             <FormControl>
-                                <WysiwygEditor value={field.value || ''} onChange={field.onChange} />
+                                <Textarea
+                                    placeholder="Detailed information about the product..."
+                                    className="min-h-[150px]"
+                                    {...field}
+                                />
                             </FormControl>
                             <FormMessage />
                         </FormItem>
