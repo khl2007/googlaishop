@@ -88,7 +88,7 @@ export function HeroSlider() {
             >
                 <CarouselContent className="-ml-4">
                     {slides.map((slide, index) => (
-                        <CarouselItem key={slide.id} className="pl-4 md:basis-4/5">
+                        <CarouselItem key={slide.id} className="pl-4 basis-4/5 md:basis-5/6">
                              <Link href={slide.link || '#'} className="block relative aspect-[16/7] w-full transition-all duration-500 ease-in-out"
                                 style={{
                                     transform: `scale(${current === index ? 1 : 0.85})`, 
