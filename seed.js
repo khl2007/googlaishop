@@ -114,9 +114,9 @@ function seedDatabase() {
 
     // Seed Slides
     const slides = [
-        { title: 'New AuraPhone X', description: 'Experience the future in your hands.', image: 'https://placehold.co/1200x500/3b82f6/ffffff.png', link: '/products/auraphone-x', buttonText: 'Shop Now', isActive: 1, order: 1 },
-        { title: 'ZenBook Pro Launch', description: 'Power and elegance combined.', image: 'https://placehold.co/1200x500/10b981/ffffff.png', link: '/products/zenbook-pro', buttonText: 'Explore', isActive: 1, order: 2 },
-        { title: 'Huge Sale on Accessories', description: 'Up to 50% off on selected items.', image: 'https://placehold.co/1200x500/f59e0b/ffffff.png', link: '/categories/accessories', buttonText: 'View Deals', isActive: 0, order: 3 },
+        { title: 'The All-New AuraPhone X Pro', description: 'Capture your world like never before.', image: 'https://placehold.co/1200x500/1e293b/ffffff.png', link: '/products/auraphone-x-pro', buttonText: 'Shop Now', isActive: 1, order: 1 },
+        { title: 'Zenith Laptops - Power Meets Elegance', description: 'Engineered for creators and professionals who demand the best.', image: 'https://placehold.co/1200x500/052e16/a3e635.png', link: '/categories/laptops', buttonText: 'Explore Laptops', isActive: 1, order: 2 },
+        { title: 'Gaming Season is Here!', description: 'Up to 30% off on high-performance gaming gear and next-gen consoles.', image: 'https://placehold.co/1200x500/4a044e/f0abfc.png', link: '/categories/gaming-consoles', buttonText: 'View Deals', isActive: 1, order: 3 },
     ];
     const insertSlideStmt = db.prepare('INSERT OR IGNORE INTO slides (title, description, image, link, buttonText, isActive, "order") VALUES (?, ?, ?, ?, ?, ?, ?)');
     slides.forEach(s => insertSlideStmt.run(s.title, s.description, s.image, s.link, s.buttonText, s.isActive, s.order));
@@ -125,8 +125,10 @@ function seedDatabase() {
 
     // Seed Home Sections
     const homeSections = [
-        { title: 'Featured Laptops', type: 'category', config: JSON.stringify(['cat2']), style: 'style1', order: 1, isActive: 1 },
-        { title: 'Hot Deals', type: 'tag', config: JSON.stringify(['new', 'sale']), style: 'style1', order: 2, isActive: 1 },
+        { title: 'Featured Products', type: 'featured', config: JSON.stringify([]), style: 'style1', order: 1, isActive: 1 },
+        { title: 'On Sale Now', type: 'on_offer', config: JSON.stringify([]), style: 'style1', order: 2, isActive: 1 },
+        { title: 'Latest Laptops', type: 'category', config: JSON.stringify(['cat-laptops']), style: 'style1', order: 3, isActive: 1 },
+        { title: 'Must-Have Accessories', type: 'tag', config: JSON.stringify(['accessory']), style: 'style1', order: 4, isActive: 1 },
     ];
     const insertHomeSectionStmt = db.prepare('INSERT OR IGNORE INTO home_sections (title, type, config, style, "order", isActive) VALUES (?, ?, ?, ?, ?, ?)');
     homeSections.forEach(s => insertHomeSectionStmt.run(s.title, s.type, s.config, s.style, s.order, s.isActive));
