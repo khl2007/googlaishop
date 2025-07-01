@@ -71,6 +71,7 @@ db.serialize(() => {
       zip TEXT NOT NULL,
       country TEXT NOT NULL,
       isPrimary BOOLEAN DEFAULT 0,
+      googleMapUrl TEXT,
       FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
     )
   `);

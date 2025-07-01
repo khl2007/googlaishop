@@ -307,7 +307,7 @@ export async function getAddressesByUserId(userId) {
 
 export async function addUserAddress(userId, addressData) {
     const db = getDatabase();
-    const { fullName, street, apartment, city, area, state, zip, country } = addressData;
+    const { fullName, street, apartment, city, area, state, zip, country, googleMapUrl } = addressData;
 
     const existingAddresses = await getAddressesByUserId(userId);
     const isFirstAddress = existingAddresses.length === 0;
@@ -315,8 +315,8 @@ export async function addUserAddress(userId, addressData) {
     const isPrimary = isFirstAddress ? 1 : 0;
 
     return new Promise((resolve, reject) => {
-        const sql = `INSERT INTO addresses (user_id, fullName, street, apartment, city, area, state, zip, country, isPrimary) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
-        db.run(sql, [userId, fullName, street, apartment, city, area, state, zip, country, isPrimary], function(err) {
+        const sql = `INSERT INTO addresses (user_id, fullName, street, apartment, city, area, state, zip, country, isPrimary, googleMapUrl) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+        db.run(sql, [userId, fullName, street, apartment, city, area, state, zip, country, isPrimary, googleMapUrl], function(err) {
             if (err) return reject(err);
             
             const newAddressId = this.lastID;
@@ -330,10 +330,10 @@ export async function addUserAddress(userId, addressData) {
 
 export async function updateUserAddress(addressId, userId, addressData) {
     const db = getDatabase();
-    const { fullName, street, apartment, city, area, state, zip, country } = addressData;
+    const { fullName, street, apartment, city, area, state, zip, country, googleMapUrl } = addressData;
     return new Promise((resolve, reject) => {
-        const sql = `UPDATE addresses SET fullName = ?, street = ?, apartment = ?, city = ?, area = ?, state = ?, zip = ?, country = ? WHERE id = ? AND user_id = ?`;
-        db.run(sql, [fullName, street, apartment, city, area, state, zip, country, addressId, userId], function(err) {
+        const sql = `UPDATE addresses SET fullName = ?, street = ?, apartment = ?, city = ?, area = ?, state = ?, zip = ?, country = ?, googleMapUrl = ? WHERE id = ? AND user_id = ?`;
+        db.run(sql, [fullName, street, apartment, city, area, state, zip, country, googleMapUrl, addressId, userId], function(err) {
             if (err) return reject(err);
             if (this.changes === 0) return reject(new Error("Address not found or permission denied."));
             resolve(this);

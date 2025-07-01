@@ -12,13 +12,12 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
 import { useEffect, useState } from "react";
-import { Loader2, Search, CreditCard, Wallet, DollarSign, Truck, Info } from "lucide-react";
+import { Loader2, CreditCard, Wallet, DollarSign, Truck, Info } from "lucide-react";
 import type { Address, User, CartItem } from "@/lib/types";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Separator } from "@/components/ui/separator";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AddressAutocomplete } from "@/components/address-autocomplete";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { getCsrfToken } from "@/lib/csrf";
@@ -33,6 +32,7 @@ const addressFormSchema = z.object({
   state: z.string().optional(),
   zip: z.string().min(3, "ZIP/Postal code is required."),
   country: z.string().min(2, "Country is required."),
+  googleMapUrl: z.string().url().optional().or(z.literal('')),
 });
 
 type AddressFormValues = z.infer<typeof addressFormSchema>;
@@ -69,7 +69,6 @@ export default function CheckoutPage() {
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [selectedAddressId, setSelectedAddressId] = useState<string>('');
   const [isAddingNewAddress, setIsAddingNewAddress] = useState(false);
-  const [isAutocompleteOpen, setIsAutocompleteOpen] = useState(false);
 
   const [shippingOptions, setShippingOptions] = useState<CalculatedShippingMethod[]>([]);
   const [loadingShipping, setLoadingShipping] = useState(false);
@@ -84,7 +83,7 @@ export default function CheckoutPage() {
   const form = useForm<AddressFormValues>({
     resolver: zodResolver(addressFormSchema),
     defaultValues: {
-      fullName: "", street: "", apartment: "", city: "", area: "", state: "", zip: "", country: "",
+      fullName: "", street: "", apartment: "", city: "", area: "", state: "", zip: "", country: "", googleMapUrl: "",
     },
   });
 
@@ -266,7 +265,10 @@ export default function CheckoutPage() {
     }
   };
 
-  const handleAutocompleteSelect = (address: { street: string; city: string; state: string; zip: string; country: string; }) => {
+  const handleAutocompleteSelect = (
+    address: { street: string; city: string; state: string; zip: string; country: string; },
+    location: { lat: number; lng: number } | null
+  ) => {
     const storeCountry = form.getValues('country');
     if (storeCountry && address.country && storeCountry !== address.country) {
         toast({
@@ -274,6 +276,11 @@ export default function CheckoutPage() {
             description: `The address is in ${address.country}, but this store only ships to ${storeCountry}.`,
             variant: "destructive"
         });
+    }
+
+    if(location) {
+      const url = `https://www.google.com/maps?q=${location.lat},${location.lng}`;
+      form.setValue("googleMapUrl", url);
     }
     
     form.setValue("street", address.street);
@@ -284,8 +291,6 @@ export default function CheckoutPage() {
     if (address.city && !cities.includes(address.city)) {
         setCities(prev => [address.city, ...prev]);
     }
-    
-    setIsAutocompleteOpen(false);
   };
 
   const selectedShippingCost = shippingOptions.find(o => String(o.id) === selectedShippingMethodId)?.cost || 0;
@@ -369,14 +374,7 @@ export default function CheckoutPage() {
                         <div className="pt-6 mt-6 border-t">
                             <Form {...form}>
                                 <div className="space-y-4">
-                                    <div className="flex justify-end">
-                                        <Dialog open={isAutocompleteOpen} onOpenChange={setIsAutocompleteOpen}>
-                                            <DialogTrigger asChild>
-                                                <Button type="button" variant="outline" size="sm"><Search className="mr-2 h-4 w-4" />Find Address</Button>
-                                            </DialogTrigger>
-                                            <DialogContent><DialogHeader><DialogTitle>Find Address</DialogTitle></DialogHeader><AddressAutocomplete onSelect={handleAutocompleteSelect} /></DialogContent>
-                                        </Dialog>
-                                    </div>
+                                    <AddressAutocomplete onSelect={handleAutocompleteSelect} />
                                     <FormField control={form.control} name="fullName" render={({ field }) => (<FormItem><FormLabel>Full Name</FormLabel><FormControl><Input placeholder="John Doe" {...field} /></FormControl><FormMessage /></FormItem>)}/>
                                     <FormField control={form.control} name="street" render={({ field }) => (<FormItem><FormLabel>Street Address</FormLabel><FormControl><Input placeholder="123 Main St" {...field} /></FormControl><FormMessage /></FormItem>)}/>
                                     <FormField control={form.control} name="apartment" render={({ field }) => (<FormItem><FormLabel>Apartment, suite, etc. (optional)</FormLabel><FormControl><Input placeholder="Apt 4B" {...field} /></FormControl><FormMessage /></FormItem>)}/>

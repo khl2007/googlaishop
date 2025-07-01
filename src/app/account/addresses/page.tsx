@@ -13,7 +13,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import type { Address } from "@/lib/types";
-import { Loader2, Plus, Edit, Trash2, Home, Search, Star } from "lucide-react";
+import { Loader2, Plus, Edit, Trash2, Home, Star } from "lucide-react";
 import { AddressAutocomplete } from "@/components/address-autocomplete";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { getCsrfToken } from "@/lib/csrf";
@@ -28,6 +28,7 @@ const addressFormSchema = z.object({
   state: z.string().optional(),
   zip: z.string().min(3, "ZIP/Postal code is required."),
   country: z.string().min(2, "Country is required."),
+  googleMapUrl: z.string().url().optional().or(z.literal('')),
 });
 
 type AddressFormValues = z.infer<typeof addressFormSchema>;
@@ -38,7 +39,6 @@ export default function AddressesPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [addressToDelete, setAddressToDelete] = useState<Address | null>(null);
-  const [isAutocompleteOpen, setIsAutocompleteOpen] = useState(false);
   const { toast } = useToast();
   const [isSettingPrimary, setIsSettingPrimary] = useState<number | null>(null);
 
@@ -57,6 +57,7 @@ export default function AddressesPage() {
       state: "",
       zip: "",
       country: "",
+      googleMapUrl: "",
     },
   });
 
@@ -113,7 +114,8 @@ export default function AddressesPage() {
       area: "", 
       state: "", 
       zip: "", 
-      country: defaultCountry
+      country: defaultCountry,
+      googleMapUrl: ""
     });
     setIsDialogOpen(true);
   };
@@ -191,7 +193,10 @@ export default function AddressesPage() {
     }
   };
   
-  const handleAutocompleteSelect = (address: { street: string; city: string; state: string; zip: string; country: string; }) => {
+  const handleAutocompleteSelect = (
+    address: { street: string; city: string; state: string; zip: string; country: string; },
+    location: { lat: number, lng: number } | null
+  ) => {
     const storeCountry = defaultCountry;
     if (storeCountry && address.country && storeCountry !== address.country) {
         toast({
@@ -199,6 +204,11 @@ export default function AddressesPage() {
             description: `The address is in ${address.country}, but this store only ships to ${storeCountry}.`,
             variant: "destructive"
         });
+    }
+
+    if(location) {
+      const url = `https://www.google.com/maps?q=${location.lat},${location.lng}`;
+      form.setValue("googleMapUrl", url);
     }
     
     form.setValue("street", address.street);
@@ -210,8 +220,6 @@ export default function AddressesPage() {
     if (address.city && !cities.includes(address.city)) {
         setCities(prev => [address.city, ...prev]);
     }
-    
-    setIsAutocompleteOpen(false);
   };
 
   return (
@@ -274,28 +282,13 @@ export default function AddressesPage() {
 
       {/* Add/Edit Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle>{form.getValues('id') ? 'Edit Address' : 'Add New Address'}</DialogTitle>
           </DialogHeader>
-          <div className="flex justify-end">
-            <Dialog open={isAutocompleteOpen} onOpenChange={setIsAutocompleteOpen}>
-                <DialogTrigger asChild>
-                    <Button type="button" variant="outline" size="sm">
-                        <Search className="mr-2 h-4 w-4" />
-                        Find Address
-                    </Button>
-                </DialogTrigger>
-                <DialogContent onInteractOutside={(e) => e.preventDefault()}>
-                    <DialogHeader>
-                        <DialogTitle>Find Address</DialogTitle>
-                    </DialogHeader>
-                    <AddressAutocomplete onSelect={handleAutocompleteSelect} />
-                </DialogContent>
-            </Dialog>
-          </div>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <AddressAutocomplete onSelect={handleAutocompleteSelect} />
               <FormField control={form.control} name="fullName" render={({ field }) => (
                   <FormItem><FormLabel>Full Name</FormLabel><FormControl><Input placeholder="John Doe" {...field} /></FormControl><FormMessage /></FormItem>
               )}/>

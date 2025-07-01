@@ -17,7 +17,7 @@ interface AddressResult {
 }
 
 interface AddressAutocompleteProps {
-  onSelect: (address: AddressResult) => void;
+  onSelect: (address: AddressResult, location: { lat: number; lng: number } | null) => void;
 }
 
 const libraries: "places"[] = ["places"];
@@ -66,12 +66,17 @@ export function AddressAutocomplete({ onSelect }: AddressAutocompleteProps) {
   }, []);
   
   const handleAddressResult = useCallback((place: google.maps.places.PlaceResult | google.maps.GeocoderResult) => {
+      const location = place.geometry?.location ? {
+          lat: place.geometry.location.lat(),
+          lng: place.geometry.location.lng(),
+      } : null;
+      
       if (place.address_components) {
         const parsedAddress = parseAddressComponents(place.address_components);
         if (inputRef.current && place.formatted_address) {
             inputRef.current.value = place.formatted_address;
         }
-        onSelect(parsedAddress);
+        onSelect(parsedAddress, location);
       } else {
         toast({
           title: "Incomplete Address",
@@ -80,11 +85,7 @@ export function AddressAutocomplete({ onSelect }: AddressAutocompleteProps) {
         });
       }
       
-      if (place.geometry?.location) {
-          const location = {
-              lat: place.geometry.location.lat(),
-              lng: place.geometry.location.lng(),
-          };
+      if (location) {
           setCenter(location);
           setMarkerPosition(location);
           map?.panTo(location);

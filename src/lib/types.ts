@@ -73,6 +73,7 @@ export type Address = {
   zip: string;
   country: string;
   isPrimary: boolean;
+  googleMapUrl?: string | null;
 };
 
 export type ShippingMethod = {
