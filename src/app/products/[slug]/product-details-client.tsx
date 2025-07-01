@@ -113,7 +113,10 @@ export function ProductDetailsClient({ product, user }: ProductDetailsClientProp
                 <p className="text-lg text-muted-foreground leading-relaxed mt-6">{product.shortDescription}</p>
             )}
 
-            <p className="text-base text-muted-foreground leading-relaxed my-6">{product.description}</p>
+            <div
+                className="wysiwyg-content my-6 text-muted-foreground"
+                dangerouslySetInnerHTML={{ __html: product.description }}
+            />
             
             <div className="space-y-6">
                 <ProductVariantSelectors 
