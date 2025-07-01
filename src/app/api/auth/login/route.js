@@ -42,7 +42,7 @@ export async function POST(request) {
 
     response.cookies.set('user_session', JSON.stringify(userWithoutPassword), {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: true,
       path: '/',
       maxAge: 60 * 60 * 24 * 7, // 1 week
       sameSite: 'none',

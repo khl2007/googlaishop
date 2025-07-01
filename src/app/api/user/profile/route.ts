@@ -64,7 +64,7 @@ export async function PUT(request: Request) {
         const response = NextResponse.json({ message: 'Profile updated successfully' });
         response.cookies.set('user_session', JSON.stringify(updatedUser), {
             httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
+            secure: true,
             path: '/',
             maxAge: 60 * 60 * 24 * 7, // 1 week
             sameSite: 'none',

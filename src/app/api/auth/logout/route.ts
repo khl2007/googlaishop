@@ -7,7 +7,7 @@ export async function POST() {
     name: 'user_session',
     value: '',
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure: true,
     path: '/',
     expires: new Date(0),
     sameSite: 'none',
