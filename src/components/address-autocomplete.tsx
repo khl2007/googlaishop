@@ -180,13 +180,13 @@ export function AddressAutocomplete({ onSelect }: AddressAutocompleteProps) {
       <GoogleMap
         id="address-map"
         mapContainerStyle={mapContainerStyle}
-        zoom={8}
+        zoom={12}
         center={center}
         onLoad={onMapLoad}
         onClick={handleMapClick}
         options={{
             zoomControl: true,
-            fullscreenControl: false,
+            fullscreenControl: true,
             streetViewControl: false,
             mapTypeControl: false,
         }}
