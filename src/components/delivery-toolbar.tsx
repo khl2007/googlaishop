@@ -218,7 +218,7 @@ export function DeliveryToolbar({ user }: { user: User | null }) {
                 <DialogHeader className="p-4 border-b">
                     <DialogTitle>Select Delivery Address</DialogTitle>
                 </DialogHeader>
-                <div className="p-4 space-y-4 max-h-[70vh] overflow-y-auto">
+                <div className="flex-1 min-h-0 p-4 space-y-4 overflow-y-auto">
                     <RadioGroup defaultValue={primaryAddressId?.toString()} onValueChange={(val) => handleSelectAddress(Number(val))}>
                         {addresses.map(address => (
                             <Label key={address.id} htmlFor={`address-${address.id}`} className="flex items-start gap-4 rounded-md border p-4 cursor-pointer hover:bg-accent has-[[data-state=checked]]:bg-accent">
