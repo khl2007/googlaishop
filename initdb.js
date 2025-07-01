@@ -20,6 +20,7 @@ db.serialize(() => {
   db.run("DROP TABLE IF EXISTS shipping_methods");
   db.run("DROP TABLE IF EXISTS slides");
   db.run("DROP TABLE IF EXISTS home_sections");
+  db.run("DROP TABLE IF EXISTS slider_groups");
 
 
   // Create roles table
@@ -106,6 +107,23 @@ db.serialize(() => {
         style TEXT NOT NULL DEFAULT 'style1', -- 'style1', 'style2', etc.
         "order" INTEGER NOT NULL,
         isActive BOOLEAN DEFAULT 0
+    )
+  `);
+
+  // Create slider_groups table
+  db.run(`
+    CREATE TABLE slider_groups (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        location TEXT NOT NULL,
+        category_id TEXT,
+        content_type TEXT NOT NULL DEFAULT 'product_tag',
+        tags TEXT,
+        slides_per_view REAL DEFAULT 2.5,
+        autoplay_speed INTEGER DEFAULT 5000,
+        style TEXT NOT NULL DEFAULT 'default',
+        is_active BOOLEAN DEFAULT 0,
+        FOREIGN KEY(category_id) REFERENCES categories(id) ON DELETE CASCADE
     )
   `);
 

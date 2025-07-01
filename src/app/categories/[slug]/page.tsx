@@ -1,9 +1,10 @@
 
 import { notFound } from "next/navigation";
-import { getCategoryBySlug, getProductsByCategoryId, getSubCategories, getCategoryById } from "@/lib/data";
+import { getCategoryBySlug, getProductsByCategoryId, getSubCategories, getCategoryById, getActiveSliderGroupForCategory } from "@/lib/data";
 import { ProductCard } from "@/components/product-card";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 import { CategoryCard } from "@/components/category-card";
+import { CategorySlider } from "@/components/category-slider";
 
 export default async function CategoryProductsPage({ params: { slug } }: { params: { slug: string } }) {
   const category = await getCategoryBySlug(slug);
@@ -11,9 +12,10 @@ export default async function CategoryProductsPage({ params: { slug } }: { param
     notFound();
   }
 
-  // A category with sub-categories shouldn't have products directly.
-  // We fetch sub-categories first to decide if we need to fetch products.
-  const subCategories = await getSubCategories(category.id);
+  const [subCategories, sliderGroup] = await Promise.all([
+    getSubCategories(category.id),
+    getActiveSliderGroupForCategory(category.id),
+  ]);
 
   const products = subCategories.length === 0
     ? await getProductsByCategoryId(category.id)
@@ -23,6 +25,9 @@ export default async function CategoryProductsPage({ params: { slug } }: { param
 
   return (
     <div className="container mx-auto my-12 px-4">
+      
+      {sliderGroup && <CategorySlider sliderGroup={sliderGroup} />}
+      
       <Breadcrumb className="mb-8">
         <BreadcrumbList>
           <BreadcrumbItem>

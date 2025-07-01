@@ -115,3 +115,16 @@ export type HomeSection = {
     order: number;
     isActive: boolean;
 };
+
+export type SliderGroup = {
+    id: number;
+    name: string;
+    location: 'category_top';
+    category_id: string | null;
+    content_type: 'product_tag';
+    tags: string; // JSON array of strings
+    slides_per_view: number;
+    autoplay_speed: number;
+    style: string;
+    is_active: boolean;
+};

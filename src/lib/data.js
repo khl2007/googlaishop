@@ -1013,3 +1013,88 @@ export async function toggleUserVerification(userId, isVerified) {
         });
     });
 }
+
+// Slider Groups
+export async function getAllSliderGroups() {
+    const db = getDatabase();
+    return new Promise((resolve, reject) => {
+        db.all(`
+            SELECT sg.*, c.name as category_name
+            FROM slider_groups sg
+            LEFT JOIN categories c ON sg.category_id = c.id
+            ORDER BY sg.name ASC
+        `, (err, rows) => {
+            if (err) return reject(new Error('Failed to fetch slider groups.'));
+            resolve(rows.map(row => ({ ...row, is_active: !!row.is_active })));
+        });
+    });
+}
+
+export async function getSliderGroupById(id) {
+    const db = getDatabase();
+    return new Promise((resolve, reject) => {
+        db.get('SELECT * FROM slider_groups WHERE id = ?', [id], (err, row) => {
+            if (err) return reject(new Error('Failed to fetch slider group.'));
+            resolve(row ? { ...row, is_active: !!row.is_active } : null);
+        });
+    });
+}
+
+export async function createSliderGroup(data) {
+    const db = getDatabase();
+    const { name, location, category_id, content_type, tags, slides_per_view, autoplay_speed, style, is_active } = data;
+    return new Promise((resolve, reject) => {
+        const sql = 'INSERT INTO slider_groups (name, location, category_id, content_type, tags, slides_per_view, autoplay_speed, style, is_active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)';
+        db.run(sql, [name, location, category_id, content_type, tags, slides_per_view, autoplay_speed, style, is_active ? 1 : 0], function (err) {
+            if (err) return reject(err);
+            resolve({ id: this.lastID });
+        });
+    });
+}
+
+export async function updateSliderGroup(id, data) {
+    const db = getDatabase();
+    const { name, location, category_id, content_type, tags, slides_per_view, autoplay_speed, style, is_active } = data;
+    return new Promise((resolve, reject) => {
+        const sql = 'UPDATE slider_groups SET name = ?, location = ?, category_id = ?, content_type = ?, tags = ?, slides_per_view = ?, autoplay_speed = ?, style = ?, is_active = ? WHERE id = ?';
+        db.run(sql, [name, location, category_id, content_type, tags, slides_per_view, autoplay_speed, style, is_active ? 1 : 0, id], function (err) {
+            if (err) return reject(err);
+            if (this.changes === 0) return reject(new Error("Slider group not found or no changes made."));
+            resolve(this);
+        });
+    });
+}
+
+export async function deleteSliderGroup(id) {
+    const db = getDatabase();
+    return new Promise((resolve, reject) => {
+        db.run('DELETE FROM slider_groups WHERE id = ?', [id], function (err) {
+            if (err) return reject(err);
+            if (this.changes === 0) return reject(new Error("Slider group not found."));
+            resolve(this);
+        });
+    });
+}
+
+export const getActiveSliderGroupForCategory = cache(async (categoryId) => {
+  const db = getDatabase();
+  return new Promise((resolve) => {
+      db.get('SELECT * FROM slider_groups WHERE is_active = 1 AND location = "category_top" AND category_id = ?', [categoryId], (err, row) => {
+          if (err) {
+              console.error("Database error in getActiveSliderGroupForCategory:", err.message);
+              return resolve(null);
+          }
+          resolve(row ? { ...row, is_active: !!row.is_active, tags: JSON.parse(row.tags || '[]') } : null);
+      });
+  });
+}, ['slider-group-for-category'], { tags: ['slider-groups'] });
+
+export async function getProductsForCategoryByTags(categoryId, tags) {
+    if (!tags || tags.length === 0) {
+        return [];
+    }
+    const allCategoryProducts = await getProductsByCategoryId(categoryId);
+    return allCategoryProducts.filter(p => 
+        p.tags && tags.some(tag => p.tags.split(',').map(t => t.trim()).includes(tag))
+    );
+}

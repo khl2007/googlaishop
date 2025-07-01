@@ -48,6 +48,21 @@ function seedDatabase() {
     db.run(`CREATE TABLE IF NOT EXISTS shipping_methods (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL, logo TEXT, cost_type TEXT NOT NULL, default_cost REAL, config TEXT, enabled BOOLEAN DEFAULT 0)`);
     db.run(`CREATE TABLE IF NOT EXISTS slides (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL, description TEXT, image TEXT NOT NULL, link TEXT, buttonText TEXT, isActive BOOLEAN DEFAULT 0, "order" INTEGER DEFAULT 0)`);
     db.run(`CREATE TABLE IF NOT EXISTS home_sections (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL, type TEXT NOT NULL, config TEXT, style TEXT NOT NULL, "order" INTEGER, isActive BOOLEAN DEFAULT 0)`);
+    db.run(`
+      CREATE TABLE IF NOT EXISTS slider_groups (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          name TEXT NOT NULL,
+          location TEXT NOT NULL,
+          category_id TEXT,
+          content_type TEXT NOT NULL DEFAULT 'product_tag',
+          tags TEXT,
+          slides_per_view REAL DEFAULT 2.5,
+          autoplay_speed INTEGER DEFAULT 5000,
+          style TEXT NOT NULL DEFAULT 'default',
+          is_active BOOLEAN DEFAULT 0,
+          FOREIGN KEY(category_id) REFERENCES categories(id) ON DELETE CASCADE
+      )
+    `);
 
 
     // Seed roles
