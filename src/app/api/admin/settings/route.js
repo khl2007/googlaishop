@@ -18,7 +18,7 @@ export async function GET() {
 
 // UPDATE settings
 export async function PUT(request) {
-  const { websiteTitle, websiteLogo, timeZone, country } = await request.json();
+  const { websiteTitle, websiteLogo, timeZone, country, checkoutRequiresVerification } = await request.json();
   const db = getDatabase();
 
   if (!websiteTitle || !timeZone || !country) {
@@ -28,11 +28,11 @@ export async function PUT(request) {
   try {
     const sql = `
         UPDATE settings 
-        SET websiteTitle = ?, websiteLogo = ?, timeZone = ?, country = ?
+        SET websiteTitle = ?, websiteLogo = ?, timeZone = ?, country = ?, checkoutRequiresVerification = ?
         WHERE id = 1
     `;
     await new Promise((resolve, reject) => {
-      db.run(sql, [websiteTitle, websiteLogo, timeZone, country], function (err) {
+      db.run(sql, [websiteTitle, websiteLogo, timeZone, country, checkoutRequiresVerification ? 1 : 0], function (err) {
         if (err) reject(err);
         if (this.changes === 0) reject(new Error('No settings found to update.'));
         resolve(this);

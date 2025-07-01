@@ -40,7 +40,7 @@ function seedDatabase() {
     db.run(`CREATE TABLE IF NOT EXISTS permissions (id INTEGER PRIMARY KEY AUTOINCREMENT, action TEXT, subject TEXT, UNIQUE(action, subject))`);
     db.run(`CREATE TABLE IF NOT EXISTS role_permissions (role_id INTEGER, permission_id INTEGER, FOREIGN KEY(role_id) REFERENCES roles(id), FOREIGN KEY(permission_id) REFERENCES permissions(id), UNIQUE(role_id, permission_id))`);
     db.run(`CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT UNIQUE, password TEXT, fullName TEXT, role_id INTEGER, phoneNumber TEXT, country TEXT, city TEXT, logo TEXT, isVerified BOOLEAN DEFAULT 0, verificationToken TEXT, FOREIGN KEY(role_id) REFERENCES roles(id))`);
-    db.run(`CREATE TABLE IF NOT EXISTS settings (id INTEGER PRIMARY KEY DEFAULT 1, websiteTitle TEXT, websiteLogo TEXT, timeZone TEXT, country TEXT)`);
+    db.run(`CREATE TABLE IF NOT EXISTS settings (id INTEGER PRIMARY KEY DEFAULT 1, websiteTitle TEXT, websiteLogo TEXT, timeZone TEXT, country TEXT, checkoutRequiresVerification BOOLEAN DEFAULT 0)`);
     db.run(`CREATE TABLE IF NOT EXISTS email_settings (id INTEGER PRIMARY KEY DEFAULT 1, provider TEXT DEFAULT 'smtp', host TEXT, port INTEGER, username TEXT, password TEXT, from_email TEXT, from_name TEXT, secure BOOLEAN DEFAULT 1)`);
     db.run(`CREATE TABLE IF NOT EXISTS payment_methods (id INTEGER PRIMARY KEY, provider TEXT UNIQUE NOT NULL, enabled BOOLEAN DEFAULT 0, config TEXT)`);
     db.run(`CREATE TABLE IF NOT EXISTS cities (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, country_name TEXT NOT NULL, UNIQUE(name, country_name))`);
@@ -57,8 +57,8 @@ function seedDatabase() {
     console.log('Roles seeded.');
     
     // Seed Settings
-    const insertSettingsStmt = db.prepare('INSERT OR IGNORE INTO settings (id, websiteTitle, websiteLogo, timeZone, country) VALUES (?, ?, ?, ?, ?)');
-    insertSettingsStmt.run(1, 'Zain Inspired E-Shop', 'https://placehold.co/100x40.png', 'UTC', 'USA', (err) => {
+    const insertSettingsStmt = db.prepare('INSERT OR IGNORE INTO settings (id, websiteTitle, websiteLogo, timeZone, country, checkoutRequiresVerification) VALUES (?, ?, ?, ?, ?, ?)');
+    insertSettingsStmt.run(1, 'Zain Inspired E-Shop', 'https://placehold.co/100x40.png', 'UTC', 'USA', 0, (err) => {
       if (err) console.error('Error inserting settings:', err.message);
     });
     insertSettingsStmt.finalize();

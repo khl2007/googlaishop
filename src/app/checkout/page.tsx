@@ -12,8 +12,8 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
 import { useEffect, useState } from "react";
-import { Loader2, Search, CreditCard, Wallet, DollarSign, Truck } from "lucide-react";
-import type { Address, CartItem } from "@/lib/types";
+import { Loader2, Search, CreditCard, Wallet, DollarSign, Truck, Info } from "lucide-react";
+import type { Address, User, CartItem } from "@/lib/types";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -22,6 +22,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { AddressAutocomplete } from "@/components/address-autocomplete";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { getCsrfToken } from "@/lib/csrf";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const addressFormSchema = z.object({
   fullName: z.string().min(2, "Full name is required."),
@@ -52,13 +53,20 @@ interface CalculatedShippingMethod {
   cost: number;
 }
 
+interface PageSettings {
+    checkoutRequiresVerification: boolean;
+}
+
 export default function CheckoutPage() {
-  const { cartItems, cartTotal, clearCart } = useCart();
+  const { cartItems, cartTotal, clearCart, useCart: cartHook } = useCart();
   const router = useRouter();
   const { toast } = useToast();
 
+  const [user, setUser] = useState<User | null>(null);
+  const [settings, setSettings] = useState<PageSettings | null>(null);
+  const [loadingInitialData, setLoadingInitialData] = useState(true);
+
   const [addresses, setAddresses] = useState<Address[]>([]);
-  const [loadingAddresses, setLoadingAddresses] = useState(true);
   const [selectedAddressId, setSelectedAddressId] = useState<string>('');
   const [isAddingNewAddress, setIsAddingNewAddress] = useState(false);
   const [isAutocompleteOpen, setIsAutocompleteOpen] = useState(false);
@@ -68,7 +76,6 @@ export default function CheckoutPage() {
   const [selectedShippingMethodId, setSelectedShippingMethodId] = useState<string>('');
 
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
-  const [loadingPaymentMethods, setLoadingPaymentMethods] = useState(true);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string>('');
   
   const [cities, setCities] = useState<string[]>([]);
@@ -77,63 +84,69 @@ export default function CheckoutPage() {
   const form = useForm<AddressFormValues>({
     resolver: zodResolver(addressFormSchema),
     defaultValues: {
-      fullName: "",
-      street: "",
-      apartment: "",
-      city: "",
-      area: "",
-      state: "",
-      zip: "",
-      country: "", // Will be set by useEffect
+      fullName: "", street: "", apartment: "", city: "", area: "", state: "", zip: "", country: "",
     },
   });
 
-  const fetchAddresses = async () => {
-    setLoadingAddresses(true);
-    try {
-      const res = await fetch('/api/user/addresses');
-      if (!res.ok) throw new Error("Failed to fetch addresses");
-      const data = await res.json();
-      setAddresses(data);
-      if (data.length > 0) {
-        // Find primary or first address and set it as selected
-        const primaryAddress = data.find((a: Address) => a.isPrimary) || data[0];
-        setSelectedAddressId(String(primaryAddress.id));
-        setIsAddingNewAddress(false);
-      } else {
-        setIsAddingNewAddress(true);
-        setSelectedAddressId('new');
-      }
-    } catch (error: any) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
-    } finally {
-      setLoadingAddresses(false);
-    }
-  };
-
-  const fetchPaymentMethods = async () => {
-    setLoadingPaymentMethods(true);
-    try {
-        const res = await fetch('/api/payment-methods');
-        if (!res.ok) throw new Error("Failed to fetch payment methods");
-        const data = await res.json();
-        setPaymentMethods(data);
-        if (data.length > 0) {
-            setSelectedPaymentMethod(data[0].provider);
+  useEffect(() => {
+    if (cartItems.length === 0 && !cartHook.length) {
+      const timeoutId = setTimeout(() => {
+        if (cartHook.length === 0) {
+           router.push("/");
         }
-    } catch (error: any) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
-    } finally {
-      setLoadingPaymentMethods(false);
+      }, 500);
+      return () => clearTimeout(timeoutId);
     }
-  };
+  }, [cartItems.length, router, cartHook.length]);
 
   useEffect(() => {
+    const fetchInitialData = async () => {
+        setLoadingInitialData(true);
+        try {
+            const [userRes, settingsRes, addressesRes, paymentMethodsRes] = await Promise.all([
+                fetch('/api/auth/me'),
+                fetch('/api/settings'),
+                fetch('/api/user/addresses'),
+                fetch('/api/payment-methods'),
+            ]);
+
+            if (!userRes.ok || !settingsRes.ok || !addressesRes.ok || !paymentMethodsRes.ok) {
+                 throw new Error('Failed to load checkout data.');
+            }
+            
+            const userData = await userRes.json();
+            setUser(userData);
+            
+            const settingsData = await settingsRes.json();
+            setSettings(settingsData);
+            
+            const addressesData = await addressesRes.json();
+            setAddresses(addressesData);
+            if (addressesData.length > 0) {
+                const primaryAddress = addressesData.find((a: Address) => a.isPrimary) || addressesData[0];
+                setSelectedAddressId(String(primaryAddress.id));
+                setIsAddingNewAddress(false);
+            } else {
+                setIsAddingNewAddress(true);
+                setSelectedAddressId('new');
+            }
+            
+            const paymentMethodsData = await paymentMethodsRes.json();
+            setPaymentMethods(paymentMethodsData);
+            if (paymentMethodsData.length > 0) {
+                setSelectedPaymentMethod(paymentMethodsData[0].provider);
+            }
+        } catch (error: any) {
+             toast({ title: "Error", description: error.message, variant: "destructive" });
+        } finally {
+            setLoadingInitialData(false);
+        }
+    };
+
     if (cartItems.length > 0) {
-        fetchAddresses();
-        fetchPaymentMethods();
+      fetchInitialData();
     }
-  }, [cartItems.length]);
+  }, [cartItems.length, toast]);
   
   useEffect(() => {
     const fetchSettingsAndCities = async () => {
@@ -145,7 +158,6 @@ export default function CheckoutPage() {
             
             if (settingsData.country) {
                 form.setValue('country', settingsData.country);
-
                 const citiesRes = await fetch(`/api/cities?country=${encodeURIComponent(settingsData.country)}`);
                 if (!citiesRes.ok) throw new Error("Failed to fetch cities");
                 const citiesData = await citiesRes.json();
@@ -163,34 +175,26 @@ export default function CheckoutPage() {
   }, [form, toast]);
 
 
-  useEffect(() => {
-    if (cartItems.length === 0 && !useCart.length) {
-      const timeoutId = setTimeout(() => {
-        if (useCart.length === 0) {
-           router.push("/");
-        }
-      }, 500);
-      return () => clearTimeout(timeoutId);
-    }
-  }, [cartItems.length, router]);
-  
   const onSaveAddress = async (data: AddressFormValues) => {
     try {
         const res = await fetch('/api/user/addresses', {
             method: 'POST',
-            headers: { 
-                'Content-Type': 'application/json',
-                'x-csrf-token': getCsrfToken(),
-            },
+            headers: { 'Content-Type': 'application/json', 'x-csrf-token': getCsrfToken() },
             body: JSON.stringify(data),
         });
         if (!res.ok) throw new Error("Failed to save address");
-        const newAddress = await res.json();
+        const newAddressData = await res.json();
         toast({ title: "Success", description: "Address saved successfully." });
         form.reset();
-        await fetchAddresses();
+        
+        // Refresh addresses list
+        const addressesRes = await fetch('/api/user/addresses');
+        const updatedAddresses = await addressesRes.json();
+        setAddresses(updatedAddresses);
+
         // Automatically select the newly added address
-        setSelectedAddressId(String(newAddress.address.id));
+        setSelectedAddressId(String(newAddressData.address.id));
+        setIsAddingNewAddress(false);
     } catch (error: any) {
         toast({ title: "Error", description: error.message, variant: "destructive" });
     }
@@ -205,10 +209,7 @@ export default function CheckoutPage() {
         try {
           const res = await fetch('/api/shipping-cost', {
             method: 'POST',
-            headers: { 
-                'Content-Type': 'application/json',
-                'x-csrf-token': getCsrfToken(),
-            },
+            headers: { 'Content-Type': 'application/json', 'x-csrf-token': getCsrfToken() },
             body: JSON.stringify({ addressId: parseInt(selectedAddressId), cartItems }),
           });
           if (!res.ok) {
@@ -234,17 +235,16 @@ export default function CheckoutPage() {
   
   const handlePlaceOrder = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isCheckoutAllowed) return;
 
     if (!selectedAddressId || (selectedAddressId === 'new' && !form.formState.isValid)) {
         toast({ title: "Error", description: "Please select or add a valid shipping address.", variant: "destructive" });
         return;
     }
-
     if (shippingOptions.length > 0 && !selectedShippingMethodId) {
         toast({ title: "Error", description: "Please select a shipping method.", variant: "destructive" });
         return;
     }
-
     if (!selectedPaymentMethod) {
         toast({ title: "Error", description: "Please select a payment method.", variant: "destructive" });
         return;
@@ -273,8 +273,9 @@ export default function CheckoutPage() {
 
   const selectedShippingCost = shippingOptions.find(o => String(o.id) === selectedShippingMethodId)?.cost || 0;
   const orderTotal = cartTotal + selectedShippingCost;
+  const isCheckoutAllowed = !settings?.checkoutRequiresVerification || (user?.isVerified ?? false);
 
-  if (cartItems.length === 0 || loadingAddresses || loadingPaymentMethods) {
+  if (cartItems.length === 0 || loadingInitialData) {
     return (
       <div className="flex min-h-[calc(100vh-10rem)] items-center justify-center">
         <div className="flex items-center gap-2">
@@ -315,6 +316,15 @@ export default function CheckoutPage() {
   return (
     <div className="container mx-auto my-12 px-4">
       <h1 className="mb-8 text-center text-4xl font-extrabold font-headline tracking-tight lg:text-5xl">Checkout</h1>
+      {!isCheckoutAllowed && (
+        <Alert variant="destructive" className="mb-8 max-w-2xl mx-auto">
+            <Info className="h-4 w-4" />
+            <AlertTitle>Account Not Verified</AlertTitle>
+            <AlertDescription>
+                Your account must be verified to complete the checkout process. Please check your email for a verification link.
+            </AlertDescription>
+        </Alert>
+      )}
       <form onSubmit={handlePlaceOrder} className="grid grid-cols-1 gap-8 lg:grid-cols-3">
         <div className="lg:col-span-2 space-y-8">
             <Card>
@@ -428,7 +438,6 @@ export default function CheckoutPage() {
                 </CardContent>
             </Card>
 
-
             <Card>
                 <CardHeader>
                     <CardTitle>Payment Method</CardTitle>
@@ -489,7 +498,7 @@ export default function CheckoutPage() {
               </div>
             </CardContent>
           </Card>
-           <Button size="lg" type="submit" className="mt-6 w-full bg-primary text-primary-foreground hover:bg-primary/90" disabled={loadingShipping}>
+           <Button size="lg" type="submit" className="mt-6 w-full bg-primary text-primary-foreground hover:bg-primary/90" disabled={loadingShipping || !isCheckoutAllowed}>
               {loadingShipping && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Place Order
             </Button>

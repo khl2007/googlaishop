@@ -15,7 +15,8 @@ export async function getUser(): Promise<User | null> {
         id: parsed.id,
         username: parsed.username,
         fullName: parsed.fullName,
-        role: parsed.role
+        role: parsed.role,
+        isVerified: parsed.isVerified
       };
       return user;
     } catch (e) {

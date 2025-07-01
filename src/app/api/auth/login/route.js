@@ -9,7 +9,7 @@ export async function POST(request) {
 
     const userRow = await new Promise((resolve, reject) => {
       const sql = `
-        SELECT u.id, u.username, u.password, u.fullName, r.name as role
+        SELECT u.id, u.username, u.password, u.fullName, r.name as role, u.isVerified
         FROM users u
         JOIN roles r ON u.role_id = r.id
         WHERE u.username = ?
@@ -35,6 +35,7 @@ export async function POST(request) {
     }
 
     const { password: _, ...userWithoutPassword } = userRow;
+    userWithoutPassword.isVerified = !!userRow.isVerified;
 
     const response = NextResponse.json({ user: userWithoutPassword }, { status: 200 });
 

@@ -8,6 +8,7 @@ export async function GET() {
     const publicSettings = {
         websiteTitle: settings?.websiteTitle || 'Zain Inspired E-Shop',
         country: settings?.country || 'USA',
+        checkoutRequiresVerification: !!settings?.checkoutRequiresVerification,
     };
     return NextResponse.json(publicSettings);
   } catch (error) {

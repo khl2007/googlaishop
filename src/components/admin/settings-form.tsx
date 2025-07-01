@@ -13,12 +13,14 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { getCsrfToken } from "@/lib/csrf";
+import { Switch } from "../ui/switch";
 
 const formSchema = z.object({
   websiteTitle: z.string().min(2, "Website title must be at least 2 characters."),
   websiteLogo: z.string().url("Must be a valid URL.").optional().or(z.literal('')),
   timeZone: z.string().min(1, "Please select a time zone."),
   country: z.string().min(1, "Please select a country."),
+  checkoutRequiresVerification: z.boolean().default(false),
 });
 
 type SettingsFormValues = z.infer<typeof formSchema>;
@@ -29,6 +31,7 @@ interface Settings {
     websiteLogo: string;
     timeZone: string;
     country: string;
+    checkoutRequiresVerification: boolean;
 }
 
 interface SettingsFormProps {
@@ -47,6 +50,7 @@ export function SettingsForm({ settings, timezones, countries }: SettingsFormPro
       websiteLogo: settings?.websiteLogo || "",
       timeZone: settings?.timeZone || "UTC",
       country: settings?.country || "USA",
+      checkoutRequiresVerification: !!settings?.checkoutRequiresVerification,
     },
   });
   
@@ -162,6 +166,20 @@ export function SettingsForm({ settings, timezones, countries }: SettingsFormPro
                     <FormMessage />
                     </FormItem>
                 )}
+                />
+
+                <FormField
+                    control={form.control}
+                    name="checkoutRequiresVerification"
+                    render={({ field }) => (
+                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                            <div className="space-y-0.5">
+                                <FormLabel className="text-base">Require Verification for Checkout</FormLabel>
+                                <FormDescription>If enabled, only users who have verified their email address can proceed to checkout.</FormDescription>
+                            </div>
+                            <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                        </FormItem>
+                    )}
                 />
 
                 <Button type="submit" disabled={isSubmitting}>
