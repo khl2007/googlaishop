@@ -9,7 +9,7 @@ import Link from "next/link";
 import { CheckCircle } from "lucide-react";
 
 export function AddToCartDrawer() {
-  const { isTopDrawerOpen, setIsTopDrawerOpen, lastAddedItem, cartTotal, cartCount } = useCart();
+  const { isTopDrawerOpen, setIsTopDrawerOpen, lastAddedItem } = useCart();
 
   return (
     <Sheet open={isTopDrawerOpen} onOpenChange={setIsTopDrawerOpen}>
@@ -40,22 +40,18 @@ export function AddToCartDrawer() {
                   <p className="font-semibold">{lastAddedItem.name}</p>
                   <p className="text-sm text-muted-foreground">Added to cart</p>
                 </div>
-                <div className="ml-auto text-right">
-                  <p className="text-sm text-muted-foreground">Cart Total ({cartCount} items)</p>
-                  <p className="font-bold text-lg">${cartTotal.toFixed(2)}</p>
-                </div>
               </div>
 
               {/* Second Row Content (Buttons) */}
-              <div className="flex items-center gap-4 justify-start md:justify-end">
+              <div className="flex items-center gap-4">
                 <Button
                   variant="outline"
-                  className="bg-white border-primary text-primary hover:bg-primary/10"
+                  className="bg-white border-primary text-primary hover:bg-primary/10 flex-1"
                   onClick={() => setIsTopDrawerOpen(false)}
                 >
                   Continue Shopping
                 </Button>
-                <Button asChild onClick={() => setIsTopDrawerOpen(false)}>
+                <Button asChild className="flex-1" onClick={() => setIsTopDrawerOpen(false)}>
                   <Link href="/checkout">Checkout</Link>
                 </Button>
               </div>
