@@ -211,7 +211,7 @@ export function DeliveryToolbar({ user }: { user: User | null }) {
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
         <DialogContent className={cn(
             "p-0 flex flex-col gap-0",
-            modalView === 'add' ? "h-screen w-screen max-w-full sm:h-auto sm:max-h-[90vh] sm:max-w-4xl sm:rounded-lg" : "max-w-lg"
+            modalView === 'add' ? "h-screen w-screen max-w-full sm:h-[90vh] sm:max-w-4xl sm:rounded-lg" : "max-w-lg"
         )}>
           {modalView === 'select' && user ? (
               <>
