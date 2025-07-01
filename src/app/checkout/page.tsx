@@ -392,7 +392,7 @@ export default function CheckoutPage() {
                                         <FormField control={form.control} name="city" render={({ field }) => (
                                             <FormItem className="col-span-2">
                                                 <FormLabel>City</FormLabel>
-                                                <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isCitiesLoading || cities.length === 0}>
+                                                <Select onValueChange={field.onChange} value={field.value} disabled={isCitiesLoading || cities.length === 0}>
                                                     <FormControl>
                                                         <SelectTrigger>
                                                             <SelectValue placeholder={isCitiesLoading ? "Loading cities..." : "Select a city"} />
