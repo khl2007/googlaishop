@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useRef, useCallback } from "react";
-import { useJsApiLoader, Autocomplete } from "@react-google-maps/api";
+import { useJsApiLoader, Autocomplete, GoogleMap, MarkerF } from "@react-google-maps/api";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Loader2, MapPin } from "lucide-react";
@@ -21,6 +21,11 @@ interface AddressAutocompleteProps {
 }
 
 const libraries: "places"[] = ["places"];
+const mapContainerStyle = {
+  height: "400px",
+  width: "100%",
+  borderRadius: "0.5rem",
+};
 
 export function AddressAutocomplete({ onSelect }: AddressAutocompleteProps) {
   const { isLoaded, loadError } = useJsApiLoader({
@@ -32,6 +37,14 @@ export function AddressAutocomplete({ onSelect }: AddressAutocompleteProps) {
   const [geocodingStatus, setGeocodingStatus] = useState<"idle" | "loading" | "error">("idle");
   const { toast } = useToast();
   const inputRef = useRef<HTMLInputElement>(null);
+  
+  const [map, setMap] = useState<google.maps.Map | null>(null);
+  const [center, setCenter] = useState({ lat: 31.963158, lng: 35.930359 }); // Default: Amman, Jordan
+  const [markerPosition, setMarkerPosition] = useState<{ lat: number; lng: number } | null>(null);
+
+  const onMapLoad = useCallback((mapInstance: google.maps.Map) => {
+    setMap(mapInstance);
+  }, []);
 
   const parseAddressComponents = useCallback((components: google.maps.GeocoderAddressComponent[]): AddressResult => {
     const address: AddressResult = { street: "", city: "", state: "", zip: "", country: "" };
@@ -51,56 +64,86 @@ export function AddressAutocomplete({ onSelect }: AddressAutocompleteProps) {
     address.street = `${streetNumber} ${route}`.trim();
     return address;
   }, []);
-
-  const onPlaceChanged = useCallback(() => {
-    if (autocomplete !== null) {
-      const place = autocomplete.getPlace();
+  
+  const handleAddressResult = useCallback((place: google.maps.places.PlaceResult | google.maps.GeocoderResult) => {
       if (place.address_components) {
         const parsedAddress = parseAddressComponents(place.address_components);
+        if (inputRef.current && place.formatted_address) {
+            inputRef.current.value = place.formatted_address;
+        }
         onSelect(parsedAddress);
       } else {
         toast({
           title: "Incomplete Address",
-          description: "Please select a more specific address from the list.",
+          description: "Could not determine a full address for this location.",
           variant: "destructive",
         });
       }
+      
+      if (place.geometry?.location) {
+          const location = {
+              lat: place.geometry.location.lat(),
+              lng: place.geometry.location.lng(),
+          };
+          setCenter(location);
+          setMarkerPosition(location);
+          map?.panTo(location);
+          map?.setZoom(17);
+      }
+  }, [map, onSelect, parseAddressComponents, toast]);
+
+
+  const onPlaceChanged = useCallback(() => {
+    if (autocomplete !== null) {
+      const place = autocomplete.getPlace();
+      handleAddressResult(place);
     }
-  }, [autocomplete, onSelect, parseAddressComponents, toast]);
+  }, [autocomplete, handleAddressResult]);
+
+  const handleMapClick = useCallback((e: google.maps.MapMouseEvent) => {
+    if (e.latLng) {
+      const location = { lat: e.latLng.lat(), lng: e.latLng.lng() };
+      setMarkerPosition(location);
+      
+      const geocoder = new window.google.maps.Geocoder();
+      geocoder.geocode({ location }, (results, status) => {
+        if (status === "OK" && results?.[0]) {
+          handleAddressResult(results[0]);
+        } else {
+          toast({ title: "Geocoding failed", description: `Could not find address for this location. Status: ${status}`, variant: "destructive" });
+        }
+      });
+    }
+  }, [handleAddressResult, toast]);
 
   const handleGeolocate = useCallback(() => {
     if (navigator.geolocation) {
       setGeocodingStatus("loading");
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          const geocoder = new window.google.maps.Geocoder();
-          const latLng = {
+          setGeocodingStatus("idle");
+          const location = {
             lat: position.coords.latitude,
             lng: position.coords.longitude,
           };
-          geocoder.geocode({ location: latLng }, (results, status) => {
+          const geocoder = new window.google.maps.Geocoder();
+          geocoder.geocode({ location }, (results, status) => {
             if (status === "OK" && results?.[0]) {
-                const parsedAddress = parseAddressComponents(results[0].address_components);
-                onSelect(parsedAddress);
-                if (inputRef.current) {
-                    inputRef.current.value = results[0].formatted_address;
-                }
-                setGeocodingStatus("idle");
+               handleAddressResult(results[0]);
             } else {
               toast({ title: "Geocoding failed", description: `Could not find address for your location. Status: ${status}`, variant: "destructive" });
-              setGeocodingStatus("error");
             }
           });
         },
         (error) => {
-          toast({ title: "Geolocation failed", description: error.message, variant: "destructive" });
           setGeocodingStatus("error");
+          toast({ title: "Geolocation failed", description: error.message, variant: "destructive" });
         }
       );
     } else {
       toast({ title: "Geolocation not supported", description: "Your browser does not support geolocation.", variant: "destructive" });
     }
-  }, [onSelect, parseAddressComponents, toast]);
+  }, [handleAddressResult, toast]);
 
 
   if (loadError) {
@@ -109,7 +152,7 @@ export function AddressAutocomplete({ onSelect }: AddressAutocompleteProps) {
             <p className="font-bold">Google Maps Error</p>
             <p className="text-sm">There was an issue loading Google Maps.</p>
             <p className="text-xs mt-2">
-                This might be an <code className="text-xs">ApiNotActivatedMapError</code>. Please ensure the <strong>Maps JavaScript API</strong> is enabled in your Google Cloud project.
+                This might be an <code className="text-xs">ApiNotActivatedMapError</code>. Please ensure the <strong>Maps JavaScript API</strong> and <strong>Geocoding API</strong> are enabled in your Google Cloud project.
             </p>
         </div>
     );
@@ -121,7 +164,7 @@ export function AddressAutocomplete({ onSelect }: AddressAutocompleteProps) {
       <Autocomplete
         onLoad={setAutocomplete}
         onPlaceChanged={onPlaceChanged}
-        fields={["address_components", "formatted_address"]}
+        fields={["address_components", "formatted_address", "geometry"]}
       >
         <Input ref={inputRef} type="text" placeholder="Start typing your address..." />
       </Autocomplete>
@@ -135,6 +178,21 @@ export function AddressAutocomplete({ onSelect }: AddressAutocompleteProps) {
         {geocodingStatus === 'loading' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <MapPin className="mr-2 h-4 w-4" />}
         Use my current location
       </Button>
+      
+      <GoogleMap
+        id="address-map"
+        mapContainerStyle={mapContainerStyle}
+        zoom={8}
+        center={center}
+        onLoad={onMapLoad}
+        onClick={handleMapClick}
+        options={{
+            streetViewControl: false,
+            mapTypeControl: false,
+        }}
+      >
+        {markerPosition && <MarkerF position={markerPosition} />}
+      </GoogleMap>
     </div>
   );
 }
