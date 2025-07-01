@@ -58,7 +58,7 @@ interface PageSettings {
 }
 
 export default function CheckoutPage() {
-  const { cartItems, cartTotal, clearCart, useCart: cartHook } = useCart();
+  const { cartItems, cartTotal, clearCart } = useCart();
   const router = useRouter();
   const { toast } = useToast();
 
@@ -89,15 +89,18 @@ export default function CheckoutPage() {
   });
 
   useEffect(() => {
-    if (cartItems.length === 0 && !cartHook.length) {
+    // The cart might be empty on initial render before hydrating from localStorage.
+    // We wait a bit to see if it populates.
+    if (cartItems.length === 0) {
       const timeoutId = setTimeout(() => {
-        if (cartHook.length === 0) {
-           router.push("/");
+        // Re-check after the delay. If still empty, redirect.
+        if (cartItems.length === 0) {
+          router.push("/");
         }
       }, 500);
       return () => clearTimeout(timeoutId);
     }
-  }, [cartItems.length, router, cartHook.length]);
+  }, [cartItems.length, router]);
 
   useEffect(() => {
     const fetchInitialData = async () => {
