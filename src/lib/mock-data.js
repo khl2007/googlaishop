@@ -22,8 +22,8 @@ export const allProducts = [
     ]),
     mainImage: 'https://placehold.co/600x600/E8F0F2/242424.png',
     optionGroups: JSON.stringify([
-        { name: 'Color', options: [{ value: 'Starlight', color_hex: '#E8F0F2', image: 'https://placehold.co/600x600/E8F0F2/242424.png'}, { value: 'Midnight', color_hex: '#222222', image: 'https://placehold.co/600x600/222222/ffffff.png'}, { value: 'Electric Blue', color_hex: '#7DF9FF', image: 'https://placehold.co/600x600/7DF9FF/000000.png'}]},
-        { name: 'Storage', options: [{ value: '128GB' }, { value: '256GB' }, { value: '512GB' }] }
+        { type: 'color', name: 'Color', options: [{ value: 'Starlight', color_hex: '#E8F0F2', image: 'https://placehold.co/600x600/E8F0F2/242424.png'}, { value: 'Midnight', color_hex: '#222222', image: 'https://placehold.co/600x600/222222/ffffff.png'}, { value: 'Electric Blue', color_hex: '#7DF9FF', image: 'https://placehold.co/600x600/7DF9FF/000000.png'}]},
+        { type: 'default', name: 'Storage', options: [{ value: '128GB' }, { value: '256GB' }, { value: '512GB' }] }
     ]),
     tags: 'smartphone, flagship, new',
     isFeatured: true,
@@ -50,7 +50,7 @@ export const allProducts = [
     ]),
     mainImage: 'https://placehold.co/600x600/c0c0c0/000000.png',
     optionGroups: JSON.stringify([
-        { name: 'Configuration', options: [{value: '16GB RAM, 512GB SSD'}, {value: '32GB RAM, 1TB SSD'}] }
+        { type: 'default', name: 'Configuration', options: [{value: '16GB RAM, 512GB SSD'}, {value: '32GB RAM, 1TB SSD'}] }
     ]),
     tags: 'laptop, productivity, oled',
     isFeatured: true,
@@ -75,7 +75,7 @@ export const allProducts = [
     ]),
     mainImage: 'https://placehold.co/600x600/f5f5f5/000000.png',
     optionGroups: JSON.stringify([
-      { name: 'Color', options: [{value: 'Glacier White', color_hex: '#f5f5f5'}, {value: 'Charcoal Black', color_hex: '#333333'}] }
+      { type: 'color', name: 'Color', options: [{value: 'Glacier White', color_hex: '#f5f5f5'}, {value: 'Charcoal Black', color_hex: '#333333'}] }
     ]),
     tags: 'audio, earbuds, anc',
     isFeatured: false,

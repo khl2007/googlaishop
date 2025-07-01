@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useMemo, useState, useEffect, useCallback } from "react";
@@ -11,6 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./ui/tooltip";
+import { Button } from "./ui/button";
 
 
 interface ProductVariantSelectorsProps {
@@ -19,13 +21,16 @@ interface ProductVariantSelectorsProps {
   onVariantChange: (variant: ProductVariant) => void;
 }
 
+interface Option {
+  value: string;
+  image?: string;
+  color_hex?: string;
+}
+
 interface OptionGroup {
+  type: 'default' | 'color' | 'gender';
   name: string;
-  options: {
-    value: string;
-    image?: string;
-    color_hex?: string;
-  }[];
+  options: Option[];
 }
 
 export function ProductVariantSelectors({
@@ -71,7 +76,6 @@ export function ProductVariantSelectors({
         const variantOptions = getOptionsFromVariant(variant);
         let currentMatchCount = 0;
         
-        // Prioritize variants that match the just-changed option value
         if (variantOptions[groupName] !== value) continue;
 
         for (const group of optionGroups) {
@@ -92,19 +96,13 @@ export function ProductVariantSelectors({
   };
 
   const isOptionAvailable = useCallback((groupName: string, optionValue: string) => {
-    // Check if there is any variant that has this option...
     return variants.some(variant => {
       const vOptions = getOptionsFromVariant(variant);
       if (vOptions[groupName] !== optionValue) {
         return false;
       }
-
-      // ...and is compatible with all *other* selected options
       return optionGroups.every(otherGroup => {
-        if (otherGroup.name === groupName) {
-          return true; // Don't check against the group we are currently evaluating
-        }
-        // If another option is selected, the variant must match it
+        if (otherGroup.name === groupName) return true;
         const otherSelectedValue = selectedOptions[otherGroup.name];
         return !otherSelectedValue || otherSelectedValue === vOptions[otherGroup.name];
       });
@@ -120,7 +118,7 @@ export function ProductVariantSelectors({
           <div key={group.name} className="space-y-2">
             <h3 className="text-lg font-semibold">{group.name}</h3>
             <div>
-              {group.name.toLowerCase() === 'color' ? (
+              {group.type === 'color' ? (
                 <div className="flex flex-wrap items-center gap-2">
                   {group.options.map((option) => {
                     if (!option.value) return null;
@@ -156,7 +154,25 @@ export function ProductVariantSelectors({
                     );
                   })}
                 </div>
-              ) : (
+              ) : group.type === 'gender' ? (
+                 <div className="flex flex-wrap items-center gap-2">
+                  {group.options.map((option) => {
+                    if (!option.value) return null;
+                    const isSelected = selectedOptions[group.name] === option.value;
+                    const available = isOptionAvailable(group.name, option.value);
+                    return (
+                       <Button
+                        key={option.value}
+                        variant={isSelected ? 'default' : 'outline'}
+                        onClick={() => handleOptionSelect(group.name, option.value)}
+                        disabled={!available}
+                       >
+                         {option.value}
+                       </Button>
+                    )
+                  })}
+                 </div>
+              ) : ( // Default type
                 <Select
                   onValueChange={(value) => handleOptionSelect(group.name, value)}
                   value={selectedOptions[group.name]}

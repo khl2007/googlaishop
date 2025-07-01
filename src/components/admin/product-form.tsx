@@ -14,18 +14,23 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { useToast } from "@/hooks/use-toast";
 import type { Product, Category } from "@/lib/types";
 import { Loader2, PlusCircle, Trash, Trash2, Wand2, Star } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "../ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription as CardDescriptionPrimitive } from "@/components/ui/card";
 import { Switch } from "../ui/switch";
 import { getCsrfToken } from "@/lib/csrf";
 import { getCrossProduct, cn } from "@/lib/utils";
 import { WysiwygEditor } from "../wysiwyg-editor";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
-const variantSchema = z.object({
-  id: z.string().optional(),
-  options: z.any().optional(),
-  price: z.coerce.number({ required_error: "Price is required" }).min(0.01),
-  stock: z.coerce.number({ required_error: "Stock is required" }).int().min(0),
+const optionSchema = z.object({
+  value: z.string().min(1, "Option value cannot be empty."),
   image: z.string().optional().or(z.literal('')),
+  color_hex: z.string().optional(),
+});
+
+const optionGroupSchema = z.object({
+  type: z.enum(['default', 'color', 'gender']),
+  name: z.string().min(1, "Group name cannot be empty."),
+  options: z.array(optionSchema).min(1, "At least one option value is required."),
 });
 
 const formSchema = z.object({
@@ -35,7 +40,7 @@ const formSchema = z.object({
   description: z.string().min(10, "Description must be at least 10 characters."),
   categoryId: z.string().min(1, "Please select a category."),
   vendorId: z.string().min(1, "Please select a vendor."),
-  optionGroups: z.any().optional(),
+  optionGroups: z.array(optionGroupSchema).optional(),
   variants: z.array(variantSchema).min(1, "At least one product variant is required."),
   tags: z.string().optional(),
   isFeatured: z.boolean().default(false),
@@ -109,7 +114,7 @@ export function ProductForm({ product, categories, vendors }: ProductFormProps) 
     name: "variants",
   });
   
-  const [variantsGenerated, setVariantsGenerated] = React.useState(isEditMode);
+  const [variantsGenerated, setVariantsGenerated] = React.useState(isEditMode || (product?.optionGroups && JSON.parse(product.optionGroups).length === 0));
   const isSubmitting = form.formState.isSubmitting;
   
   const handleGenerateVariants = () => {
@@ -255,36 +260,52 @@ export function ProductForm({ product, categories, vendors }: ProductFormProps) 
             <Card>
               <CardHeader>
                   <CardTitle>Product Options</CardTitle>
-                  <FormDescription>
+                  <CardDescriptionPrimitive>
                     Define groups of options for your product, like 'Color' or 'Size'. If your product has no options, you can skip this section.
-                  </FormDescription>
+                  </CardDescriptionPrimitive>
               </CardHeader>
               <CardContent className="space-y-6">
                   {groupFields.map((groupField, groupIndex) => (
                     <Card key={groupField.id}>
                         <CardHeader className="flex flex-row items-center justify-between py-4">
-                          <h3 className="font-semibold">Option Group</h3>
+                            <FormField control={form.control} name={`optionGroups.${groupIndex}.name`} render={({ field }) => (
+                                <FormItem className="flex-1"><FormLabel className="sr-only">Group Name</FormLabel><FormControl><Input placeholder="e.g., Color" {...field} disabled={variantsGenerated} className="text-base font-semibold" /></FormControl><FormMessage /></FormItem>
+                            )} />
                           <Button type="button" variant="ghost" size="icon" onClick={() => removeGroup(groupIndex)} disabled={variantsGenerated}>
                               <Trash className="h-4 w-4 text-destructive" />
                           </Button>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                          <FormField control={form.control} name={`optionGroups.${groupIndex}.name`} render={({ field }) => (
-                            <FormItem><FormLabel>Group Name</FormLabel><FormControl><Input placeholder="e.g., Color" {...field} disabled={variantsGenerated} /></FormControl><FormMessage /></FormItem>
-                          )} />
                           <OptionValuesArray groupIndex={groupIndex} isReadOnly={variantsGenerated} />
                         </CardContent>
                     </Card>
                   ))}
-                  <Button type="button" variant="outline" onClick={() => appendGroup({ name: '', options: [{ value: '' }] })} disabled={variantsGenerated}>
-                    <PlusCircle className="mr-2 h-4 w-4" /> Add Option Group
-                  </Button>
+                  
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button type="button" variant="outline" disabled={variantsGenerated}>
+                            <PlusCircle className="mr-2 h-4 w-4" /> Add Option Group
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent>
+                        <DropdownMenuItem onSelect={() => appendGroup({ type: 'default', name: 'Size', options: [{ value: 'Small', image: '', color_hex: '' }] })}>
+                            Standard
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onSelect={() => appendGroup({ type: 'color', name: 'Color', options: [{ value: 'White', image: '', color_hex: '#ffffff' }] })}>
+                            Color
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onSelect={() => appendGroup({ type: 'gender', name: 'Gender', options: [{ value: 'Unisex', image: '', color_hex: '' }] })}>
+                            Gender
+                        </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+
               </CardContent>
               {optionGroups && optionGroups.length > 0 && (
                 <CardFooter className="justify-end">
-                    <Button type="button" onClick={handleGenerateVariants}>
+                    <Button type="button" onClick={handleGenerateVariants} disabled={variantsGenerated}>
                         <Wand2 className="mr-2 h-4 w-4" />
-                        {isEditMode ? 'Regenerate Variants' : 'Generate Variants'}
+                        Generate Variants
                     </Button>
                 </CardFooter>
               )}
@@ -293,9 +314,9 @@ export function ProductForm({ product, categories, vendors }: ProductFormProps) 
             {(variantsGenerated || (optionGroups && optionGroups.length === 0)) && (
               <Card>
                   <CardHeader><CardTitle>Manage Variants</CardTitle>
-                  <FormDescription>
+                  <CardDescriptionPrimitive>
                     Configure the price, stock, and image for each product variant.
-                  </FormDescription>
+                  </CardDescriptionPrimitive>
                   </CardHeader>
                   <CardContent className="space-y-6">
                       {variantFields.map((variantField, index) => (
@@ -447,40 +468,97 @@ export function ProductForm({ product, categories, vendors }: ProductFormProps) 
 }
 
 function OptionValuesArray({ groupIndex, isReadOnly }: { groupIndex: number, isReadOnly: boolean }) {
-  const { control } = useFormContext<ProductFormValues>();
+  const { control, watch } = useFormContext<ProductFormValues>();
   const { fields, append, remove } = useFieldArray({
     control: control,
     name: `optionGroups.${groupIndex}.options`,
   });
 
+  const groupType = watch(`optionGroups.${groupIndex}.type`);
+
+  const renderInputs = (optionIndex: number) => {
+    switch (groupType) {
+        case 'color':
+            return (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                    <FormField control={control} name={`optionGroups.${groupIndex}.options.${optionIndex}.value`} render={({ field }) => (
+                        <FormItem><FormLabel className="text-xs">Option Value</FormLabel><FormControl><Input placeholder="e.g., Red" {...field} disabled={isReadOnly} /></FormControl><FormMessage /></FormItem>
+                    )}/>
+                    <FormField control={control} name={`optionGroups.${groupIndex}.options.${optionIndex}.color_hex`} render={({ field }) => (
+                        <FormItem><FormLabel className="text-xs">Hex</FormLabel><FormControl><Input type="color" {...field} disabled={isReadOnly} className="h-10 w-full" /></FormControl><FormMessage /></FormItem>
+                    )}/>
+                    <OptionImageUpload groupIndex={groupIndex} optionIndex={optionIndex} isReadOnly={isReadOnly} />
+                </div>
+            );
+        case 'gender':
+             return (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+                     <FormField control={control} name={`optionGroups.${groupIndex}.options.${optionIndex}.value`} render={({ field }) => (
+                        <FormItem className="w-full">
+                            <FormLabel className="text-xs">Gender</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isReadOnly}>
+                                <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                                <SelectContent>
+                                    <SelectItem value="Unisex">Unisex</SelectItem>
+                                    <SelectItem value="Men">Men</SelectItem>
+                                    <SelectItem value="Women">Women</SelectItem>
+                                    <SelectItem value="Kids">Kids</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <FormMessage />
+                        </FormItem>
+                    )}/>
+                    <OptionImageUpload groupIndex={groupIndex} optionIndex={optionIndex} isReadOnly={isReadOnly} />
+                </div>
+             );
+        default: // 'default' type
+            return (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+                    <FormField control={control} name={`optionGroups.${groupIndex}.options.${optionIndex}.value`} render={({ field }) => (
+                        <FormItem><FormLabel className="text-xs">Option Value</FormLabel><FormControl><Input placeholder="e.g., Small" {...field} disabled={isReadOnly} /></FormControl><FormMessage /></FormItem>
+                    )}/>
+                    <OptionImageUpload groupIndex={groupIndex} optionIndex={optionIndex} isReadOnly={isReadOnly} />
+                </div>
+            );
+    }
+  };
+
   return (
     <div className="space-y-4">
         <FormLabel>Options</FormLabel>
         {fields.map((field, optionIndex) => (
-            <div key={field.id} className="grid grid-cols-1 md:grid-cols-2 gap-4 border p-4 rounded-md relative">
-            <FormField
-                control={control}
-                name={`optionGroups.${groupIndex}.options.${optionIndex}.value`}
-                render={({ field }) => (
-                <FormItem>
-                    <FormLabel className="text-xs">Option Value</FormLabel>
-                    <FormControl>
-                    <Input placeholder="e.g., Red" {...field} disabled={isReadOnly} />
-                    </FormControl>
-                    <FormMessage />
-                </FormItem>
+            <div key={field.id} className="border p-4 rounded-md relative">
+                {renderInputs(optionIndex)}
+                {!isReadOnly && fields.length > 1 && (
+                    <Button type="button" variant="ghost" size="icon" className="absolute top-1 right-1 h-7 w-7" onClick={() => remove(optionIndex)}>
+                        <Trash className="h-4 w-4 text-destructive" />
+                    </Button>
                 )}
-            />
-            <FormField
-                control={control}
-                name={`optionGroups.${groupIndex}.options.${optionIndex}.image`}
-                render={({ field: { onChange, value, ...rest } }) => {
-                    const fileInputRef = React.useRef<HTMLInputElement>(null);
-                    return (
-                        <FormItem>
-                            <FormLabel className="text-xs">Image (Optional)</FormLabel>
-                            {value && (
-                                <div className="relative w-16 h-16 border rounded-md p-1">
+            </div>
+        ))}
+       {!isReadOnly && (
+        <Button type="button" variant="outline" size="sm" onClick={() => append({ value: '', image: '', color_hex: '#000000' })}>
+          <PlusCircle className="mr-2 h-4 w-4" /> Add Option
+        </Button>
+       )}
+    </div>
+  );
+}
+
+function OptionImageUpload({ groupIndex, optionIndex, isReadOnly }: { groupIndex: number, optionIndex: number, isReadOnly: boolean }) {
+    const { control } = useFormContext<ProductFormValues>();
+    return (
+        <FormField
+            control={control}
+            name={`optionGroups.${groupIndex}.options.${optionIndex}.image`}
+            render={({ field: { onChange, value, ...rest } }) => {
+                const fileInputRef = React.useRef<HTMLInputElement>(null);
+                return (
+                    <FormItem>
+                        <FormLabel className="text-xs">Image (Optional)</FormLabel>
+                        <div className="flex items-center gap-2">
+                             {value && (
+                                <div className="relative w-16 h-16 border rounded-md p-1 shrink-0">
                                     <Image src={value} alt="Option preview" layout="fill" className="object-contain" />
                                     <Button type="button" variant="ghost" size="icon" className="absolute -top-2 -right-2 h-5 w-5 bg-background rounded-full" onClick={() => {
                                         onChange("");
@@ -491,42 +569,30 @@ function OptionValuesArray({ groupIndex, isReadOnly }: { groupIndex: number, isR
                                 </div>
                             )}
                             <FormControl>
-                            <Input
-                                {...rest}
-                                ref={fileInputRef}
-                                type="file"
-                                accept="image/*"
-                                disabled={isReadOnly}
-                                onChange={(e) => {
-                                const file = e.target.files?.[0];
-                                if (file) {
-                                    const reader = new FileReader();
-                                    reader.onloadend = () => onChange(reader.result as string);
-                                    reader.readAsDataURL(file);
-                                }
-                                }}
-                            />
+                                <Input
+                                    {...rest}
+                                    ref={fileInputRef}
+                                    type="file"
+                                    accept="image/*"
+                                    className="h-10 text-xs"
+                                    disabled={isReadOnly}
+                                    onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) {
+                                        const reader = new FileReader();
+                                        reader.onloadend = () => onChange(reader.result as string);
+                                        reader.readAsDataURL(file);
+                                    }
+                                    }}
+                                />
                             </FormControl>
-                            <FormMessage />
-                        </FormItem>
-                    );
-                }}
-            />
-
-            {!isReadOnly && (
-                <Button type="button" variant="ghost" size="icon" className="absolute top-2 right-2" onClick={() => remove(optionIndex)}>
-                <Trash className="h-4 w-4 text-destructive" />
-                </Button>
-            )}
-            </div>
-        ))}
-       {!isReadOnly && (
-        <Button type="button" variant="outline" size="sm" onClick={() => append({ value: '', image: '', color_hex: '' })}>
-          <PlusCircle className="mr-2 h-4 w-4" /> Add Option
-        </Button>
-       )}
-    </div>
-  );
+                        </div>
+                        <FormMessage />
+                    </FormItem>
+                );
+            }}
+        />
+    )
 }
 
 function ProductImageForm() {
@@ -581,7 +647,7 @@ function ProductImageForm() {
     <Card>
       <CardHeader>
         <CardTitle>Product Images</CardTitle>
-        <FormDescription>Upload multiple images for the product gallery. Select one to be the main image.</FormDescription>
+        <CardDescriptionPrimitive>Upload multiple images for the product gallery. Select one to be the main image.</CardDescriptionPrimitive>
       </CardHeader>
       <CardContent className="space-y-4">
         <FormField
