@@ -22,6 +22,7 @@ import { AddressAutocomplete } from "@/components/address-autocomplete";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { getCsrfToken } from "@/lib/csrf";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 const addressFormSchema = z.object({
   fullName: z.string().min(2, "Full name is required."),
@@ -68,7 +69,9 @@ export default function CheckoutPage() {
 
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [selectedAddressId, setSelectedAddressId] = useState<string>('');
-  const [isAddingNewAddress, setIsAddingNewAddress] = useState(false);
+  
+  const [isAddressDialogOpen, setIsAddressDialogOpen] = useState(false);
+  const [step, setStep] = useState(1);
 
   const [shippingOptions, setShippingOptions] = useState<CalculatedShippingMethod[]>([]);
   const [loadingShipping, setLoadingShipping] = useState(false);
@@ -88,11 +91,8 @@ export default function CheckoutPage() {
   });
 
   useEffect(() => {
-    // The cart might be empty on initial render before hydrating from localStorage.
-    // We wait a bit to see if it populates.
     if (cartItems.length === 0) {
       const timeoutId = setTimeout(() => {
-        // Re-check after the delay. If still empty, redirect.
         if (cartItems.length === 0) {
           router.push("/");
         }
@@ -127,10 +127,8 @@ export default function CheckoutPage() {
             if (addressesData.length > 0) {
                 const primaryAddress = addressesData.find((a: Address) => a.isPrimary) || addressesData[0];
                 setSelectedAddressId(String(primaryAddress.id));
-                setIsAddingNewAddress(false);
             } else {
-                setIsAddingNewAddress(true);
-                setSelectedAddressId('new');
+                openNewAddressDialog();
             }
             
             const paymentMethodsData = await paymentMethodsRes.json();
@@ -148,6 +146,7 @@ export default function CheckoutPage() {
     if (cartItems.length > 0) {
       fetchInitialData();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cartItems.length, toast]);
   
   useEffect(() => {
@@ -176,6 +175,33 @@ export default function CheckoutPage() {
     fetchSettingsAndCities();
   }, [form, toast]);
 
+  const openNewAddressDialog = () => {
+      setStep(1);
+      form.reset({
+          fullName: user?.fullName || "",
+          street: "",
+          apartment: "",
+          city: "",
+          area: "",
+          state: "",
+          zip: "",
+          country: form.getValues('country'),
+          googleMapUrl: ""
+      });
+      setIsAddressDialogOpen(true);
+  };
+  
+  const handleConfirmLocation = () => {
+    if (!form.getValues('street')) {
+        toast({
+            title: "Location not selected",
+            description: "Please search for or click on the map to select an address.",
+            variant: "destructive",
+        })
+        return;
+    }
+    setStep(2);
+  }
 
   const onSaveAddress = async (data: AddressFormValues) => {
     try {
@@ -186,17 +212,16 @@ export default function CheckoutPage() {
         });
         if (!res.ok) throw new Error("Failed to save address");
         const newAddressData = await res.json();
+        
         toast({ title: "Success", description: "Address saved successfully." });
+        setIsAddressDialogOpen(false);
         form.reset();
         
-        // Refresh addresses list
         const addressesRes = await fetch('/api/user/addresses');
         const updatedAddresses = await addressesRes.json();
         setAddresses(updatedAddresses);
 
-        // Automatically select the newly added address
         setSelectedAddressId(String(newAddressData.address.id));
-        setIsAddingNewAddress(false);
     } catch (error: any) {
         toast({ title: "Error", description: error.message, variant: "destructive" });
     }
@@ -204,7 +229,7 @@ export default function CheckoutPage() {
 
   useEffect(() => {
     const fetchShippingOptions = async () => {
-      if (selectedAddressId && selectedAddressId !== 'new' && cartItems.length > 0) {
+      if (selectedAddressId && cartItems.length > 0) {
         setLoadingShipping(true);
         setShippingOptions([]);
         setSelectedShippingMethodId('');
@@ -239,7 +264,7 @@ export default function CheckoutPage() {
     e.preventDefault();
     if (!isCheckoutAllowed) return;
 
-    if (!selectedAddressId || (selectedAddressId === 'new' && !form.formState.isValid)) {
+    if (!selectedAddressId) {
         toast({ title: "Error", description: "Please select or add a valid shipping address.", variant: "destructive" });
         return;
     }
@@ -336,6 +361,7 @@ export default function CheckoutPage() {
   };
 
   return (
+    <>
     <div className="container mx-auto my-12 px-4">
       <h1 className="mb-8 text-center text-4xl font-extrabold font-headline tracking-tight lg:text-5xl">Checkout</h1>
       {!isCheckoutAllowed && (
@@ -354,70 +380,20 @@ export default function CheckoutPage() {
                     <CardTitle>Shipping Information</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <RadioGroup value={selectedAddressId} onValueChange={(value) => {
-                        setSelectedAddressId(value);
-                        setIsAddingNewAddress(value === 'new');
-                    }} className="space-y-4">
+                    <RadioGroup value={selectedAddressId} onValueChange={setSelectedAddressId} className="space-y-4">
                         {addresses.map((address) => (
                             <Label key={address.id} htmlFor={String(address.id)} className="flex items-start gap-4 rounded-md border p-4 cursor-pointer hover:bg-accent has-[[data-state=checked]]:bg-accent">
                                 <RadioGroupItem value={String(address.id)} id={String(address.id)} className="mt-1" />
                                 {renderAddress(address)}
                             </Label>
                         ))}
-                        <Label htmlFor="new" className="flex items-start gap-4 rounded-md border p-4 cursor-pointer hover:bg-accent has-[[data-state=checked]]:bg-accent">
-                            <RadioGroupItem value="new" id="new" className="mt-1" />
-                            <div><p className="font-semibold">Add a new address</p></div>
-                        </Label>
                     </RadioGroup>
 
-                    {isAddingNewAddress && (
-                        <div className="pt-6 mt-6 border-t">
-                            <Form {...form}>
-                                <div className="space-y-4">
-                                    <AddressAutocomplete onSelect={handleAutocompleteSelect} />
-                                    <FormField control={form.control} name="fullName" render={({ field }) => (<FormItem><FormLabel>Full Name</FormLabel><FormControl><Input placeholder="John Doe" {...field} /></FormControl><FormMessage /></FormItem>)}/>
-                                    <FormField control={form.control} name="street" render={({ field }) => (<FormItem><FormLabel>Street Address</FormLabel><FormControl><Input placeholder="123 Main St" {...field} /></FormControl><FormMessage /></FormItem>)}/>
-                                    <FormField control={form.control} name="apartment" render={({ field }) => (<FormItem><FormLabel>Apartment, suite, etc. (optional)</FormLabel><FormControl><Input placeholder="Apt 4B" {...field} /></FormControl><FormMessage /></FormItem>)}/>
-                                    
-                                    <FormField control={form.control} name="country" render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Country</FormLabel>
-                                            <FormControl>
-                                                <Input {...field} readOnly disabled className="bg-muted/50" />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}/>
-                                    <div className="grid grid-cols-3 gap-4">
-                                        <FormField control={form.control} name="city" render={({ field }) => (
-                                            <FormItem className="col-span-2">
-                                                <FormLabel>City</FormLabel>
-                                                <Select onValueChange={field.onChange} value={field.value} disabled={isCitiesLoading || cities.length === 0}>
-                                                    <FormControl>
-                                                        <SelectTrigger>
-                                                            <SelectValue placeholder={isCitiesLoading ? "Loading cities..." : "Select a city"} />
-                                                        </SelectTrigger>
-                                                    </FormControl>
-                                                    <SelectContent>
-                                                        {cities.map((cityName) => (
-                                                            <SelectItem key={cityName} value={cityName}>
-                                                                {cityName}
-                                                            </SelectItem>
-                                                        ))}
-                                                    </SelectContent>
-                                                </Select>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}/>
-                                        <FormField control={form.control} name="zip" render={({ field }) => (<FormItem><FormLabel>ZIP</FormLabel><FormControl><Input placeholder="12345" {...field} /></FormControl><FormMessage /></FormItem>)}/>
-                                    </div>
-                                    <FormField control={form.control} name="area" render={({ field }) => (<FormItem><FormLabel>Area / District (Optional)</FormLabel><FormControl><Input placeholder="e.g. Downtown" {...field} /></FormControl><FormMessage /></FormItem>)}/>
-                                    
-                                    <Button type="button" onClick={form.handleSubmit(onSaveAddress)} disabled={form.formState.isSubmitting}>{form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Save Address</Button>
-                                </div>
-                            </Form>
-                        </div>
-                    )}
+                    <div className="pt-4 mt-4 border-t">
+                        <Button type="button" variant="outline" className="w-full" onClick={openNewAddressDialog}>
+                            Add a new address
+                        </Button>
+                    </div>
                 </CardContent>
             </Card>
 
@@ -520,5 +496,107 @@ export default function CheckoutPage() {
         </div>
       </form>
     </div>
+
+    <Dialog open={isAddressDialogOpen} onOpenChange={setIsAddressDialogOpen}>
+      <DialogContent className="h-screen w-screen max-w-full p-0 flex flex-col gap-0 sm:rounded-none">
+          <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSaveAddress)} className="flex h-full flex-col">
+            {step === 1 && (
+                <>
+                    <DialogHeader className="p-4 border-b shrink-0">
+                        <DialogTitle>Step 1: Pin Your Location</DialogTitle>
+                        <DialogDescription>Search for or click on the map to find your address.</DialogDescription>
+                    </DialogHeader>
+                    <div className="flex-1 relative">
+                        <AddressAutocomplete onSelect={handleAutocompleteSelect} />
+                    </div>
+                    <DialogFooter className="p-4 border-t shrink-0">
+                        <Button type="button" className="w-full" size="lg" onClick={handleConfirmLocation}>
+                          Confirm Location
+                        </Button>
+                    </DialogFooter>
+                </>
+            )}
+            {step === 2 && (
+                  <>
+                    <DialogHeader className="p-4 border-b shrink-0">
+                        <DialogTitle>Step 2: Confirm Your Details</DialogTitle>
+                    </DialogHeader>
+                      <div className="flex-1 space-y-4 overflow-y-auto p-4">
+                        <FormField control={form.control} name="fullName" render={({ field }) => (
+                            <FormItem><FormLabel>Full Name</FormLabel><FormControl><Input placeholder="John Doe" {...field} /></FormControl><FormMessage /></FormItem>
+                        )}/>
+                        <FormField control={form.control} name="street" render={({ field }) => (
+                            <FormItem><FormLabel>Street Address</FormLabel><FormControl><Input placeholder="123 Main St" {...field} /></FormControl><FormMessage /></FormItem>
+                        )}/>
+                        <FormField control={form.control} name="apartment" render={({ field }) => (
+                            <FormItem><FormLabel>Apt, Suite, etc. (Optional)</FormLabel><FormControl><Input placeholder="Apt 4B" {...field} /></FormControl><FormMessage /></FormItem>
+                        )}/>
+                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                          <FormField
+                            control={form.control}
+                            name="country"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Country</FormLabel>
+                                <FormControl>
+                                  <Input {...field} readOnly disabled className="bg-muted/50" />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name="city"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>City</FormLabel>
+                                <Select
+                                  onValueChange={field.onChange}
+                                  value={field.value}
+                                  disabled={isCitiesLoading || cities.length === 0}
+                                >
+                                  <FormControl>
+                                    <SelectTrigger>
+                                      <SelectValue placeholder={isCitiesLoading ? "Loading..." : "Select a city"} />
+                                    </SelectTrigger>
+                                  </FormControl>
+                                  <SelectContent>
+                                    {cities.map((cityName) => (
+                                      <SelectItem key={cityName} value={cityName}>
+                                        {cityName}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                          <FormField control={form.control} name="area" render={({ field }) => (
+                              <FormItem><FormLabel>Area / District (Optional)</FormLabel><FormControl><Input placeholder="e.g. Downtown" {...field} /></FormControl><FormMessage /></FormItem>
+                          )}/>
+                          <FormField control={form.control} name="zip" render={({ field }) => (
+                              <FormItem><FormLabel>ZIP / Postal</FormLabel><FormControl><Input placeholder="12345" {...field} /></FormControl><FormMessage /></FormItem>
+                          )}/>
+                        </div>
+                      </div>
+                      <DialogFooter className="p-4 border-t shrink-0 flex justify-between w-full">
+                          <Button type="button" variant="outline" onClick={() => setStep(1)}>Back</Button>
+                          <Button type="submit" disabled={form.formState.isSubmitting}>
+                              {form.formState.isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                              Save Address
+                          </Button>
+                      </DialogFooter>
+                  </>
+            )}
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
+    </>
   );
 }
