@@ -107,7 +107,6 @@ export function ProductForm({ product, categories, vendors }: ProductFormProps) 
   const handleGenerateVariants = () => {
     const optionGroups = form.getValues('optionGroups');
     if (!optionGroups || optionGroups.length === 0) {
-      // If no option groups, create a single default variant
       form.setValue('variants', [{ options: {}, price: 0, stock: 0, image: '' }]);
       setVariantsGenerated(true);
       return;
@@ -499,6 +498,3 @@ function OptionValuesArray({ groupIndex, isReadOnly }: { groupIndex: number, isR
     </div>
   );
 }
-
-
-    
