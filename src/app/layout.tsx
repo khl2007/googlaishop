@@ -11,6 +11,7 @@ import { Header } from '@/components/header';
 import { Footer } from '@/components/footer';
 import { PageTransitionWrapper } from '@/components/page-transition-wrapper';
 import { ConditionalBottomToolbar } from '@/components/conditional-bottom-toolbar';
+import { DeliveryToolbar } from '@/components/delivery-toolbar';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -51,6 +52,7 @@ export default async function RootLayout({
         <Providers>
           <div className="relative flex min-h-dvh flex-col">
             {showHeaderAndFooter && <Header user={user} />}
+            {showHeaderAndFooter && <DeliveryToolbar user={user} />}
             <main className="flex flex-1 pb-16 md:pb-0">
               <PageTransitionWrapper>
                 {children}
