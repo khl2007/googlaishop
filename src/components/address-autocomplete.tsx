@@ -187,6 +187,8 @@ export function AddressAutocomplete({ onSelect }: AddressAutocompleteProps) {
         onLoad={onMapLoad}
         onClick={handleMapClick}
         options={{
+            zoomControl: true,
+            fullscreenControl: true,
             streetViewControl: false,
             mapTypeControl: false,
         }}
