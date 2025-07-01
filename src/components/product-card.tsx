@@ -35,9 +35,9 @@ export function ProductCard({ product, showButton = true }: ProductCardProps) {
         </Link>
       </CardHeader>
       <CardContent className="flex-1 p-4">
-        <h3 className="text-lg font-semibold font-headline">
+        <h4 className=" font-semibold font-headline">
           <Link href={`/products/${product.slug}`}>{product.name}</Link>
-        </h3>
+        </h4>
         <div className="mt-2 flex items-baseline gap-2">
            {hasSalePrice ? (
             <>
