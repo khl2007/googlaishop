@@ -95,6 +95,8 @@ export function ProductForm({ product, categories, vendors }: ProductFormProps) 
     reValidateMode: 'onChange',
   });
   
+  const optionGroups = form.watch("optionGroups");
+  
   const { fields: groupFields, append: appendGroup, remove: removeGroup } = useFieldArray({
     control: form.control,
     name: "optionGroups",
@@ -235,7 +237,7 @@ export function ProductForm({ product, categories, vendors }: ProductFormProps) 
               <CardHeader>
                   <CardTitle>Product Options</CardTitle>
                   <FormDescription>
-                    Define groups of options for your product, like 'Color' or 'Size'. If your product has no options, you can skip this section and just generate a single variant.
+                    Define groups of options for your product, like 'Color' or 'Size'. If your product has no options, you can skip this section.
                   </FormDescription>
               </CardHeader>
               <CardContent className="space-y-6">
@@ -259,19 +261,21 @@ export function ProductForm({ product, categories, vendors }: ProductFormProps) 
                     <PlusCircle className="mr-2 h-4 w-4" /> Add Option Group
                   </Button>
               </CardContent>
-              <CardFooter className="justify-end">
-                <Button type="button" onClick={handleGenerateVariants}>
-                    <Wand2 className="mr-2 h-4 w-4" />
-                    {isEditMode ? 'Regenerate Variants' : 'Generate Variants'}
-                </Button>
-              </CardFooter>
+              {optionGroups && optionGroups.length > 0 && (
+                <CardFooter className="justify-end">
+                    <Button type="button" onClick={handleGenerateVariants}>
+                        <Wand2 className="mr-2 h-4 w-4" />
+                        {isEditMode ? 'Regenerate Variants' : 'Generate Variants'}
+                    </Button>
+                </CardFooter>
+              )}
             </Card>
             
-            {variantsGenerated && (
+            {(variantsGenerated || (optionGroups && optionGroups.length === 0)) && (
               <Card>
                   <CardHeader><CardTitle>Manage Variants</CardTitle>
                   <FormDescription>
-                    Configure the price, stock, and image for each generated variant.
+                    Configure the price, stock, and image for each product variant.
                   </FormDescription>
                   </CardHeader>
                   <CardContent className="space-y-6">
@@ -410,11 +414,11 @@ export function ProductForm({ product, categories, vendors }: ProductFormProps) 
         </div>
         
         <div className="lg:col-span-3">
-            <Button type="submit" disabled={isSubmitting || !variantsGenerated}>
+            <Button type="submit" disabled={isSubmitting || (!variantsGenerated && optionGroups && optionGroups.length > 0)}>
               {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {isEditMode ? "Save Changes" : "Create Product"}
             </Button>
-            {!variantsGenerated && (
+            {!variantsGenerated && optionGroups && optionGroups.length > 0 && (
               <p className="text-sm text-destructive mt-2">Please generate variants before saving.</p>
             )}
         </div>
