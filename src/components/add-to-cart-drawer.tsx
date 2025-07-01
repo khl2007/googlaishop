@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useCart } from "@/hooks/use-cart";
@@ -9,7 +8,7 @@ import Link from "next/link";
 import { CheckCircle } from "lucide-react";
 
 export function AddToCartDrawer() {
-  const { isTopDrawerOpen, setIsTopDrawerOpen, lastAddedItem } = useCart();
+  const { isTopDrawerOpen, setIsTopDrawerOpen, lastAddedItem, cartTotal } = useCart();
 
   return (
     <Sheet open={isTopDrawerOpen} onOpenChange={setIsTopDrawerOpen}>
@@ -36,9 +35,13 @@ export function AddToCartDrawer() {
                     data-ai-hint="product image"
                   />
                 </div>
-                <div>
+                <div className="flex-1">
                   <p className="font-semibold">{lastAddedItem.name}</p>
                   <p className="text-sm text-muted-foreground">Added to cart</p>
+                </div>
+                <div className="text-right">
+                    <p className="text-sm text-muted-foreground">Cart Total</p>
+                    <p className="font-bold text-lg">${cartTotal.toFixed(2)}</p>
                 </div>
               </div>
 
