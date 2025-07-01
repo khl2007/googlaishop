@@ -192,11 +192,25 @@ export default function AddressesPage() {
   };
   
   const handleAutocompleteSelect = (address: { street: string; city: string; state: string; zip: string; country: string; }) => {
+    const storeCountry = defaultCountry;
+    if (storeCountry && address.country && storeCountry !== address.country) {
+        toast({
+            title: "Country Mismatch",
+            description: `The address is in ${address.country}, but this store only ships to ${storeCountry}.`,
+            variant: "destructive"
+        });
+    }
+    
     form.setValue("street", address.street);
     form.setValue("city", address.city);
     form.setValue("state", address.state ?? "");
     form.setValue("zip", address.zip);
     form.setValue("country", address.country);
+
+    if (address.city && !cities.includes(address.city)) {
+        setCities(prev => [address.city, ...prev]);
+    }
+    
     setIsAutocompleteOpen(false);
   };
 
