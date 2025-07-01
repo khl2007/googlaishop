@@ -12,6 +12,7 @@ import { Footer } from '@/components/footer';
 import { PageTransitionWrapper } from '@/components/page-transition-wrapper';
 import { ConditionalBottomToolbar } from '@/components/conditional-bottom-toolbar';
 import { DeliveryToolbar } from '@/components/delivery-toolbar';
+import { AddToCartDrawer } from '@/components/add-to-cart-drawer';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -62,6 +63,7 @@ export default async function RootLayout({
             {showHeaderAndFooter && <ConditionalBottomToolbar user={user} />}
           </div>
           <Toaster />
+          <AddToCartDrawer />
         </Providers>
       </body>
     </html>

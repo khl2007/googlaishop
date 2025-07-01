@@ -10,15 +10,13 @@ import React, {
   useCallback,
 } from "react";
 import type { ReactNode } from "react";
-import { useToast } from "./use-toast";
 
 interface CartContextType {
   cartItems: CartItem[];
   addToCart: (
     product: { id: string; name: string },
     variant: ProductVariant,
-    quantity: number,
-    options?: { openCart?: boolean }
+    quantity: number
   ) => void;
   removeFromCart: (variantId: string) => void;
   updateQuantity: (variantId: string, quantity: number) => void;
@@ -27,6 +25,9 @@ interface CartContextType {
   cartTotal: number;
   isCartOpen: boolean;
   setIsCartOpen: (isOpen: boolean) => void;
+  isTopDrawerOpen: boolean;
+  setIsTopDrawerOpen: (isOpen: boolean) => void;
+  lastAddedItem: CartItem | null;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -34,7 +35,8 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 export const CartProvider = ({ children }: { children: ReactNode }) => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
-  const { toast } = useToast();
+  const [isTopDrawerOpen, setIsTopDrawerOpen] = useState(false);
+  const [lastAddedItem, setLastAddedItem] = useState<CartItem | null>(null);
 
   useEffect(() => {
     try {
@@ -59,9 +61,9 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     (
       product: { id: string; name: string },
       variant: ProductVariant,
-      quantity: number,
-      options?: { openCart?: boolean }
+      quantity: number
     ) => {
+      let newItem: CartItem | null = null;
       setCartItems((prevItems) => {
         const existingItem = prevItems.find(
           (item) => item.variantId === variant.id
@@ -70,36 +72,33 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         const priceToAdd = (variant.salePrice != null && variant.salePrice > 0) ? variant.salePrice : variant.price;
 
         if (existingItem) {
-          return prevItems.map((item) =>
+          const updatedItems = prevItems.map((item) =>
             item.variantId === variant.id
               ? { ...item, quantity: item.quantity + quantity, price: priceToAdd } // Also update price in case it changed
               : item
           );
+           newItem = updatedItems.find(i => i.variantId === variant.id) || null;
+           return updatedItems;
         }
-        return [
-          ...prevItems,
-          {
-            productId: product.id,
-            variantId: variant.id,
-            name: product.name,
-            variantName: variant.name,
-            price: priceToAdd,
-            image: variant.image,
-            quantity,
-          },
-        ];
-      });
-      toast({
-        title: "Added to cart",
-        description: `${product.name} (${variant.name}) has been added to your cart.`,
+         const freshItem: CartItem = {
+          productId: product.id,
+          variantId: variant.id,
+          name: product.name,
+          variantName: variant.name,
+          price: priceToAdd,
+          image: variant.image,
+          quantity,
+        };
+        newItem = freshItem;
+        return [...prevItems, freshItem];
       });
       
-      // Conditionally open the cart. Default is true.
-      if (options?.openCart !== false) {
-          setIsCartOpen(true);
+      if (newItem) {
+        setLastAddedItem(newItem);
       }
+      setIsTopDrawerOpen(true);
     },
-    [toast]
+    []
   );
 
   const removeFromCart = useCallback((variantId: string) => {
@@ -139,6 +138,9 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     cartTotal,
     isCartOpen,
     setIsCartOpen,
+    isTopDrawerOpen,
+    setIsTopDrawerOpen,
+    lastAddedItem,
   };
 
   return React.createElement(CartContext.Provider, { value: providerValue }, children);
