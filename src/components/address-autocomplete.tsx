@@ -103,7 +103,17 @@ export function AddressAutocomplete({ onSelect }: AddressAutocompleteProps) {
   }, [onSelect, parseAddressComponents, toast]);
 
 
-  if (loadError) return <div>Error loading maps. Please check your API key and configuration.</div>;
+  if (loadError) {
+    return (
+        <div className="p-4 text-center text-destructive border border-destructive/50 rounded-md bg-destructive/10">
+            <p className="font-bold">Google Maps Error</p>
+            <p className="text-sm">There was an issue loading Google Maps.</p>
+            <p className="text-xs mt-2">
+                This might be an <code className="text-xs">ApiNotActivatedMapError</code>. Please ensure the <strong>Maps JavaScript API</strong> is enabled in your Google Cloud project.
+            </p>
+        </div>
+    );
+  }
   if (!isLoaded) return <div className="flex items-center justify-center p-8"><Loader2 className="h-8 w-8 animate-spin" /></div>;
 
   return (
