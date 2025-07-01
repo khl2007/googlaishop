@@ -1,3 +1,4 @@
+
 import Link from "next/link";
 import Image from "next/image";
 import type { Product } from "@/lib/types";
@@ -24,7 +25,7 @@ export function ProductCard({ product, showButton = true }: ProductCardProps) {
       <CardHeader className="p-0">
         <Link href={`/products/${product.slug}`} className="block overflow-hidden aspect-square relative">
           <Image
-            src={imageToShow}
+            src={imageToShow || "https://placehold.co/600x600.png"}
             alt={product.name}
             fill
             className="object-cover object-center transition-transform duration-300 ease-in-out hover:scale-105"

@@ -1,5 +1,6 @@
 
 
+
 import { NextResponse } from 'next/server';
 import getDatabase from '@/lib/database';
 import { getAllProducts } from '@/lib/data';

@@ -30,7 +30,7 @@ export function ProductDetailsClient({ product, user }: ProductDetailsClientProp
       }
   }, [product.images]);
 
-  const [displayImage, setDisplayImage] = useState(product.mainImage || images[0] || selectedVariant.image);
+  const [displayImage, setDisplayImage] = useState(product.mainImage || selectedVariant.image || images[0]);
 
   useEffect(() => {
       if (selectedVariant.image && !selectedVariant.image.includes('placehold.co')) {
