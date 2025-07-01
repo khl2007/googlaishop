@@ -35,7 +35,7 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const user = await getUser();
-  const headersList = headers();
+  const headersList = await headers();
   const pathname = headersList.get('x-next-pathname') || '';
 
   const isAdminRoute = pathname.startsWith('/admin');

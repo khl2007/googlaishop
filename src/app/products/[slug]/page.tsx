@@ -1,3 +1,4 @@
+
 import { notFound } from "next/navigation";
 import { ProductDetailsClient } from "./product-details-client";
 import { AiRecommendations } from "@/components/ai-recommendations";
@@ -5,7 +6,8 @@ import { getProductBySlug } from "@/lib/data";
 import { getUser } from "@/lib/session";
 
 export default async function ProductPage({ params }: { params: { slug: string } }) {
-  const { slug } = params;
+  const resolvedParams = await params;
+  const { slug } = resolvedParams;
   const [product, user] = await Promise.all([
     getProductBySlug(slug),
     getUser(),
