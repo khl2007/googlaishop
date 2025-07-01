@@ -1,12 +1,12 @@
+
 "use client";
 
 import { useCart } from "@/hooks/use-cart";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import Image from "next/image";
 import Link from "next/link";
-import { ShoppingCart, X } from "lucide-react";
+import { ShoppingCart, X, Minus, Plus } from "lucide-react";
 
 export default function CartPage() {
   const { cartItems, removeFromCart, updateQuantity, cartTotal, cartCount } = useCart();
@@ -36,13 +36,32 @@ export default function CartPage() {
                         <p className="mt-2 font-bold text-primary">${item.price.toFixed(2)}</p>
                       </div>
                       <div className="flex items-center gap-4">
-                        <Input
-                          type="number"
-                          min="1"
-                          value={item.quantity}
-                          onChange={(e) => updateQuantity(item.variantId, parseInt(e.target.value))}
-                          className="h-10 w-20"
-                        />
+                        <div className="flex items-center rounded-md border border-input">
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="h-10 w-10 rounded-r-none"
+                                onClick={() => updateQuantity(item.variantId, item.quantity - 1)}
+                                disabled={item.quantity <= 1}
+                            >
+                                <Minus className="h-4 w-4" />
+                            </Button>
+                            <span
+                              className="h-10 w-12 flex items-center justify-center bg-transparent text-center text-sm font-medium"
+                            >
+                              {item.quantity}
+                            </span>
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="h-10 w-10 rounded-l-none"
+                                onClick={() => updateQuantity(item.variantId, item.quantity + 1)}
+                            >
+                                <Plus className="h-4 w-4" />
+                            </Button>
+                        </div>
                          <Button variant="ghost" size="icon" onClick={() => removeFromCart(item.variantId)}>
                           <X className="h-5 w-5" />
                         </Button>

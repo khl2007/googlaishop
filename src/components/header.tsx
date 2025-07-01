@@ -137,7 +137,7 @@ export function Header({ user }: HeaderProps) {
 
   return (
     <header className={cn(
-      "sticky top-0 z-50 w-full border-b transition-colors duration-300",
+      "sticky flex items-center justify-center top-0 z-50 w-full border-b transition-colors duration-300",
       scrolled 
         ? "border-border bg-background/80 backdrop-blur-sm" 
         : "border-transparent bg-[linear-gradient(to_left,#18101a,#431d4f_50%,#2d1d60_60%,#432066)]"
