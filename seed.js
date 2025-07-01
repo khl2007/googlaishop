@@ -39,7 +39,7 @@ function seedDatabase() {
     db.run(`CREATE TABLE IF NOT EXISTS roles (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT UNIQUE)`);
     db.run(`CREATE TABLE IF NOT EXISTS permissions (id INTEGER PRIMARY KEY AUTOINCREMENT, action TEXT, subject TEXT, UNIQUE(action, subject))`);
     db.run(`CREATE TABLE IF NOT EXISTS role_permissions (role_id INTEGER, permission_id INTEGER, FOREIGN KEY(role_id) REFERENCES roles(id), FOREIGN KEY(permission_id) REFERENCES permissions(id), UNIQUE(role_id, permission_id))`);
-    db.run(`CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT UNIQUE, password TEXT, fullName TEXT, role_id INTEGER, phoneNumber TEXT, country TEXT, city TEXT, logo TEXT, FOREIGN KEY(role_id) REFERENCES roles(id))`);
+    db.run(`CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT UNIQUE, password TEXT, fullName TEXT, role_id INTEGER, phoneNumber TEXT, country TEXT, city TEXT, logo TEXT, isVerified BOOLEAN DEFAULT 0, verificationToken TEXT, FOREIGN KEY(role_id) REFERENCES roles(id))`);
     db.run(`CREATE TABLE IF NOT EXISTS settings (id INTEGER PRIMARY KEY DEFAULT 1, websiteTitle TEXT, websiteLogo TEXT, timeZone TEXT, country TEXT)`);
     db.run(`CREATE TABLE IF NOT EXISTS email_settings (id INTEGER PRIMARY KEY DEFAULT 1, provider TEXT DEFAULT 'smtp', host TEXT, port INTEGER, username TEXT, password TEXT, from_email TEXT, from_name TEXT, secure BOOLEAN DEFAULT 1)`);
     db.run(`CREATE TABLE IF NOT EXISTS payment_methods (id INTEGER PRIMARY KEY, provider TEXT UNIQUE NOT NULL, enabled BOOLEAN DEFAULT 0, config TEXT)`);
@@ -173,15 +173,15 @@ function seedDatabase() {
         console.log('Role permissions seeded.');
 
         // Seed Users
-        const insertUserStmt = db.prepare("INSERT OR IGNORE INTO users (username, password, fullName, role_id, phoneNumber, country, city, logo) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+        const insertUserStmt = db.prepare("INSERT OR IGNORE INTO users (username, password, fullName, role_id, phoneNumber, country, city, logo, isVerified, verificationToken) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
         
-        // Seed Admin User
+        // Seed Admin User (pre-verified)
         const adminEmail = 'admin@example.com';
         const adminPassword = 'adminpassword';
         const adminFullName = 'Admin User';
         const hashedPassword = bcrypt.hashSync(adminPassword, 10);
         const adminRoleId = roleMap.get('admin');
-        insertUserStmt.run(adminEmail, hashedPassword, adminFullName, adminRoleId, '555-0100', 'Adminland', 'Admin City', null, (err) => {
+        insertUserStmt.run(adminEmail, hashedPassword, adminFullName, adminRoleId, '555-0100', 'Adminland', 'Admin City', null, 1, null, (err) => {
           if (err) console.error('Error inserting admin user:', err.message);
         });
 
@@ -191,7 +191,7 @@ function seedDatabase() {
         const customerFullName = 'Test Customer';
         const hashedCustomerPassword = bcrypt.hashSync(customerPassword, 10);
         const customerRoleId = roleMap.get('customer');
-        insertUserStmt.run(customerEmail, hashedCustomerPassword, customerFullName, customerRoleId, '555-0102', 'Customerland', 'Customer City', null, (err) => {
+        insertUserStmt.run(customerEmail, hashedCustomerPassword, customerFullName, customerRoleId, '555-0102', 'Customerland', 'Customer City', null, 0, null, (err) => {
             if (err) console.error('Error inserting customer user:', err.message);
         });
         
@@ -202,7 +202,7 @@ function seedDatabase() {
         const hashedVendorPassword = bcrypt.hashSync(vendorPassword, 10);
         const vendorRoleId = roleMap.get('vendor');
         
-        insertUserStmt.run(vendorEmail, hashedVendorPassword, vendorFullName, vendorRoleId, '555-0101', 'Vendoria', 'Vendor City', 'https://placehold.co/100x100.png', function(err) {
+        insertUserStmt.run(vendorEmail, hashedVendorPassword, vendorFullName, vendorRoleId, '555-0101', 'Vendoria', 'Vendor City', 'https://placehold.co/100x100.png', 1, null, function(err) {
             if (err) {
                 console.error('Error inserting vendor user:', err.message);
                 seedProductsAndCategories(null); // Proceed without a vendor if insertion fails

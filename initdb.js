@@ -37,6 +37,8 @@ db.serialize(() => {
       city TEXT,
       logo TEXT,
       role_id INTEGER,
+      isVerified BOOLEAN DEFAULT 0,
+      verificationToken TEXT,
       FOREIGN KEY(role_id) REFERENCES roles(id)
     )
   `);

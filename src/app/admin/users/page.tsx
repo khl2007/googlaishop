@@ -11,12 +11,15 @@ import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { getCsrfToken } from '@/lib/csrf';
+import { Switch } from '@/components/ui/switch';
+import { CheckCircle, XCircle } from 'lucide-react';
 
 interface User {
   id: number;
   fullName: string;
   username: string;
   role: string;
+  isVerified: boolean;
 }
 
 export default function UsersPage() {
@@ -69,6 +72,42 @@ export default function UsersPage() {
     }
   };
 
+  const handleVerificationToggle = async (user: User, isVerified: boolean) => {
+    // Optimistic UI update
+    setUsers(currentUsers =>
+        currentUsers.map(u => (u.id === user.id ? { ...u, isVerified } : u))
+    );
+
+    try {
+        const res = await fetch(`/api/admin/users/${user.id}/verify`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'x-csrf-token': getCsrfToken(),
+            },
+            body: JSON.stringify({ isVerified }),
+        });
+        if (!res.ok) {
+            const errorData = await res.json();
+            throw new Error(errorData.message || 'Failed to update status');
+        }
+        toast({
+            title: 'Success',
+            description: `User ${user.fullName} has been ${isVerified ? 'verified' : 'unverified'}.`,
+        });
+    } catch (error: any) {
+        // Revert UI on failure
+        setUsers(currentUsers =>
+            currentUsers.map(u => (u.id === user.id ? { ...u, isVerified: !isVerified } : u))
+        );
+        toast({
+            title: 'Error',
+            description: error.message,
+            variant: 'destructive',
+        });
+    }
+  };
+
   if (loading) return <div>Loading...</div>;
   if (error) return <div>Error: {error}</div>;
 
@@ -90,6 +129,7 @@ export default function UsersPage() {
               <TableHead>Full Name</TableHead>
               <TableHead>Email</TableHead>
               <TableHead>Role</TableHead>
+              <TableHead>Verified</TableHead>
               <TableHead><span className="sr-only">Actions</span></TableHead>
             </TableRow>
           </TableHeader>
@@ -99,6 +139,19 @@ export default function UsersPage() {
                 <TableCell className="font-medium">{user.fullName}</TableCell>
                 <TableCell>{user.username}</TableCell>
                 <TableCell><Badge variant="outline">{user.role}</Badge></TableCell>
+                <TableCell>
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id={`verified-switch-${user.id}`}
+                      checked={user.isVerified}
+                      onCheckedChange={(checked) => handleVerificationToggle(user, checked)}
+                    />
+                    {user.isVerified
+                      ? <CheckCircle className="h-5 w-5 text-green-500" />
+                      : <XCircle className="h-5 w-5 text-red-500" />
+                    }
+                  </div>
+                </TableCell>
                 <TableCell>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>

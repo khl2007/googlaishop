@@ -982,3 +982,34 @@ export async function updateEmailSettings(data) {
         });
     });
 }
+
+export async function findUserByTokenAndVerify(token) {
+    const db = getDatabase();
+    return new Promise((resolve, reject) => {
+        db.get('SELECT id FROM users WHERE verificationToken = ?', [token], (err, user) => {
+            if (err) return reject(new Error("Database error finding token."));
+            if (!user) return reject(new Error("Invalid or expired verification token."));
+
+            db.run(
+                'UPDATE users SET isVerified = 1, verificationToken = NULL WHERE id = ?',
+                [user.id],
+                function(updateErr) {
+                    if (updateErr) return reject(new Error("Database error verifying user."));
+                    resolve({ success: true, userId: user.id });
+                }
+            );
+        });
+    });
+}
+
+export async function toggleUserVerification(userId, isVerified) {
+    const db = getDatabase();
+    return new Promise((resolve, reject) => {
+        const sql = 'UPDATE users SET isVerified = ? WHERE id = ?';
+        db.run(sql, [isVerified ? 1 : 0, userId], function(err) {
+            if (err) return reject(err);
+            if (this.changes === 0) return reject(new Error("User not found."));
+            resolve(this);
+        });
+    });
+}

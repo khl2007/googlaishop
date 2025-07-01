@@ -53,6 +53,7 @@ export type User = {
   username: string;
   fullName: string;
   role: 'admin' | 'vendor' | 'customer' | 'delivery';
+  isVerified?: boolean;
 };
 
 export type Role = {

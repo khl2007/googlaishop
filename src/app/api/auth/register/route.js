@@ -1,6 +1,9 @@
+
 import { NextResponse } from 'next/server';
 import getDatabase from '@/lib/database';
 import bcrypt from 'bcrypt';
+import { randomUUID } from 'crypto';
+import { sendVerificationEmail } from '@/lib/email';
 
 export async function POST(request) {
   try {
@@ -38,10 +41,11 @@ export async function POST(request) {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
+    const verificationToken = randomUUID();
 
-    await new Promise((resolve, reject) => {
-      const sql = 'INSERT INTO users (username, password, fullName, role_id, phoneNumber, country, city) VALUES (?, ?, ?, ?, ?, ?, ?)';
-      const params = [email, hashedPassword, fullName, roleRecord.id, phoneNumber, country, city];
+    const result = await new Promise((resolve, reject) => {
+      const sql = 'INSERT INTO users (username, password, fullName, role_id, phoneNumber, country, city, verificationToken) VALUES (?, ?, ?, ?, ?, ?, ?, ?)';
+      const params = [email, hashedPassword, fullName, roleRecord.id, phoneNumber, country, city, verificationToken];
       db.run(sql, params, function (err) {
         if (err) {
           reject(new Error('Database error during user insertion.'));
@@ -51,7 +55,14 @@ export async function POST(request) {
       });
     });
 
-    return NextResponse.json({ message: 'User created successfully' }, { status: 201 });
+    try {
+      await sendVerificationEmail(email, verificationToken);
+    } catch (emailError) {
+      console.error(`Failed to send verification email to ${email}:`, emailError);
+      // Even if email fails, the account is created. Admin can manually verify.
+    }
+
+    return NextResponse.json({ message: 'Account created successfully. Please check your email to verify your account.' }, { status: 201 });
 
   } catch (error) {
     console.error('Registration error:', error);

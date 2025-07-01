@@ -1,3 +1,4 @@
+
 import { NextResponse } from 'next/server';
 import getDatabase from '@/lib/database';
 import bcrypt from 'bcrypt';
@@ -9,7 +10,7 @@ export async function GET(request) {
 
   try {
     let sql = `
-        SELECT u.id, u.fullName, u.username, r.name as role
+        SELECT u.id, u.fullName, u.username, r.name as role, u.isVerified
         FROM users u
         JOIN roles r ON u.role_id = r.id
       `;
@@ -28,7 +29,11 @@ export async function GET(request) {
         resolve(rows);
       });
     });
-    return NextResponse.json(users);
+
+    // Convert isVerified to boolean
+    const processedUsers = users.map(user => ({...user, isVerified: !!user.isVerified}));
+
+    return NextResponse.json(processedUsers);
   } catch (error) {
     return NextResponse.json({ message: 'Failed to fetch users', error: error.message }, { status: 500 });
   }
