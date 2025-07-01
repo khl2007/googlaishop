@@ -46,22 +46,41 @@ export function AddressAutocomplete({ onSelect }: AddressAutocompleteProps) {
     setMap(mapInstance);
   }, []);
 
-  const parseAddressComponents = useCallback((components: google.maps.GeocoderAddressComponent[]): AddressResult => {
+  const parseAddressComponents = useCallback((place: google.maps.places.PlaceResult | google.maps.GeocoderResult): AddressResult => {
+    const components = place.address_components || [];
     const address: AddressResult = { street: "", city: "", state: "", zip: "", country: "" };
-    let streetNumber = "";
-    let route = "";
+    
+    const getComponent = (type: string, useShortName = false) => {
+        const component = components.find(c => c.types.includes(type));
+        return component ? (useShortName ? component.short_name : component.long_name) : "";
+    }
 
-    components.forEach(component => {
-      const types = component.types;
-      if (types.includes("street_number")) streetNumber = component.long_name;
-      if (types.includes("route")) route = component.long_name;
-      if (types.includes("locality")) address.city = component.long_name;
-      if (types.includes("administrative_area_level_1")) address.state = component.short_name;
-      if (types.includes("country")) address.country = component.long_name;
-      if (types.includes("postal_code")) address.zip = component.long_name;
-    });
+    let streetNumber = getComponent("street_number");
+    let route = getComponent("route");
 
-    address.street = `${streetNumber} ${route}`.trim();
+    let street = `${streetNumber} ${route}`.trim();
+    
+    // Fallback strategy: If street is empty, and it's a specific point of interest,
+    // the street might be in the formatted_address. Let's try to extract it.
+    if (!street && place.formatted_address) {
+        const addressParts = place.formatted_address.split(', ');
+        if (addressParts.length >= 3) { // Heuristic: e.g., Street, City, Country or Street, City, State ZIP
+            street = addressParts[0];
+        }
+    }
+
+    address.street = street;
+    address.city = getComponent("locality") || getComponent("postal_town");
+    address.state = getComponent("administrative_area_level_1", true);
+    address.zip = getComponent("postal_code");
+    address.country = getComponent("country");
+
+    // If city is still empty, try to get it from other components
+    if (!address.city && components.length > 0) {
+        const cityComponent = components.find(c => c.types.includes('administrative_area_level_3') || c.types.includes('political'));
+        if (cityComponent) address.city = cityComponent.long_name;
+    }
+
     return address;
   }, []);
   
@@ -72,7 +91,7 @@ export function AddressAutocomplete({ onSelect }: AddressAutocompleteProps) {
       } : null;
       
       if (place.address_components) {
-        const parsedAddress = parseAddressComponents(place.address_components);
+        const parsedAddress = parseAddressComponents(place);
         if (inputRef.current && place.formatted_address) {
             inputRef.current.value = place.formatted_address;
         }
