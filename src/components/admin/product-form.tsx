@@ -698,5 +698,3 @@ function ProductImageForm() {
     </Card>
   );
 }
-
-    
