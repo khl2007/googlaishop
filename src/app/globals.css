@@ -6,6 +6,36 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
+.wysiwyg-content h1,
+.wysiwyg-content h2,
+.wysiwyg-content h3 {
+    @apply font-bold mb-4 mt-6;
+}
+
+.wysiwyg-content h1 { @apply text-2xl; }
+.wysiwyg-content h2 { @apply text-xl; }
+.wysiwyg-content h3 { @apply text-lg; }
+
+.wysiwyg-content p {
+    @apply mb-4 leading-relaxed;
+}
+
+.wysiwyg-content ul {
+    @apply list-disc list-inside mb-4 pl-4;
+}
+
+.wysiwyg-content ol {
+    @apply list-decimal list-inside mb-4 pl-4;
+}
+
+.wysiwyg-content li {
+    @apply mb-2;
+}
+
+.wysiwyg-content blockquote {
+    @apply border-l-4 border-muted-foreground/20 pl-4 italic text-muted-foreground my-4;
+}
+
 @layer base {
   :root {
     --background: 0 0% 100%;

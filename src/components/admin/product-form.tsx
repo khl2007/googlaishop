@@ -9,7 +9,6 @@ import { z } from "zod";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
@@ -19,6 +18,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "../ui/card
 import { Switch } from "../ui/switch";
 import { getCsrfToken } from "@/lib/csrf";
 import { getCrossProduct, cn } from "@/lib/utils";
+import { WysiwygEditor } from "../wysiwyg-editor";
 
 const variantSchema = z.object({
   id: z.string().optional(),
@@ -230,7 +230,7 @@ export function ProductForm({ product, categories, vendors }: ProductFormProps) 
                     <FormField control={form.control} name="shortDescription" render={({ field }) => (
                         <FormItem>
                             <FormLabel>Short Description</FormLabel>
-                            <FormControl><Textarea placeholder="A brief, catchy summary of the product..." {...field} /></FormControl>
+                            <FormControl><Input placeholder="A brief, catchy summary of the product..." {...field} /></FormControl>
                             <FormDescription>This will be shown on product listings. Keep it concise (max 200 characters).</FormDescription>
                             <FormMessage />
                         </FormItem>
@@ -239,10 +239,9 @@ export function ProductForm({ product, categories, vendors }: ProductFormProps) 
                         <FormItem>
                             <FormLabel>Full Description</FormLabel>
                             <FormControl>
-                                <Textarea
-                                    placeholder="Detailed information about the product..."
-                                    className="min-h-[150px]"
-                                    {...field}
+                                <WysiwygEditor
+                                    value={field.value || ''}
+                                    onChange={field.onChange}
                                 />
                             </FormControl>
                             <FormMessage />
