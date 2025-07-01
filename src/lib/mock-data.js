@@ -1,4 +1,5 @@
 
+
 export const allCategories = [
   { id: 'cat1', name: 'Smartphones', slug: 'smartphones', image: 'https://placehold.co/400x300.png', parentId: null },
   { id: 'cat2', name: 'Laptops', slug: 'laptops', image: 'https://placehold.co/400x300.png', parentId: null },
@@ -88,3 +89,5 @@ export const allProducts = [
     ],
   },
 ];
+
+    

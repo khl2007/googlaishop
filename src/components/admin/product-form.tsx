@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
-import type { Product, Category } from "@/lib/types";
+import type { Product, Category, ProductVariant } from "@/lib/types";
 import { Loader2, PlusCircle, Trash, Trash2, Wand2, Star } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription as CardDescriptionPrimitive } from "@/components/ui/card";
 import { Switch } from "../ui/switch";
@@ -20,6 +20,14 @@ import { getCsrfToken } from "@/lib/csrf";
 import { getCrossProduct, cn } from "@/lib/utils";
 import { WysiwygEditor } from "../wysiwyg-editor";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+
+const variantSchema = z.object({
+  id: z.string().optional(),
+  options: z.record(z.string()).optional(),
+  price: z.coerce.number({ required_error: "Price is required" }).min(0, "Price must be non-negative."),
+  stock: z.coerce.number({ required_error: "Stock is required" }).int("Stock must be an integer.").min(0, "Stock must be non-negative."),
+  image: z.string().optional().or(z.literal('')),
+});
 
 const optionSchema = z.object({
   value: z.string().min(1, "Option value cannot be empty."),
@@ -690,3 +698,5 @@ function ProductImageForm() {
     </Card>
   );
 }
+
+    
