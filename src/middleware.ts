@@ -9,7 +9,6 @@ export function middleware(request: NextRequest) {
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set('x-next-pathname', pathname);
 
-  // This is the response we will eventually return, unless we error out early.
   const response = NextResponse.next({
     request: {
       headers: requestHeaders,
@@ -19,14 +18,13 @@ export function middleware(request: NextRequest) {
   const isSecure = request.nextUrl.protocol === 'https:';
 
   // Ensure CSRF cookie is set on the response if it's not in the request.
-  // This happens first, so the `response` object has the cookie info.
   if (!request.cookies.has('csrf_token')) {
     const token = crypto.randomUUID();
     response.cookies.set({
       name: 'csrf_token',
       value: token,
       path: '/',
-      sameSite: 'none',
+      sameSite: 'lax', // Use 'lax' for better compatibility across environments
       secure: isSecure,
       httpOnly: false, // Must be readable by client JS for this pattern
     });
@@ -64,7 +62,7 @@ export function middleware(request: NextRequest) {
     loginUrl.searchParams.set('redirect', pathname);
     const redirectResponse = NextResponse.redirect(loginUrl);
     
-    // **THE FIX**: Copy the CSRF cookie from our main `response` object
+    // Copy the CSRF cookie from our main `response` object
     // to the new `redirectResponse` object before returning it.
     const csrfCookie = response.cookies.get('csrf_token');
     if (csrfCookie) {
@@ -85,11 +83,9 @@ export function middleware(request: NextRequest) {
   if (pathname.startsWith('/delivery') && (!user || user.role !== 'delivery')) return redirectToLogin();
   if ((pathname.startsWith('/checkout') || pathname.startsWith('/account')) && !user) return redirectToLogin();
 
-  // If we reach here, no redirect was needed, so we return the original `response`.
   return response;
 }
 
 export const config = {
-  // Match all paths except static files and images. This now includes API routes.
   matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
 };
