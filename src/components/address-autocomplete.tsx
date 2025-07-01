@@ -5,8 +5,9 @@ import { useState, useRef, useCallback } from "react";
 import { useJsApiLoader, Autocomplete, GoogleMap, MarkerF } from "@react-google-maps/api";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
-import { Loader2, MapPin } from "lucide-react";
+import { Loader2, LocateFixed } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { Card } from "./ui/card";
 
 interface AddressResult {
   street: string;
@@ -22,9 +23,8 @@ interface AddressAutocompleteProps {
 
 const libraries: "places"[] = ["places"];
 const mapContainerStyle = {
-  height: "400px",
+  height: "100%",
   width: "100%",
-  borderRadius: "0.5rem",
 };
 
 export function AddressAutocomplete({ onSelect }: AddressAutocompleteProps) {
@@ -57,14 +57,11 @@ export function AddressAutocomplete({ onSelect }: AddressAutocompleteProps) {
 
     let streetNumber = getComponent("street_number");
     let route = getComponent("route");
-
     let street = `${streetNumber} ${route}`.trim();
     
-    // Fallback strategy: If street is empty, and it's a specific point of interest,
-    // the street might be in the formatted_address. Let's try to extract it.
     if (!street && place.formatted_address) {
         const addressParts = place.formatted_address.split(', ');
-        if (addressParts.length >= 3) { // Heuristic: e.g., Street, City, Country or Street, City, State ZIP
+        if (addressParts.length >= 3) {
             street = addressParts[0];
         }
     }
@@ -75,7 +72,6 @@ export function AddressAutocomplete({ onSelect }: AddressAutocompleteProps) {
     address.zip = getComponent("postal_code");
     address.country = getComponent("country");
 
-    // If city is still empty, try to get it from other components
     if (!address.city && components.length > 0) {
         const cityComponent = components.find(c => c.types.includes('administrative_area_level_3') || c.types.includes('political'));
         if (cityComponent) address.city = cityComponent.long_name;
@@ -177,28 +173,10 @@ export function AddressAutocomplete({ onSelect }: AddressAutocompleteProps) {
         </div>
     );
   }
-  if (!isLoaded) return <div className="flex items-center justify-center p-8"><Loader2 className="h-8 w-8 animate-spin" /></div>;
+  if (!isLoaded) return <div className="flex items-center justify-center h-full w-full"><Loader2 className="h-8 w-8 animate-spin" /></div>;
 
   return (
-    <div className="space-y-4">
-      <Autocomplete
-        onLoad={setAutocomplete}
-        onPlaceChanged={onPlaceChanged}
-        fields={["address_components", "formatted_address", "geometry"]}
-      >
-        <Input ref={inputRef} type="text" placeholder="Start typing your address..." />
-      </Autocomplete>
-      <Button
-        type="button"
-        variant="outline"
-        className="w-full"
-        onClick={handleGeolocate}
-        disabled={geocodingStatus === 'loading'}
-      >
-        {geocodingStatus === 'loading' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <MapPin className="mr-2 h-4 w-4" />}
-        Use my current location
-      </Button>
-      
+    <div className="relative w-full h-full">
       <GoogleMap
         id="address-map"
         mapContainerStyle={mapContainerStyle}
@@ -208,13 +186,35 @@ export function AddressAutocomplete({ onSelect }: AddressAutocompleteProps) {
         onClick={handleMapClick}
         options={{
             zoomControl: true,
-            fullscreenControl: true,
+            fullscreenControl: false,
             streetViewControl: false,
             mapTypeControl: false,
         }}
       >
         {markerPosition && <MarkerF position={markerPosition} />}
       </GoogleMap>
+      <div className="absolute top-4 left-4 right-4 z-10">
+        <Card className="shadow-lg">
+            <Autocomplete
+                onLoad={setAutocomplete}
+                onPlaceChanged={onPlaceChanged}
+                fields={["address_components", "formatted_address", "geometry"]}
+            >
+                <Input ref={inputRef} type="text" placeholder="Start typing your address..." className="w-full h-12 text-base" />
+            </Autocomplete>
+        </Card>
+      </div>
+      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10">
+        <Button
+            type="button"
+            className="h-12 px-6 shadow-lg"
+            onClick={handleGeolocate}
+            disabled={geocodingStatus === 'loading'}
+        >
+            {geocodingStatus === 'loading' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <LocateFixed className="mr-2 h-4 w-4" />}
+            Locate Me
+        </Button>
+      </div>
     </div>
   );
 }

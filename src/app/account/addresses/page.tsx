@@ -7,7 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
@@ -45,6 +45,8 @@ export default function AddressesPage() {
   const [cities, setCities] = useState<string[]>([]);
   const [isCitiesLoading, setIsCitiesLoading] = useState(true);
   const [defaultCountry, setDefaultCountry] = useState('');
+  
+  const [step, setStep] = useState(1);
 
   const form = useForm<AddressFormValues>({
     resolver: zodResolver(addressFormSchema),
@@ -106,6 +108,7 @@ export default function AddressesPage() {
 
 
   const openDialog = (address?: Address) => {
+    setStep(1); // Always start at step 1
     form.reset(address || { 
       fullName: "", 
       street: "", 
@@ -119,6 +122,18 @@ export default function AddressesPage() {
     });
     setIsDialogOpen(true);
   };
+  
+  const handleConfirmLocation = () => {
+    if (!form.getValues('street')) {
+        toast({
+            title: "Location not selected",
+            description: "Please search for or click on the map to select an address.",
+            variant: "destructive",
+        })
+        return;
+    }
+    setStep(2);
+  }
 
   const onSubmit = async (data: AddressFormValues) => {
     const isEditing = !!data.id;
@@ -282,77 +297,101 @@ export default function AddressesPage() {
 
       {/* Add/Edit Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{form.getValues('id') ? 'Edit Address' : 'Add New Address'}</DialogTitle>
-          </DialogHeader>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <AddressAutocomplete onSelect={handleAutocompleteSelect} />
-              <FormField control={form.control} name="fullName" render={({ field }) => (
-                  <FormItem><FormLabel>Full Name</FormLabel><FormControl><Input placeholder="John Doe" {...field} /></FormControl><FormMessage /></FormItem>
-              )}/>
-              <FormField control={form.control} name="street" render={({ field }) => (
-                  <FormItem><FormLabel>Street Address</FormLabel><FormControl><Input placeholder="123 Main St" {...field} /></FormControl><FormMessage /></FormItem>
-              )}/>
-               <FormField control={form.control} name="apartment" render={({ field }) => (
-                  <FormItem><FormLabel>Apt, Suite, etc. (Optional)</FormLabel><FormControl><Input placeholder="Apt 4B" {...field} /></FormControl><FormMessage /></FormItem>
-              )}/>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <FormField
-                  control={form.control}
-                  name="country"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Country</FormLabel>
-                      <FormControl>
-                        <Input {...field} readOnly disabled className="bg-muted/50" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="city"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>City</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        value={field.value}
-                        disabled={isCitiesLoading || cities.length === 0}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder={isCitiesLoading ? "Loading..." : "Select a city"} />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {cities.map((cityName) => (
-                            <SelectItem key={cityName} value={cityName}>
-                              {cityName}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <FormField control={form.control} name="area" render={({ field }) => (
-                    <FormItem><FormLabel>Area / District (Optional)</FormLabel><FormControl><Input placeholder="e.g. Downtown" {...field} /></FormControl><FormMessage /></FormItem>
-                )}/>
-                 <FormField control={form.control} name="zip" render={({ field }) => (
-                    <FormItem><FormLabel>ZIP / Postal</FormLabel><FormControl><Input placeholder="12345" {...field} /></FormControl><FormMessage /></FormItem>
-                )}/>
-              </div>
-              <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
-                {form.formState.isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                Save Address
-              </Button>
+        <DialogContent className="h-screen w-screen max-w-full p-0 flex flex-col gap-0 sm:rounded-none">
+           <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="flex h-full flex-col">
+              {step === 1 && (
+                  <>
+                      <DialogHeader className="p-4 border-b shrink-0">
+                          <DialogTitle>Step 1: Pin Your Location</DialogTitle>
+                          <DialogDescription>Search for or click on the map to find your address.</DialogDescription>
+                      </DialogHeader>
+                      <div className="flex-1 relative">
+                          <AddressAutocomplete onSelect={handleAutocompleteSelect} />
+                      </div>
+                      <DialogFooter className="p-4 border-t shrink-0">
+                          <Button type="button" className="w-full" size="lg" onClick={handleConfirmLocation}>
+                            Confirm Location
+                          </Button>
+                      </DialogFooter>
+                  </>
+              )}
+              {step === 2 && (
+                   <>
+                      <DialogHeader className="p-4 border-b shrink-0">
+                          <DialogTitle>Step 2: Confirm Your Details</DialogTitle>
+                      </DialogHeader>
+                       <div className="flex-1 space-y-4 overflow-y-auto p-4">
+                          <FormField control={form.control} name="fullName" render={({ field }) => (
+                              <FormItem><FormLabel>Full Name</FormLabel><FormControl><Input placeholder="John Doe" {...field} /></FormControl><FormMessage /></FormItem>
+                          )}/>
+                          <FormField control={form.control} name="street" render={({ field }) => (
+                              <FormItem><FormLabel>Street Address</FormLabel><FormControl><Input placeholder="123 Main St" {...field} /></FormControl><FormMessage /></FormItem>
+                          )}/>
+                          <FormField control={form.control} name="apartment" render={({ field }) => (
+                              <FormItem><FormLabel>Apt, Suite, etc. (Optional)</FormLabel><FormControl><Input placeholder="Apt 4B" {...field} /></FormControl><FormMessage /></FormItem>
+                          )}/>
+                          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                            <FormField
+                              control={form.control}
+                              name="country"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Country</FormLabel>
+                                  <FormControl>
+                                    <Input {...field} readOnly disabled className="bg-muted/50" />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            <FormField
+                              control={form.control}
+                              name="city"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>City</FormLabel>
+                                  <Select
+                                    onValueChange={field.onChange}
+                                    value={field.value}
+                                    disabled={isCitiesLoading || cities.length === 0}
+                                  >
+                                    <FormControl>
+                                      <SelectTrigger>
+                                        <SelectValue placeholder={isCitiesLoading ? "Loading..." : "Select a city"} />
+                                      </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                      {cities.map((cityName) => (
+                                        <SelectItem key={cityName} value={cityName}>
+                                          {cityName}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          </div>
+                          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                            <FormField control={form.control} name="area" render={({ field }) => (
+                                <FormItem><FormLabel>Area / District (Optional)</FormLabel><FormControl><Input placeholder="e.g. Downtown" {...field} /></FormControl><FormMessage /></FormItem>
+                            )}/>
+                            <FormField control={form.control} name="zip" render={({ field }) => (
+                                <FormItem><FormLabel>ZIP / Postal</FormLabel><FormControl><Input placeholder="12345" {...field} /></FormControl><FormMessage /></FormItem>
+                            )}/>
+                          </div>
+                       </div>
+                        <DialogFooter className="p-4 border-t shrink-0 flex justify-between w-full">
+                           <Button type="button" variant="outline" onClick={() => setStep(1)}>Back</Button>
+                            <Button type="submit" disabled={form.formState.isSubmitting}>
+                                {form.formState.isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                                Save Address
+                            </Button>
+                        </DialogFooter>
+                   </>
+              )}
             </form>
           </Form>
         </DialogContent>
