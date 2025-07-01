@@ -1,3 +1,4 @@
+
 import { NextResponse } from 'next/server';
 import getDatabase from '@/lib/database';
 import bcrypt from 'bcrypt';
@@ -44,6 +45,7 @@ export async function POST(request) {
       secure: process.env.NODE_ENV === 'production',
       path: '/',
       maxAge: 60 * 60 * 24 * 7, // 1 week
+      sameSite: 'none',
     });
     
     return response;

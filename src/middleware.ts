@@ -36,7 +36,7 @@ export function middleware(request: NextRequest) {
       name: 'csrf_token',
       value: token,
       path: '/',
-      sameSite: 'strict',
+      sameSite: 'none',
       secure: isSecure,
       httpOnly: false, // Must be readable by client JS for this pattern
     });

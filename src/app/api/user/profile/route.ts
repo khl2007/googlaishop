@@ -67,6 +67,7 @@ export async function PUT(request: Request) {
             secure: process.env.NODE_ENV === 'production',
             path: '/',
             maxAge: 60 * 60 * 24 * 7, // 1 week
+            sameSite: 'none',
         });
         
         return response;
