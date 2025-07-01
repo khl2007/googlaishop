@@ -19,7 +19,7 @@ export function ProductCard({ product, showButton = true }: ProductCardProps) {
   }
 
   const imageToShow = product.mainImage || firstVariant.image;
-  const hasSalePrice = firstVariant.salePrice && firstVariant.salePrice > 0;
+  const hasSalePrice = firstVariant.salePrice != null && firstVariant.salePrice > 0;
 
   return (
     <Card className="flex flex-col overflow-hidden rounded-lg shadow-md transition-shadow hover:shadow-xl">

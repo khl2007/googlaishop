@@ -67,7 +67,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
           (item) => item.variantId === variant.id
         );
         
-        const priceToAdd = (variant.salePrice && variant.salePrice > 0) ? variant.salePrice : variant.price;
+        const priceToAdd = (variant.salePrice != null && variant.salePrice > 0) ? variant.salePrice : variant.price;
 
         if (existingItem) {
           return prevItems.map((item) =>
