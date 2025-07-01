@@ -109,6 +109,10 @@ export function ProductDetailsClient({ product, user }: ProductDetailsClientProp
                 ${selectedVariant.price.toFixed(2)}
             </p>
             
+            {product.shortDescription && (
+                <p className="text-lg text-muted-foreground leading-relaxed mt-6">{product.shortDescription}</p>
+            )}
+
             <p className="text-base text-muted-foreground leading-relaxed my-6">{product.description}</p>
             
             <div className="space-y-6">

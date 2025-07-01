@@ -235,6 +235,7 @@ function seedDatabase() {
     name TEXT,
     slug TEXT UNIQUE,
     description TEXT,
+    shortDescription TEXT,
     categoryId TEXT,
     vendorId INTEGER,
     optionGroups TEXT,
@@ -264,11 +265,11 @@ function seedDatabase() {
     insertCategoryStmt.finalize();
     console.log('Categories seeded.');
 
-    const insertProductStmt = db.prepare('INSERT OR IGNORE INTO products (id, name, slug, description, categoryId, vendorId, optionGroups, tags, isFeatured, isOnOffer, weight, dimensions, images, mainImage) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+    const insertProductStmt = db.prepare('INSERT OR IGNORE INTO products (id, name, slug, description, shortDescription, categoryId, vendorId, optionGroups, tags, isFeatured, isOnOffer, weight, dimensions, images, mainImage) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
     const insertVariantStmt = db.prepare('INSERT OR IGNORE INTO product_variants (id, productId, name, price, image, stock, options) VALUES (?, ?, ?, ?, ?, ?, ?)');
 
     allProducts.forEach(product => {
-      insertProductStmt.run(product.id, product.name, product.slug, product.description, product.categoryId, vendorId, product.optionGroups, product.tags, product.isFeatured, product.isOnOffer, product.weight, product.dimensions, product.images, product.mainImage, (err) => {
+      insertProductStmt.run(product.id, product.name, product.slug, product.description, product.shortDescription, product.categoryId, vendorId, product.optionGroups, product.tags, product.isFeatured, product.isOnOffer, product.weight, product.dimensions, product.images, product.mainImage, (err) => {
         if (err) {
           console.error(`Error inserting product ${product.name}:`, err.message);
         }

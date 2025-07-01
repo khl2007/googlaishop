@@ -32,7 +32,7 @@ export async function GET(request, { params }) {
 // UPDATE a product
 export async function PUT(request, { params }) {
   const { id } = params;
-   const { name, slug, description, categoryId, vendorId, variants, optionGroups, tags, isFeatured, isOnOffer, weight, dimensions, images, mainImage } = await request.json();
+   const { name, slug, description, shortDescription, categoryId, vendorId, variants, optionGroups, tags, isFeatured, isOnOffer, weight, dimensions, images, mainImage } = await request.json();
   const db = getDatabase();
 
   if (!name || !slug || !description || !categoryId || !vendorId) {
@@ -43,8 +43,8 @@ export async function PUT(request, { params }) {
     await new Promise((resolve, reject) => db.run('BEGIN TRANSACTION', err => err ? reject(err) : resolve()));
 
     await new Promise((resolve, reject) => {
-      const sql = 'UPDATE products SET name = ?, slug = ?, description = ?, categoryId = ?, vendorId = ?, optionGroups = ?, tags = ?, isFeatured = ?, isOnOffer = ?, weight = ?, dimensions = ?, images = ?, mainImage = ? WHERE id = ?';
-      db.run(sql, [name, slug, description, categoryId, vendorId, optionGroups, tags, isFeatured, isOnOffer, weight, dimensions, images, mainImage, id], function (err) {
+      const sql = 'UPDATE products SET name = ?, slug = ?, description = ?, shortDescription = ?, categoryId = ?, vendorId = ?, optionGroups = ?, tags = ?, isFeatured = ?, isOnOffer = ?, weight = ?, dimensions = ?, images = ?, mainImage = ? WHERE id = ?';
+      db.run(sql, [name, slug, description, shortDescription, categoryId, vendorId, optionGroups, tags, isFeatured, isOnOffer, weight, dimensions, images, mainImage, id], function (err) {
         if (err) reject(err);
         if (this.changes === 0) reject(new Error('Product not found'));
         resolve(this);

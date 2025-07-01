@@ -31,6 +31,7 @@ const variantSchema = z.object({
 const formSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters."),
   slug: z.string().min(2, "Slug must be at least 2 characters.").regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Slug must be lowercase and contain only letters, numbers, and hyphens."),
+  shortDescription: z.string().max(200, "Short description cannot exceed 200 characters.").optional(),
   description: z.string().min(10, "Description must be at least 10 characters."),
   categoryId: z.string().min(1, "Please select a category."),
   vendorId: z.string().min(1, "Please select a vendor."),
@@ -72,6 +73,7 @@ export function ProductForm({ product, categories, vendors }: ProductFormProps) 
     defaultValues: {
       name: product?.name || "",
       slug: product?.slug || "",
+      shortDescription: product?.shortDescription || "",
       description: product?.description || "",
       categoryId: product?.categoryId || "",
       vendorId: product?.vendorId?.toString() ?? "",
@@ -225,8 +227,20 @@ export function ProductForm({ product, categories, vendors }: ProductFormProps) 
                     <FormField control={form.control} name="slug" render={({ field }) => (
                         <FormItem><FormLabel>Slug</FormLabel><FormControl><Input placeholder="e.g., auraphone-x" {...field} /></FormControl><FormMessage /></FormItem>
                     )} />
+                    <FormField control={form.control} name="shortDescription" render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Short Description</FormLabel>
+                            <FormControl><Textarea placeholder="A brief, catchy summary of the product..." {...field} /></FormControl>
+                            <FormDescription>This will be shown on product listings. Keep it concise (max 200 characters).</FormDescription>
+                            <FormMessage />
+                        </FormItem>
+                    )} />
                     <FormField control={form.control} name="description" render={({ field }) => (
-                        <FormItem><FormLabel>Description</FormLabel><FormControl><Textarea placeholder="Describe the product..." {...field} /></FormControl><FormMessage /></FormItem>
+                        <FormItem>
+                            <FormLabel>Full Description</FormLabel>
+                            <FormControl><Textarea placeholder="Describe the product in detail..." {...field} rows={5} /></FormControl>
+                            <FormMessage />
+                        </FormItem>
                     )} />
                 </CardContent>
             </Card>

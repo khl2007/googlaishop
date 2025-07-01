@@ -11,6 +11,7 @@ export const allProducts = [
     id: 'prod1',
     name: 'AuraPhone X',
     slug: 'auraphone-x',
+    shortDescription: 'The future in your hands, with a stunning display and revolutionary camera.',
     description: 'Experience the next generation of mobile technology with the AuraPhone X. Featuring a stunning edge-to-edge display, a powerful A-series chip, and a revolutionary camera system.',
     categoryId: 'cat1',
     images: JSON.stringify([
@@ -40,6 +41,7 @@ export const allProducts = [
     id: 'prod2',
     name: 'ZenBook Pro',
     slug: 'zenbook-pro',
+    shortDescription: 'A sleek, lightweight powerhouse for ultimate creativity and productivity.',
     description: 'Unleash your creative potential with the ZenBook Pro. A sleek, lightweight powerhouse with a breathtaking 4K OLED display and the latest high-performance processors for ultimate productivity.',
     categoryId: 'cat2',
     images: JSON.stringify([
@@ -64,6 +66,7 @@ export const allProducts = [
     id: 'prod3',
     name: 'EchoBuds Pro',
     slug: 'echobuds-pro',
+    shortDescription: 'Immerse yourself in pure sound with active noise cancellation.',
     description: 'Immerse yourself in pure sound with EchoBuds Pro. Active noise cancellation, a comfortable and secure fit, and crystal-clear audio for music and calls on the go.',
     categoryId: 'cat3',
     images: JSON.stringify([

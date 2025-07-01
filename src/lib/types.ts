@@ -23,6 +23,7 @@ export type Product = {
   name: string;
   slug: string;
   description: string;
+  shortDescription?: string | null;
   categoryId: string;
   vendorId: number;
   optionGroups?: string | null; // JSON string
