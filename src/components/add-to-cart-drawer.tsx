@@ -2,7 +2,7 @@
 "use client";
 
 import { useCart } from "@/hooks/use-cart";
-import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import Image from "next/image";
 import { Button } from "./ui/button";
 import Link from "next/link";
@@ -18,6 +18,9 @@ export function AddToCartDrawer() {
         className="p-4 sm:p-6 w-full max-w-none border-b shadow-lg data-[state=open]:animate-in data-[state=open]:slide-in-from-top data-[state=closed]:animate-out data-[state=closed]:slide-out-to-top"
         onOpenAutoFocus={(e) => e.preventDefault()}
       >
+        <SheetHeader>
+            <SheetTitle className="sr-only">Item Added to Cart</SheetTitle>
+        </SheetHeader>
         {lastAddedItem && (
           <div className="container mx-auto max-w-4xl">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
