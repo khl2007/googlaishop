@@ -39,7 +39,7 @@ export function ProductDetailsClient({ product, user }: ProductDetailsClientProp
   }, [selectedVariant]);
 
   const handleAddToCart = () => {
-    addToCart(product, selectedVariant, quantity, { openCart: false });
+    addToCart(product, selectedVariant, quantity);
   };
 
   const showAddToCart = !(user && ['admin', 'vendor', 'delivery'].includes(user.role));
