@@ -211,7 +211,7 @@ export function DeliveryToolbar({ user }: { user: User | null }) {
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
         <DialogContent className={cn(
             "p-0 flex flex-col gap-0",
-            modalView === 'add' ? "h-screen w-screen max-w-full sm:h-[90vh] sm:max-w-4xl sm:rounded-lg" : "max-w-lg"
+            modalView === 'add' ? "h-[90dvh] w-screen max-w-full sm:h-auto sm:max-h-[90vh] sm:max-w-4xl sm:rounded-lg" : "max-w-lg"
         )}>
           {modalView === 'select' && user ? (
               <>
@@ -246,7 +246,7 @@ export function DeliveryToolbar({ user }: { user: User | null }) {
                                 <DialogTitle>Step 1: Pin Your Location</DialogTitle>
                                 <DialogDescription>Search for or click on the map to find your address.</DialogDescription>
                             </DialogHeader>
-                            <div className="flex-1 relative">
+                            <div className="flex-1 relative min-h-0">
                                 <AddressAutocomplete onSelect={handleAutocompleteSelect} />
                             </div>
                             <DialogFooter className="p-4 border-t shrink-0">

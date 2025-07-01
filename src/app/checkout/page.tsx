@@ -498,7 +498,7 @@ export default function CheckoutPage() {
     </div>
 
     <Dialog open={isAddressDialogOpen} onOpenChange={setIsAddressDialogOpen}>
-      <DialogContent className="h-screen w-screen max-w-full p-0 flex flex-col gap-0 sm:h-[90vh] sm:rounded-lg">
+      <DialogContent className="h-[90dvh] w-screen max-w-full p-0 flex flex-col gap-0 sm:h-auto sm:max-h-[90vh] sm:rounded-lg">
           <Form {...form}>
           <form onSubmit={form.handleSubmit(onSaveAddress)} className="flex h-full flex-col">
             {step === 1 && (
@@ -507,7 +507,7 @@ export default function CheckoutPage() {
                         <DialogTitle>Step 1: Pin Your Location</DialogTitle>
                         <DialogDescription>Search for or click on the map to find your address.</DialogDescription>
                     </DialogHeader>
-                    <div className="flex-1 relative">
+                    <div className="flex-1 relative min-h-0">
                         <AddressAutocomplete onSelect={handleAutocompleteSelect} />
                     </div>
                     <DialogFooter className="p-4 border-t shrink-0">
