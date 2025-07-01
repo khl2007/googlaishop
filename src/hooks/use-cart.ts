@@ -66,10 +66,13 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         const existingItem = prevItems.find(
           (item) => item.variantId === variant.id
         );
+        
+        const priceToAdd = (variant.salePrice && variant.salePrice > 0) ? variant.salePrice : variant.price;
+
         if (existingItem) {
           return prevItems.map((item) =>
             item.variantId === variant.id
-              ? { ...item, quantity: item.quantity + quantity }
+              ? { ...item, quantity: item.quantity + quantity, price: priceToAdd } // Also update price in case it changed
               : item
           );
         }
@@ -80,7 +83,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
             variantId: variant.id,
             name: product.name,
             variantName: variant.name,
-            price: variant.price,
+            price: priceToAdd,
             image: variant.image,
             quantity,
           },

@@ -53,12 +53,12 @@ export async function PUT(request, { params }) {
 
     if (variants && variants.length > 0) {
         const updateVariantStmt = db.prepare(
-          'UPDATE product_variants SET price = ?, stock = ?, image = ? WHERE id = ?'
+          'UPDATE product_variants SET price = ?, salePrice = ?, stock = ?, image = ? WHERE id = ?'
         );
         for (const variant of variants) {
           if (variant.id) { 
             await new Promise((resolve, reject) => {
-              updateVariantStmt.run([variant.price, variant.stock, variant.image, variant.id], function(err) {
+              updateVariantStmt.run([variant.price, variant.salePrice, variant.stock, variant.image, variant.id], function(err) {
                 if (err) return reject(err);
                 resolve(this);
               });

@@ -19,6 +19,7 @@ export function ProductCard({ product, showButton = true }: ProductCardProps) {
   }
 
   const imageToShow = product.mainImage || firstVariant.image;
+  const hasSalePrice = firstVariant.salePrice && firstVariant.salePrice > 0;
 
   return (
     <Card className="flex flex-col overflow-hidden rounded-lg shadow-md transition-shadow hover:shadow-xl">
@@ -37,9 +38,16 @@ export function ProductCard({ product, showButton = true }: ProductCardProps) {
         <h3 className="text-lg font-semibold font-headline">
           <Link href={`/products/${product.slug}`}>{product.name}</Link>
         </h3>
-        <p className="mt-1 text-sm text-muted-foreground">
-          From ${firstVariant.price.toFixed(2)}
-        </p>
+        <div className="mt-2 flex items-baseline gap-2">
+           {hasSalePrice ? (
+            <>
+              <p className="text-lg font-bold text-primary">${firstVariant.salePrice?.toFixed(2)}</p>
+              <s className="text-sm text-muted-foreground">${firstVariant.price.toFixed(2)}</s>
+            </>
+          ) : (
+            <p className="text-lg font-bold text-foreground">${firstVariant.price.toFixed(2)}</p>
+          )}
+        </div>
       </CardContent>
       {showButton && (
         <CardFooter className="p-4 pt-0">

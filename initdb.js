@@ -108,7 +108,7 @@ db.serialize(() => {
   // Keep other tables
   db.run("CREATE TABLE categories (id TEXT PRIMARY KEY, name TEXT, slug TEXT UNIQUE, image TEXT, parentId TEXT, FOREIGN KEY(parentId) REFERENCES categories(id) ON DELETE SET NULL)");
   db.run("CREATE TABLE products (id TEXT PRIMARY KEY, name TEXT, slug TEXT UNIQUE, description TEXT, shortDescription TEXT, categoryId TEXT, vendorId INTEGER, optionGroups TEXT, tags TEXT, isFeatured BOOLEAN DEFAULT 0, isOnOffer BOOLEAN DEFAULT 0, weight REAL, dimensions TEXT, images TEXT, mainImage TEXT, FOREIGN KEY(categoryId) REFERENCES categories(id), FOREIGN KEY(vendorId) REFERENCES users(id))");
-  db.run("CREATE TABLE product_variants (id TEXT PRIMARY KEY, productId TEXT, name TEXT, price INTEGER, image TEXT, stock INTEGER, options TEXT, FOREIGN KEY(productId) REFERENCES products(id))");
+  db.run("CREATE TABLE product_variants (id TEXT PRIMARY KEY, productId TEXT, name TEXT, price REAL, salePrice REAL, image TEXT, stock INTEGER, options TEXT, FOREIGN KEY(productId) REFERENCES products(id))");
   db.run("CREATE TABLE settings (id INTEGER PRIMARY KEY DEFAULT 1, websiteTitle TEXT, websiteLogo TEXT, timeZone TEXT, country TEXT)");
   db.run("CREATE TABLE payment_methods (id INTEGER PRIMARY KEY, provider TEXT UNIQUE NOT NULL, enabled BOOLEAN DEFAULT 0, config TEXT)");
   db.run(`

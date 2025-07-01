@@ -105,9 +105,16 @@ export function ProductDetailsClient({ product, user }: ProductDetailsClientProp
                 {product.name}
             </h1>
             
-            <p className="text-3xl font-bold tracking-tight text-primary mt-4">
-                ${selectedVariant.price.toFixed(2)}
-            </p>
+            <div className="flex items-baseline gap-4 mt-4">
+                <p className="text-3xl font-bold tracking-tight text-primary">
+                    ${(selectedVariant.salePrice || selectedVariant.price).toFixed(2)}
+                </p>
+                {selectedVariant.salePrice && (
+                    <s className="text-xl font-normal text-muted-foreground">
+                        ${selectedVariant.price.toFixed(2)}
+                    </s>
+                )}
+            </div>
             
             {product.shortDescription && (
                 <p className="text-lg text-muted-foreground leading-relaxed mt-6">{product.shortDescription}</p>

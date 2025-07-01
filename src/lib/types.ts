@@ -12,6 +12,7 @@ export type ProductVariant = {
   id: string;
   name: string;
   price: number;
+  salePrice?: number | null;
   image: string;
   stock: number;
   color_hex: string | null;

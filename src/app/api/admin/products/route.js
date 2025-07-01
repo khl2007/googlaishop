@@ -2,6 +2,7 @@
 
 
 
+
 import { NextResponse } from 'next/server';
 import getDatabase from '@/lib/database';
 import { getAllProducts } from '@/lib/data';
@@ -40,7 +41,7 @@ export async function POST(request) {
             });
         });
 
-        const insertVariantStmt = db.prepare('INSERT INTO product_variants (id, productId, name, price, image, stock, options) VALUES (?, ?, ?, ?, ?, ?, ?)');
+        const insertVariantStmt = db.prepare('INSERT INTO product_variants (id, productId, name, price, salePrice, image, stock, options) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
         for (const variant of variants) {
             const variantId = `var-${randomUUID().slice(0, 8)}`;
             
@@ -61,7 +62,7 @@ export async function POST(request) {
 
 
             await new Promise((resolve, reject) => {
-                insertVariantStmt.run(variantId, productId, variant.name, variant.price, image, variant.stock, variant.options, function(err) {
+                insertVariantStmt.run(variantId, productId, variant.name, variant.price, variant.salePrice, image, variant.stock, variant.options, function(err) {
                     if (err) return reject(err);
                     resolve(this);
                 });

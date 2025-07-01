@@ -25,8 +25,17 @@ const variantSchema = z.object({
   id: z.string().optional(),
   options: z.record(z.string()).optional(),
   price: z.coerce.number({ required_error: "Price is required" }).min(0, "Price must be non-negative."),
+  salePrice: z.coerce.number().min(0).optional().nullable(),
   stock: z.coerce.number({ required_error: "Stock is required" }).int("Stock must be an integer.").min(0, "Stock must be non-negative."),
   image: z.string().optional().or(z.literal('')),
+}).refine(data => {
+    if (data.salePrice && data.price) {
+        return data.salePrice < data.price;
+    }
+    return true;
+}, {
+    message: "Sale price must be less than the regular price.",
+    path: ["salePrice"],
 });
 
 const optionSchema = z.object({
@@ -96,8 +105,9 @@ export function ProductForm({ product, categories, vendors }: ProductFormProps) 
           id: v.id,
           options: typeof v.options === 'string' ? JSON.parse(v.options) : v.options,
           price: v.price,
+          salePrice: v.salePrice,
           stock: v.stock,
-      })) || [{ options: {}, price: 0, stock: 0, image: '' }],
+      })) || [{ options: {}, price: 0, salePrice: null, stock: 0, image: '' }],
       tags: product?.tags || "",
       isFeatured: !!product?.isFeatured,
       isOnOffer: !!product?.isOnOffer,
@@ -128,7 +138,7 @@ export function ProductForm({ product, categories, vendors }: ProductFormProps) 
   const handleGenerateVariants = () => {
     const optionGroups = form.getValues('optionGroups');
     if (!optionGroups || optionGroups.length === 0) {
-      form.setValue('variants', [{ options: {}, price: 0, stock: 0, image: '' }]);
+      form.setValue('variants', [{ options: {}, price: 0, salePrice: null, stock: 0, image: '' }]);
       setVariantsGenerated(true);
       return;
     }
@@ -162,6 +172,7 @@ export function ProductForm({ product, categories, vendors }: ProductFormProps) 
         return {
             options: options,
             price: 0,
+            salePrice: null,
             stock: 0,
             image: variantImage
         };
@@ -187,6 +198,7 @@ export function ProductForm({ product, categories, vendors }: ProductFormProps) 
                 id: v.id,
                 name: variantName,
                 price: Number(v.price),
+                salePrice: v.salePrice ? Number(v.salePrice) : null,
                 stock: Number(v.stock),
                 options: JSON.stringify(v.options || {}),
             }
@@ -343,10 +355,15 @@ export function ProductForm({ product, categories, vendors }: ProductFormProps) 
                                   <FormField control={form.control} name={`variants.${index}.price`} render={({ field }) => (
                                       <FormItem><FormLabel>Price</FormLabel><FormControl><Input type="number" step="0.01" placeholder="99.99" {...field} /></FormControl><FormMessage /></FormItem>
                                   )}/>
+                                  <FormField control={form.control} name={`variants.${index}.salePrice`} render={({ field }) => (
+                                    <FormItem><FormLabel>Sale Price</FormLabel><FormControl><Input type="number" step="0.01" placeholder="79.99" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
+                                  )}/>
                                   <FormField control={form.control} name={`variants.${index}.stock`} render={({ field }) => (
                                       <FormItem><FormLabel>Stock</FormLabel><FormControl><Input type="number" placeholder="100" {...field} /></FormControl><FormMessage /></FormItem>
                                   )}/>
-                                  <FormField control={form.control} name={`variants.${index}.image`} render={({ field: { onChange, value, ...rest } }) => {
+                                  
+                              </div>
+                               <FormField control={form.control} name={`variants.${index}.image`} render={({ field: { onChange, value, ...rest } }) => {
                                       const fileInputRef = React.useRef<HTMLInputElement>(null);
                                       return (
                                           <FormItem>
@@ -382,7 +399,6 @@ export function ProductForm({ product, categories, vendors }: ProductFormProps) 
                                           </FormItem>
                                       )
                                   }}/>
-                              </div>
                           </Card>
                       ))}
                   </CardContent>
