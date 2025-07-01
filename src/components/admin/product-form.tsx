@@ -14,12 +14,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
 import type { Product, Category } from "@/lib/types";
-import { Loader2, PlusCircle, Trash, Trash2 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
+import { Loader2, PlusCircle, Trash, Trash2, Wand2 } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "../ui/card";
 import { Switch } from "../ui/switch";
 import { getCsrfToken } from "@/lib/csrf";
+import { getCrossProduct } from "@/lib/utils";
 
-// Simpler schema, only validating price and stock are provided numbers.
 const variantSchema = z.object({
   id: z.string().optional(),
   options: z.any().optional(),
@@ -34,8 +34,8 @@ const formSchema = z.object({
   description: z.string().min(10, "Description must be at least 10 characters."),
   categoryId: z.string().min(1, "Please select a category."),
   vendorId: z.string().min(1, "Please select a vendor."),
-  optionGroups: z.any().optional(), // Validation disabled
-  variants: z.array(variantSchema).min(1, "At least one product variant is required."), // Basic validation on variants array
+  optionGroups: z.any().optional(),
+  variants: z.array(variantSchema).min(1, "At least one product variant is required."),
   tags: z.string().optional(),
   isFeatured: z.boolean().default(false),
   isOnOffer: z.boolean().default(false),
@@ -87,39 +87,69 @@ export function ProductForm({ product, categories, vendors }: ProductFormProps) 
       weight: product?.weight ?? undefined,
       dimensions: product?.dimensions || "",
     },
-    mode: 'onSubmit', // Validate only on submit
+    mode: 'onSubmit',
     reValidateMode: 'onChange',
   });
-
+  
   const { fields: groupFields, append: appendGroup, remove: removeGroup } = useFieldArray({
     control: form.control,
     name: "optionGroups",
   });
   
-  const { fields: variantFields, append: appendVariant, remove: removeVariant } = useFieldArray({
+  const { fields: variantFields, remove: removeVariant } = useFieldArray({
     control: form.control,
     name: "variants",
   });
   
-  const watchedGroups = form.watch('optionGroups');
-
-
+  const [variantsGenerated, setVariantsGenerated] = React.useState(isEditMode);
   const isSubmitting = form.formState.isSubmitting;
-
-  const handleRemoveGroup = (index: number) => {
-    const groupToRemove = form.getValues(`optionGroups.${index}`);
-    removeGroup(index); 
-    
-    if (groupToRemove && groupToRemove.name) {
-      const currentVariants = form.getValues('variants');
-      currentVariants.forEach((variant, variantIndex) => {
-        if (variant.options && groupToRemove.name in variant.options) {
-          const newOptions = { ...variant.options };
-          delete newOptions[groupToRemove.name];
-          form.setValue(`variants.${variantIndex}.options`, newOptions, { shouldValidate: true });
-        }
-      });
+  
+  const handleGenerateVariants = () => {
+    const optionGroups = form.getValues('optionGroups');
+    if (!optionGroups || optionGroups.length === 0) {
+      // If no option groups, create a single default variant
+      form.setValue('variants', [{ options: {}, price: 0, stock: 0, image: '' }]);
+      setVariantsGenerated(true);
+      return;
     }
+
+    const validOptionGroups = optionGroups.filter(g => g.name && g.options?.length > 0 && g.options.some(o => o.value));
+    
+    if (validOptionGroups.length === 0) {
+       toast({ title: "No options defined", description: "Please add at least one option group with values to generate variants.", variant: "destructive"});
+       return;
+    }
+
+    const optionValuesByGroup = validOptionGroups.map(group => {
+      return group.options.filter(opt => opt.value).map(opt => ({
+        group: group.name,
+        value: opt.value,
+        image: opt.image || ''
+      }));
+    });
+    
+    const combinations = getCrossProduct(...optionValuesByGroup);
+
+    const newVariants = combinations.map(combo => {
+        const options: Record<string, string> = {};
+        let variantImage = '';
+        combo.forEach(opt => {
+            options[opt.group] = opt.value;
+            if (opt.image) {
+              variantImage = opt.image;
+            }
+        });
+        return {
+            options: options,
+            price: 0,
+            stock: 0,
+            image: variantImage
+        };
+    });
+
+    form.setValue('variants', newVariants);
+    setVariantsGenerated(true);
+    toast({ title: "Variants Generated", description: `${newVariants.length} variants have been created. Now set their prices and stock.` });
   };
 
 
@@ -175,8 +205,6 @@ export function ProductForm({ product, categories, vendors }: ProductFormProps) 
       });
     }
   };
-  
-  const hasOptionGroups = watchedGroups && watchedGroups.length > 0 && watchedGroups.some(g => g.name);
 
   return (
     <Form {...form}>
@@ -198,150 +226,110 @@ export function ProductForm({ product, categories, vendors }: ProductFormProps) 
             </Card>
 
             <Card>
-            <CardHeader>
-                <CardTitle>Product Options</CardTitle>
-                <FormDescription>
-                Define groups of options for your product, like 'Color' or 'Size'. If your product has no options, you can skip this.
-                </FormDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-                {groupFields.map((groupField, groupIndex) => (
-                <Card key={groupField.id}>
-                    <CardHeader className="flex flex-row items-center justify-between py-4">
-                    <h3 className="font-semibold">Option Group</h3>
-                    {!isEditMode && (
-                        <Button type="button" variant="ghost" size="icon" onClick={() => handleRemoveGroup(groupIndex)}>
-                            <Trash className="h-4 w-4 text-destructive" />
-                        </Button>
-                    )}
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                    <FormField
-                        control={form.control}
-                        name={`optionGroups.${groupIndex}.name`}
-                        render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Group Name</FormLabel>
-                            <FormControl>
-                            <Input placeholder="e.g., Color" {...field} disabled={isEditMode} />
-                            </FormControl>
-                            <FormMessage />
-                        </FormItem>
-                        )}
-                    />
-                    <OptionValuesArray groupIndex={groupIndex} isEditMode={isEditMode} />
-                    </CardContent>
-                </Card>
-                ))}
-                {!isEditMode && (
-                    <Button type="button" variant="outline" onClick={() => appendGroup({ name: '', options: [{ value: '' }] })}>
+              <CardHeader>
+                  <CardTitle>Product Options</CardTitle>
+                  <FormDescription>
+                    Define groups of options for your product, like 'Color' or 'Size'. If your product has no options, you can skip this section and just generate a single variant.
+                  </FormDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                  {groupFields.map((groupField, groupIndex) => (
+                    <Card key={groupField.id}>
+                        <CardHeader className="flex flex-row items-center justify-between py-4">
+                          <h3 className="font-semibold">Option Group</h3>
+                          <Button type="button" variant="ghost" size="icon" onClick={() => removeGroup(groupIndex)} disabled={variantsGenerated}>
+                              <Trash className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                          <FormField control={form.control} name={`optionGroups.${groupIndex}.name`} render={({ field }) => (
+                            <FormItem><FormLabel>Group Name</FormLabel><FormControl><Input placeholder="e.g., Color" {...field} disabled={variantsGenerated} /></FormControl><FormMessage /></FormItem>
+                          )} />
+                          <OptionValuesArray groupIndex={groupIndex} isReadOnly={variantsGenerated} />
+                        </CardContent>
+                    </Card>
+                  ))}
+                  <Button type="button" variant="outline" onClick={() => appendGroup({ name: '', options: [{ value: '' }] })} disabled={variantsGenerated}>
                     <PlusCircle className="mr-2 h-4 w-4" /> Add Option Group
-                    </Button>
-                )}
-                {isEditMode && <p className="text-sm text-muted-foreground">Option groups cannot be changed after creation to maintain variant consistency.</p>}
-            </CardContent>
+                  </Button>
+              </CardContent>
+              <CardFooter className="justify-end">
+                <Button type="button" onClick={handleGenerateVariants}>
+                    <Wand2 className="mr-2 h-4 w-4" />
+                    {isEditMode ? 'Regenerate Variants' : 'Generate Variants'}
+                </Button>
+              </CardFooter>
             </Card>
             
-            <Card>
-                <CardHeader><CardTitle>Variants</CardTitle>
-                <FormDescription>
-                {hasOptionGroups 
-                    ? "Add and configure each product variant based on the option groups you created."
-                    : "Configure the details for your standard product."
-                }
-                </FormDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                    {variantFields.map((variantField, index) => (
-                        <Card key={variantField.id} className="p-4 space-y-4 relative">
-                            <div className="absolute top-2 right-2">
-                            {variantFields.length > 1 && (
-                                <Button type="button" variant="ghost" size="icon" onClick={() => removeVariant(index)}>
-                                    <Trash className="h-4 w-4 text-destructive" />
-                                </Button>
-                            )}
-                            </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                                {watchedGroups && watchedGroups.map((group) => {
-                                    if (!group.name) return null;
-                                    return (
-                                        <FormField
-                                            key={`${variantField.id}-${group.name}`}
-                                            control={form.control}
-                                            name={`variants.${index}.options.${group.name}`}
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel>{group.name}</FormLabel>
-                                                    <Select onValueChange={field.onChange} value={field.value} disabled={isEditMode}>
-                                                        <FormControl><SelectTrigger><SelectValue placeholder={`Select ${group.name.toLowerCase()}`} /></SelectTrigger></FormControl>
-                                                        <SelectContent>
-                                                            {group.options.filter(o => o.value).map((option) => (
-                                                                <SelectItem key={option.value} value={option.value}>{option.value}</SelectItem>
-                                                            ))}
-                                                        </SelectContent>
-                                                    </Select>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
-                                    );
-                                })}
-
-                                <FormField control={form.control} name={`variants.${index}.price`} render={({ field }) => (
-                                    <FormItem><FormLabel>Price</FormLabel><FormControl><Input type="number" step="0.01" placeholder="99.99" {...field} /></FormControl><FormMessage /></FormItem>
-                                )}/>
-                                <FormField control={form.control} name={`variants.${index}.stock`} render={({ field }) => (
-                                    <FormItem><FormLabel>Stock</FormLabel><FormControl><Input type="number" placeholder="100" {...field} /></FormControl><FormMessage /></FormItem>
-                                )}/>
-                                <FormField control={form.control} name={`variants.${index}.image`} render={({ field: { onChange, value, ...rest } }) => {
-                                    const fileInputRef = React.useRef<HTMLInputElement>(null);
-                                    return (
-                                        <FormItem className={hasOptionGroups ? "md:col-span-2 lg:col-span-4" : "col-span-1 md:col-span-2 lg:col-span-4"}>
-                                            <FormLabel>Image (Optional)</FormLabel>
-                                            {value && (
-                                                <div className="relative w-20 h-20 border rounded-md p-1">
-                                                    <Image src={value} alt="Variant preview" layout="fill" className="object-contain" />
-                                                    <Button type="button" variant="ghost" size="icon" className="absolute -top-3 -right-3 h-6 w-6 bg-background rounded-full" onClick={() => {
-                                                        onChange("");
-                                                        if (fileInputRef.current) fileInputRef.current.value = "";
-                                                    }}>
-                                                        <Trash2 className="h-4 w-4 text-destructive" />
-                                                    </Button>
-                                                </div>
-                                            )}
-                                            <FormControl>
-                                            <Input
-                                                {...rest}
-                                                ref={fileInputRef}
-                                                type="file"
-                                                accept="image/*"
-                                                onChange={(e) => {
-                                                const file = e.target.files?.[0];
-                                                if (file) {
-                                                    const reader = new FileReader();
-                                                    reader.onloadend = () => onChange(reader.result as string);
-                                                    reader.readAsDataURL(file);
-                                                }
-                                                }}
-                                            />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )
-                                }}/>
-                            </div>
-                        </Card>
-                    ))}
-                    {!isEditMode && (
-                    <Button type="button" variant="outline" onClick={() => appendVariant({ options: {}, price: 0, stock: 0, image: '' })}>
-                        <PlusCircle className="mr-2 h-4 w-4" /> Add Variant
-                    </Button>
-                    )}
-                     {isEditMode && variantFields.length > 1 && (
-                      <p className="text-sm text-muted-foreground">Adding/removing variants is disabled in edit mode. You can adjust price, stock, and image for existing variants.</p>
-                     )}
-                </CardContent>
-            </Card>
+            {variantsGenerated && (
+              <Card>
+                  <CardHeader><CardTitle>Manage Variants</CardTitle>
+                  <FormDescription>
+                    Configure the price, stock, and image for each generated variant.
+                  </FormDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                      {variantFields.map((variantField, index) => (
+                          <Card key={variantField.id} className="p-4 space-y-4 relative">
+                              <div className="flex justify-between items-start">
+                                <div className="font-semibold text-lg">
+                                  {Object.values(form.getValues(`variants.${index}.options`)).join(' / ') || 'Standard Product'}
+                                </div>
+                                {variantFields.length > 1 && (
+                                  <Button type="button" variant="ghost" size="icon" onClick={() => removeVariant(index)}>
+                                      <Trash className="h-4 w-4 text-destructive" />
+                                  </Button>
+                                )}
+                              </div>
+                              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                  <FormField control={form.control} name={`variants.${index}.price`} render={({ field }) => (
+                                      <FormItem><FormLabel>Price</FormLabel><FormControl><Input type="number" step="0.01" placeholder="99.99" {...field} /></FormControl><FormMessage /></FormItem>
+                                  )}/>
+                                  <FormField control={form.control} name={`variants.${index}.stock`} render={({ field }) => (
+                                      <FormItem><FormLabel>Stock</FormLabel><FormControl><Input type="number" placeholder="100" {...field} /></FormControl><FormMessage /></FormItem>
+                                  )}/>
+                                  <FormField control={form.control} name={`variants.${index}.image`} render={({ field: { onChange, value, ...rest } }) => {
+                                      const fileInputRef = React.useRef<HTMLInputElement>(null);
+                                      return (
+                                          <FormItem>
+                                              <FormLabel>Image (Optional)</FormLabel>
+                                              {value && (
+                                                  <div className="relative w-20 h-20 border rounded-md p-1">
+                                                      <Image src={value} alt="Variant preview" layout="fill" className="object-contain" />
+                                                      <Button type="button" variant="ghost" size="icon" className="absolute -top-3 -right-3 h-6 w-6 bg-background rounded-full" onClick={() => {
+                                                          onChange("");
+                                                          if (fileInputRef.current) fileInputRef.current.value = "";
+                                                      }}>
+                                                          <Trash2 className="h-4 w-4 text-destructive" />
+                                                      </Button>
+                                                  </div>
+                                              )}
+                                              <FormControl>
+                                              <Input
+                                                  {...rest}
+                                                  ref={fileInputRef}
+                                                  type="file"
+                                                  accept="image/*"
+                                                  onChange={(e) => {
+                                                  const file = e.target.files?.[0];
+                                                  if (file) {
+                                                      const reader = new FileReader();
+                                                      reader.onloadend = () => onChange(reader.result as string);
+                                                      reader.readAsDataURL(file);
+                                                  }
+                                                  }}
+                                              />
+                                              </FormControl>
+                                              <FormMessage />
+                                          </FormItem>
+                                      )
+                                  }}/>
+                              </div>
+                          </Card>
+                      ))}
+                  </CardContent>
+              </Card>
+            )}
         </div>
 
         <div className="lg:col-span-1 space-y-8">
@@ -381,7 +369,7 @@ export function ProductForm({ product, categories, vendors }: ProductFormProps) 
                             <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
                             <div className="space-y-0.5">
                                 <FormLabel>Featured Product</FormLabel>
-                                <FormDescription>Display this product on the homepage.</FormDescription>
+                                <FormDescription>Display this product prominently.</FormDescription>
                             </div>
                             <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
                             </FormItem>
@@ -416,17 +404,20 @@ export function ProductForm({ product, categories, vendors }: ProductFormProps) 
         </div>
         
         <div className="lg:col-span-3">
-            <Button type="submit" disabled={isSubmitting}>
+            <Button type="submit" disabled={isSubmitting || !variantsGenerated}>
               {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {isEditMode ? "Save Changes" : "Create Product"}
             </Button>
+            {!variantsGenerated && (
+              <p className="text-sm text-destructive mt-2">Please generate variants before saving.</p>
+            )}
         </div>
       </form>
     </Form>
   );
 }
 
-function OptionValuesArray({ groupIndex, isEditMode }: { groupIndex: number, isEditMode: boolean }) {
+function OptionValuesArray({ groupIndex, isReadOnly }: { groupIndex: number, isReadOnly: boolean }) {
   const { control } = useFormContext<ProductFormValues>();
   const { fields, append, remove } = useFieldArray({
     control: control,
@@ -437,7 +428,7 @@ function OptionValuesArray({ groupIndex, isEditMode }: { groupIndex: number, isE
     <div className="space-y-4">
         <FormLabel>Options</FormLabel>
         {fields.map((field, optionIndex) => (
-            <div key={field.id} className="grid grid-cols-1 md:grid-cols-3 gap-4 border p-4 rounded-md relative">
+            <div key={field.id} className="grid grid-cols-1 md:grid-cols-2 gap-4 border p-4 rounded-md relative">
             <FormField
                 control={control}
                 name={`optionGroups.${groupIndex}.options.${optionIndex}.value`}
@@ -445,7 +436,7 @@ function OptionValuesArray({ groupIndex, isEditMode }: { groupIndex: number, isE
                 <FormItem>
                     <FormLabel className="text-xs">Option Value</FormLabel>
                     <FormControl>
-                    <Input placeholder="e.g., Red" {...field} disabled={isEditMode} />
+                    <Input placeholder="e.g., Red" {...field} disabled={isReadOnly} />
                     </FormControl>
                     <FormMessage />
                 </FormItem>
@@ -465,7 +456,7 @@ function OptionValuesArray({ groupIndex, isEditMode }: { groupIndex: number, isE
                                     <Button type="button" variant="ghost" size="icon" className="absolute -top-2 -right-2 h-5 w-5 bg-background rounded-full" onClick={() => {
                                         onChange("");
                                         if (fileInputRef.current) fileInputRef.current.value = "";
-                                    }}>
+                                    }} disabled={isReadOnly}>
                                         <Trash className="h-3 w-3 text-destructive" />
                                     </Button>
                                 </div>
@@ -476,11 +467,11 @@ function OptionValuesArray({ groupIndex, isEditMode }: { groupIndex: number, isE
                                 ref={fileInputRef}
                                 type="file"
                                 accept="image/*"
-                                disabled={isEditMode}
+                                disabled={isReadOnly}
                                 onChange={(e) => {
                                 const file = e.target.files?.[0];
                                 if (file) {
-                                    const reader = a new FileReader();
+                                    const reader = new FileReader();
                                     reader.onloadend = () => onChange(reader.result as string);
                                     reader.readAsDataURL(file);
                                 }
@@ -492,31 +483,15 @@ function OptionValuesArray({ groupIndex, isEditMode }: { groupIndex: number, isE
                     );
                 }}
             />
-            <FormField
-                control={control}
-                name={`optionGroups.${groupIndex}.options.${optionIndex}.color_hex`}
-                render={({ field }) => (
-                <FormItem>
-                    <FormLabel className="text-xs">Color (Optional)</FormLabel>
-                    <FormControl>
-                    <div className="flex items-center gap-2">
-                        <Input type="color" onChange={field.onChange} value={field.value || '#ffffff'} className="w-12 h-10 p-1" disabled={isEditMode} />
-                        <Input type="text" placeholder="#RRGGBB" {...field} value={field.value ?? ''} disabled={isEditMode} />
-                    </div>
-                    </FormControl>
-                    <FormMessage />
-                </FormItem>
-                )}
-            />
 
-            {!isEditMode && (
+            {!isReadOnly && (
                 <Button type="button" variant="ghost" size="icon" className="absolute top-2 right-2" onClick={() => remove(optionIndex)}>
                 <Trash className="h-4 w-4 text-destructive" />
                 </Button>
             )}
             </div>
         ))}
-       {!isEditMode && (
+       {!isReadOnly && (
         <Button type="button" variant="outline" size="sm" onClick={() => append({ value: '', image: '', color_hex: '' })}>
           <PlusCircle className="mr-2 h-4 w-4" /> Add Option
         </Button>
@@ -524,5 +499,6 @@ function OptionValuesArray({ groupIndex, isEditMode }: { groupIndex: number, isE
     </div>
   );
 }
+
 
     
