@@ -762,28 +762,59 @@ export async function getAllHomeSections() {
 }
 
 export const getActiveHomeSections = cache(async () => {
-  const db = getDatabase();
-  return new Promise((resolve) => {
-      db.all('SELECT * FROM home_sections WHERE isActive = 1 ORDER BY "order" ASC', (err, rows) => {
-          if (err) {
-              console.error("Database error in getActiveHomeSections:", err.message);
-              // Instead of rejecting, resolve with an empty array to prevent crashing the page.
-              return resolve([]);
-          }
-          try {
-              const sections = rows.map(row => ({
-                  ...row,
-                  isActive: !!row.isActive,
-                  config: row.config ? JSON.parse(row.config) : null
-              }));
-              resolve(sections);
-          } catch (parseError) {
-              console.error("Error parsing home section config:", parseError.message);
-              // Resolve with an empty array if parsing fails.
-              resolve([]);
-          }
-      });
-  });
+    const db = getDatabase();
+    const sections = await new Promise((resolve, reject) => {
+        db.all('SELECT * FROM home_sections WHERE isActive = 1 ORDER BY "order" ASC', (err, rows) => {
+            if (err) {
+                console.error("Database error fetching home sections:", err.message);
+                return reject(new Error("Failed to fetch home sections."));
+            }
+            resolve(rows);
+        });
+    });
+
+    const sliderGroupIds = sections
+        .filter(s => s.type === 'slider_group' && s.config)
+        .map(s => Number(s.config));
+
+    let sliderGroupsMap = new Map();
+    if (sliderGroupIds.length > 0) {
+        const placeholders = sliderGroupIds.map(() => '?').join(',');
+        const sliderGroups = await new Promise((resolve, reject) => {
+            db.all(`SELECT * FROM slider_groups WHERE id IN (${placeholders})`, sliderGroupIds, (err, rows) => {
+                if (err) return reject(new Error('Failed to fetch associated slider groups.'));
+                resolve(rows);
+            });
+        });
+        sliderGroupsMap = new Map(sliderGroups.map(sg => [sg.id, sg]));
+    }
+
+    const processedSections = sections.map(row => {
+        let config;
+        let sliderGroupData = null;
+        if (row.type === 'slider_group') {
+            config = row.config; // Keep as ID string
+            const sg = sliderGroupsMap.get(Number(row.config));
+            if (sg) {
+                sliderGroupData = { ...sg, is_active: !!sg.is_active, tags: JSON.parse(sg.tags || '[]') };
+            }
+        } else {
+            try {
+                config = row.config ? JSON.parse(row.config) : null;
+            } catch (e) {
+                config = null;
+            }
+        }
+
+        return {
+            ...row,
+            isActive: !!row.isActive,
+            config: config,
+            sliderGroup: sliderGroupData, // Attach the full slider group object
+        };
+    });
+
+    return processedSections;
 }, ['home-sections'], { tags: ['home-sections'] });
 
 

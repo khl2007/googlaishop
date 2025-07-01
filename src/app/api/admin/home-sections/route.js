@@ -1,16 +1,17 @@
 
 import { NextResponse } from 'next/server';
-import { getAllHomeSections, createHomeSection, updateHomeSectionsOrder, getAllCategories, getAllProductTags, getAllProducts } from '@/lib/data';
+import { getAllHomeSections, createHomeSection, updateHomeSectionsOrder, getAllCategories, getAllProductTags, getAllProducts, getAllSliderGroups } from '@/lib/data';
 import { revalidateTag } from 'next/cache';
 
 export async function GET() {
   try {
     const sections = await getAllHomeSections();
     // Also fetch data needed for the form
-    const [categories, tags, products] = await Promise.all([
+    const [categories, tags, products, sliderGroups] = await Promise.all([
       getAllCategories(),
       getAllProductTags(),
       getAllProducts(),
+      getAllSliderGroups(),
     ]);
 
     return NextResponse.json({
@@ -19,6 +20,7 @@ export async function GET() {
             categories: categories.map(c => ({ value: c.id, label: c.name })),
             tags: tags.map(t => ({ value: t, label: t })),
             products: products.map(p => ({ value: p.id, label: p.name })),
+            sliderGroups: sliderGroups.map(sg => ({ value: sg.id.toString(), label: sg.name })),
         }
     });
   } catch (error) {

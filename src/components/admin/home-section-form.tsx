@@ -1,6 +1,7 @@
 
 "use client";
 
+import React from "react";
 import { useForm, type SubmitHandler } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -19,6 +20,7 @@ interface FormOptions {
   categories: { value: string; label: string }[];
   tags: { value: string; label: string }[];
   products: { value: string; label: string }[];
+  sliderGroups: { value: string; label: string }[];
 }
 
 interface HomeSectionFormProps {
@@ -30,10 +32,18 @@ interface HomeSectionFormProps {
 
 const formSchema = z.object({
   title: z.string().min(2, "Title is required."),
-  type: z.enum(['category', 'tag', 'ai', 'custom', 'featured', 'on_offer']),
+  type: z.enum(['category', 'tag', 'ai', 'custom', 'featured', 'on_offer', 'slider_group']),
   config: z.any().optional(),
   style: z.string().min(1, "Style is required."),
   isActive: z.boolean().default(false),
+}).refine(data => {
+    if (data.type === 'slider_group') {
+        return typeof data.config === 'string' && data.config.length > 0;
+    }
+    return true;
+}, {
+    message: "A slider group must be selected.",
+    path: ["config"],
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -42,7 +52,12 @@ export function HomeSectionForm({ section, formOptions, onFormSubmit, sectionCou
   const { toast } = useToast();
   const isEditMode = !!section;
   
-  const parsedConfig = section?.config ? JSON.parse(section.config) : [];
+  let initialConfig: any;
+  if (section?.type === 'slider_group') {
+      initialConfig = section.config;
+  } else {
+      initialConfig = section?.config ? JSON.parse(section.config) : [];
+  }
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -51,16 +66,22 @@ export function HomeSectionForm({ section, formOptions, onFormSubmit, sectionCou
       type: section?.type || 'category',
       style: section?.style || 'style1',
       isActive: section?.isActive || false,
-      config: parsedConfig,
+      config: initialConfig,
     },
   });
 
   const watchedType = form.watch("type");
+  
+  React.useEffect(() => {
+    form.setValue('config', undefined);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [watchedType]);
+
 
   const handleSubmit: SubmitHandler<FormValues> = async (data) => {
     const payload = {
         ...data,
-        config: JSON.stringify(data.config || []),
+        config: data.type === 'slider_group' ? data.config : JSON.stringify(data.config || []),
         order: section?.order || sectionCount + 1,
     };
 
@@ -85,7 +106,7 @@ export function HomeSectionForm({ section, formOptions, onFormSubmit, sectionCou
       });
 
       // To get the full object back on create
-      const finalData = isEditMode ? {...section, ...payload, config: JSON.parse(payload.config) } : result;
+      const finalData = isEditMode ? {...section, ...payload, config: data.config } : result;
       onFormSubmit(finalData);
 
     } catch (error: any) {
@@ -94,37 +115,26 @@ export function HomeSectionForm({ section, formOptions, onFormSubmit, sectionCou
   };
 
   const renderConfigField = () => {
-    const configFieldProps = {
+    const multiSelectFields = {
         category: {
-            component: MultiSelect,
-            props: {
-                placeholder: "Select categories...",
-                options: formOptions.categories,
-            },
+            placeholder: "Select categories...",
+            options: formOptions.categories,
             description: "Select one or more categories to display products from."
         },
         tag: {
-            component: MultiSelect,
-            props: {
-                placeholder: "Select tags...",
-                options: formOptions.tags,
-            },
+            placeholder: "Select tags...",
+            options: formOptions.tags,
             description: "Select one or more tags to display products."
         },
         custom: {
-            component: MultiSelect,
-            props: {
-                placeholder: "Select products...",
-                options: formOptions.products,
-            },
+            placeholder: "Select products...",
+            options: formOptions.products,
             description: "Select specific products to display."
         }
     };
-
-    const configDetails = configFieldProps[watchedType as keyof typeof configFieldProps];
     
-    if (configDetails) {
-        const { component: Component, props, description } = configDetails;
+    if (Object.keys(multiSelectFields).includes(watchedType)) {
+        const details = multiSelectFields[watchedType as keyof typeof multiSelectFields];
         return (
            <FormField
               control={form.control}
@@ -133,14 +143,14 @@ export function HomeSectionForm({ section, formOptions, onFormSubmit, sectionCou
                   <FormItem>
                       <FormLabel>Configuration</FormLabel>
                       <FormControl>
-                          <Component
-                              {...props}
+                          <MultiSelect
+                              {...details}
                               value={field.value || []}
                               onChange={field.onChange}
                           />
                       </FormControl>
                       <FormDescription>
-                         {description}
+                         {details.description}
                       </FormDescription>
                       <FormMessage />
                   </FormItem>
@@ -148,6 +158,29 @@ export function HomeSectionForm({ section, formOptions, onFormSubmit, sectionCou
           />
         );
     }
+    
+    if (watchedType === 'slider_group') {
+        return (
+            <FormField
+                control={form.control}
+                name="config"
+                render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Slider Group</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl><SelectTrigger><SelectValue placeholder="Select a slider group" /></SelectTrigger></FormControl>
+                            <SelectContent>
+                                {formOptions.sliderGroups.map(sg => <SelectItem key={sg.value} value={sg.value}>{sg.label}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
+                        <FormDescription>Select a pre-configured slider group to display in this section.</FormDescription>
+                        <FormMessage />
+                    </FormItem>
+                )}
+            />
+        );
+    }
+
     return null;
 }
 
@@ -170,6 +203,7 @@ export function HomeSectionForm({ section, formOptions, onFormSubmit, sectionCou
                         <SelectItem value="tag">By Tag</SelectItem>
                         <SelectItem value="custom">Custom Products</SelectItem>
                         <SelectItem value="ai">AI Recommended</SelectItem>
+                        <SelectItem value="slider_group">Slider Group</SelectItem>
                     </SelectContent>
                 </Select>
                 <FormMessage /></FormItem>

@@ -106,16 +106,6 @@ export type Slide = {
     order: number;
 };
 
-export type HomeSection = {
-    id: number;
-    title: string;
-    type: 'category' | 'tag' | 'ai' | 'custom' | 'featured' | 'on_offer';
-    config: string | null; // JSON string
-    style: string;
-    order: number;
-    isActive: boolean;
-};
-
 export type SliderGroup = {
     id: number;
     name: string;
@@ -127,4 +117,15 @@ export type SliderGroup = {
     autoplay_speed: number;
     style: string;
     is_active: boolean;
+};
+
+export type HomeSection = {
+    id: number;
+    title: string;
+    type: 'category' | 'tag' | 'ai' | 'custom' | 'featured' | 'on_offer' | 'slider_group';
+    config: string | null; // JSON string or ID
+    style: string;
+    order: number;
+    isActive: boolean;
+    sliderGroup?: SliderGroup | null;
 };
