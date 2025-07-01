@@ -1,6 +1,7 @@
 
 import getDatabase from '@/lib/database';
 import { unstable_cache as cache } from 'next/cache';
+import { getProductRecommendations } from '@/ai/flows/product-recommendations';
 
 export async function getProductBySlug(slug) {
   const db = getDatabase();
@@ -924,9 +925,19 @@ export async function getProductsForSection(section) {
                  const productMap = new Map(allProducts.map(p => [p.id, p]));
                  return productIds.map(id => productMap.get(id)).filter(Boolean);
             }
-            case 'ai':
-                // AI logic placeholder
-                return allProducts.slice(0, 4);
+            case 'ai': {
+                // Get general recommendations. In a real app, you could pass user context.
+                const recommendations = await getProductRecommendations({ productDescription: 'popular and trending electronics for a general audience' });
+                const { recommendedProductIds } = recommendations;
+                
+                if (!recommendedProductIds || recommendedProductIds.length === 0) {
+                    return [];
+                }
+                
+                // Use the pre-fetched list of all products for efficiency
+                const productMap = new Map(allProducts.map(p => [p.id, p]));
+                return recommendedProductIds.map(id => productMap.get(id)).filter(p => p !== undefined);
+            }
             default:
                 return [];
         }
