@@ -17,16 +17,17 @@ export function ProductCard({ product, showButton = true }: ProductCardProps) {
     return null;
   }
 
+  const imageToShow = product.mainImage || firstVariant.image;
+
   return (
     <Card className="flex flex-col overflow-hidden rounded-lg shadow-md transition-shadow hover:shadow-xl">
       <CardHeader className="p-0">
-        <Link href={`/products/${product.slug}`} className="block overflow-hidden">
+        <Link href={`/products/${product.slug}`} className="block overflow-hidden aspect-square relative">
           <Image
-            src={firstVariant.image}
+            src={imageToShow}
             alt={product.name}
-            width={400}
-            height={400}
-            className="h-full w-full object-cover object-center transition-transform duration-300 ease-in-out hover:scale-105"
+            fill
+            className="object-cover object-center transition-transform duration-300 ease-in-out hover:scale-105"
             data-ai-hint="product image"
           />
         </Link>

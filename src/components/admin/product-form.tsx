@@ -14,11 +14,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
 import type { Product, Category } from "@/lib/types";
-import { Loader2, PlusCircle, Trash, Trash2, Wand2 } from "lucide-react";
+import { Loader2, PlusCircle, Trash, Trash2, Wand2, Star } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "../ui/card";
 import { Switch } from "../ui/switch";
 import { getCsrfToken } from "@/lib/csrf";
-import { getCrossProduct } from "@/lib/utils";
+import { getCrossProduct, cn } from "@/lib/utils";
 
 const variantSchema = z.object({
   id: z.string().optional(),
@@ -44,6 +44,8 @@ const formSchema = z.object({
       z.coerce.number({ invalid_type_error: "Weight must be a number." }).min(0, "Weight must be non-negative.").optional()
   ),
   dimensions: z.string().optional(),
+  images: z.array(z.string()).optional(),
+  mainImage: z.string().optional(),
 });
 
 
@@ -86,6 +88,8 @@ export function ProductForm({ product, categories, vendors }: ProductFormProps) 
       isOnOffer: !!product?.isOnOffer,
       weight: product?.weight ?? undefined,
       dimensions: product?.dimensions || "",
+      images: product?.images ? JSON.parse(product.images) : [],
+      mainImage: product?.mainImage || "",
     },
     mode: 'onSubmit',
     reValidateMode: 'onChange',
@@ -157,6 +161,7 @@ export function ProductForm({ product, categories, vendors }: ProductFormProps) 
         ...data,
         vendorId: parseInt(data.vendorId),
         optionGroups: data.optionGroups ? JSON.stringify(data.optionGroups) : "[]",
+        images: JSON.stringify(data.images || []),
         variants: data.variants.map(v => {
             const optionValues = v.options ? Object.values(v.options) : [];
             const variantName = optionValues.length > 0 ? optionValues.join(' / ') : data.name;
@@ -223,6 +228,8 @@ export function ProductForm({ product, categories, vendors }: ProductFormProps) 
                     )} />
                 </CardContent>
             </Card>
+
+            <ProductImageForm />
 
             <Card>
               <CardHeader>
@@ -496,5 +503,101 @@ function OptionValuesArray({ groupIndex, isReadOnly }: { groupIndex: number, isR
         </Button>
        )}
     </div>
+  );
+}
+
+function ProductImageForm() {
+  const { control, setValue, getValues, watch } = useFormContext<ProductFormValues>();
+  const { toast } = useToast();
+  
+  const images = watch('images', []);
+  const mainImage = watch('mainImage');
+  
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files) {
+      const currentImages = getValues('images') || [];
+      const newImagePromises = Array.from(files).map(file => {
+        return new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+      });
+      
+      try {
+        const newImages = await Promise.all(newImagePromises);
+        const allImages = [...currentImages, ...newImages];
+        setValue('images', allImages, { shouldDirty: true });
+        
+        if (!getValues('mainImage') && allImages.length > 0) {
+          setValue('mainImage', allImages[0], { shouldDirty: true });
+        }
+      } catch (error) {
+        toast({ title: "Error reading file", variant: "destructive" });
+      }
+    }
+  };
+
+  const handleSetMain = (image: string) => {
+    setValue('mainImage', image, { shouldDirty: true });
+  };
+  
+  const handleDelete = (imageToDelete: string) => {
+    const currentImages = getValues('images') || [];
+    const newImages = currentImages.filter(img => img !== imageToDelete);
+    setValue('images', newImages, { shouldDirty: true });
+    
+    if (getValues('mainImage') === imageToDelete) {
+      setValue('mainImage', newImages[0] || '', { shouldDirty: true });
+    }
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Product Images</CardTitle>
+        <FormDescription>Upload multiple images for the product gallery. Select one to be the main image.</FormDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <FormField
+          control={control}
+          name="images"
+          render={() => (
+            <FormItem>
+              <FormLabel>Upload Images</FormLabel>
+              <FormControl>
+                <Input type="file" multiple accept="image/*" onChange={handleImageUpload} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        
+        {images && images.length > 0 && (
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-4">
+            {images.map((image, index) => (
+              <div key={index} className="relative group">
+                <div className={cn("aspect-square rounded-lg overflow-hidden border-2", mainImage === image ? 'border-primary' : 'border-transparent')}>
+                  <Image src={image} alt={`Product image ${index + 1}`} fill className="object-cover" />
+                </div>
+                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                  <Button type="button" variant="outline" size="icon" className="h-8 w-8" onClick={() => handleSetMain(image)}>
+                    <Star className={cn("h-4 w-4", mainImage === image && "text-yellow-400 fill-yellow-400")} />
+                  </Button>
+                  <Button type="button" variant="destructive" size="icon" className="h-8 w-8" onClick={() => handleDelete(image)}>
+                    <Trash className="h-4 w-4" />
+                  </Button>
+                </div>
+                {mainImage === image && (
+                  <div className="absolute top-1 right-1 bg-primary text-primary-foreground text-xs font-bold px-1.5 py-0.5 rounded">MAIN</div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }

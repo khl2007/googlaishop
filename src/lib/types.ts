@@ -31,6 +31,8 @@ export type Product = {
   isOnOffer?: boolean;
   weight?: number;
   dimensions?: string;
+  images?: string | null; // JSON string
+  mainImage?: string | null;
 };
 
 export type CartItem = {

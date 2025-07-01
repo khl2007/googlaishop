@@ -12,6 +12,13 @@ export const allProducts = [
     slug: 'auraphone-x',
     description: 'Experience the next generation of mobile technology with the AuraPhone X. Featuring a stunning edge-to-edge display, a powerful A-series chip, and a revolutionary camera system.',
     categoryId: 'cat1',
+    images: JSON.stringify([
+      'https://placehold.co/600x600/E8F0F2/242424.png',
+      'https://placehold.co/600x600/222222/ffffff.png',
+      'https://placehold.co/600x600/7DF9FF/000000.png',
+      'https://placehold.co/600x600/f5f5f5/000000.png'
+    ]),
+    mainImage: 'https://placehold.co/600x600/E8F0F2/242424.png',
     optionGroups: JSON.stringify([
         { name: 'Color', options: [{ value: 'Starlight', color_hex: '#E8F0F2', image: 'https://placehold.co/600x600/E8F0F2/242424.png'}, { value: 'Midnight', color_hex: '#222222', image: 'https://placehold.co/600x600/222222/ffffff.png'}, { value: 'Electric Blue', color_hex: '#7DF9FF', image: 'https://placehold.co/600x600/7DF9FF/000000.png'}]},
         { name: 'Storage', options: [{ value: '128GB' }, { value: '256GB' }, { value: '512GB' }] }
@@ -34,6 +41,11 @@ export const allProducts = [
     slug: 'zenbook-pro',
     description: 'Unleash your creative potential with the ZenBook Pro. A sleek, lightweight powerhouse with a breathtaking 4K OLED display and the latest high-performance processors for ultimate productivity.',
     categoryId: 'cat2',
+    images: JSON.stringify([
+      'https://placehold.co/600x600/c0c0c0/000000.png',
+      'https://placehold.co/600x600/a9a9a9/ffffff.png',
+    ]),
+    mainImage: 'https://placehold.co/600x600/c0c0c0/000000.png',
     optionGroups: JSON.stringify([
         { name: 'Configuration', options: [{value: '16GB RAM, 512GB SSD'}, {value: '32GB RAM, 1TB SSD'}] }
     ]),
@@ -53,6 +65,11 @@ export const allProducts = [
     slug: 'echobuds-pro',
     description: 'Immerse yourself in pure sound with EchoBuds Pro. Active noise cancellation, a comfortable and secure fit, and crystal-clear audio for music and calls on the go.',
     categoryId: 'cat3',
+    images: JSON.stringify([
+        'https://placehold.co/600x600/f5f5f5/000000.png',
+        'https://placehold.co/600x600/333333/ffffff.png'
+    ]),
+    mainImage: 'https://placehold.co/600x600/f5f5f5/000000.png',
     optionGroups: JSON.stringify([
       { name: 'Color', options: [{value: 'Glacier White', color_hex: '#f5f5f5'}, {value: 'Charcoal Black', color_hex: '#333333'}] }
     ]),
