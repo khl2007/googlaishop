@@ -1,12 +1,13 @@
-patch-package
---- a/node_modules/react-quill/lib/component.js
-+++ b/node_modules/react-quill/lib/component.js
-@@ -372,7 +372,7 @@
+diff --git a/node_modules/react-quill/lib/index.js b/node_modules/react-quill/lib/index.js
+index 734b46c..92b85ba 100644
+--- a/node_modules/react-quill/lib/index.js
++++ b/node_modules/react-quill/lib/index.js
+@@ -359,7 +359,7 @@
  	},
  
  	getEditingArea: function getEditingArea() {
--		return _reactDom2.default.findDOMNode(this.editingArea);
-+		return this.editingArea;
+-		return _reactDom2.default.findDOMNode(this.editor.container);
++		return this.editor.container;
  	},
  
  	getEditor: function getEditor() {
