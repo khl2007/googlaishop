@@ -1,10 +1,11 @@
+
 import { getProductById, getAllCategories, getVendors } from "@/lib/data";
 import { ProductForm } from "@/components/admin/product-form";
 import { notFound } from "next/navigation";
 
-export default async function EditProductPage({ params }: { params: { id: string } }) {
+export default async function EditProductPage({ params: { id } }: { params: { id: string } }) {
   const [product, categories, vendors] = await Promise.all([
-    getProductById(params.id),
+    getProductById(id),
     getAllCategories(),
     getVendors()
   ]);

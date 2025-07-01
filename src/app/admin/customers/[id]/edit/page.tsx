@@ -1,11 +1,12 @@
+
 import { getAdminUserById, getRoles } from "@/lib/data";
 import { CustomerForm } from "@/components/admin/customer-form";
 import { notFound } from "next/navigation";
 import type { Role } from "@/lib/types";
 
-export default async function EditCustomerPage({ params }: { params: { id: string } }) {
+export default async function EditCustomerPage({ params: { id } }: { params: { id: string } }) {
   const [customer, roles] = await Promise.all([
-    getAdminUserById(params.id),
+    getAdminUserById(id),
     getRoles()
   ]);
 

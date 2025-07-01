@@ -1,10 +1,11 @@
+
 import { getAdminUserById, getRoles } from "@/lib/data";
 import { UserForm } from "@/components/admin/user-form";
 import { notFound } from "next/navigation";
 
-export default async function EditUserPage({ params }: { params: { id: string } }) {
+export default async function EditUserPage({ params: { id } }: { params: { id: string } }) {
   const [user, roles] = await Promise.all([
-    getAdminUserById(params.id),
+    getAdminUserById(id),
     getRoles()
   ]);
 

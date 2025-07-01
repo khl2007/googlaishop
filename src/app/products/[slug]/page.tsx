@@ -5,9 +5,7 @@ import { AiRecommendations } from "@/components/ai-recommendations";
 import { getProductBySlug } from "@/lib/data";
 import { getUser } from "@/lib/session";
 
-export default async function ProductPage({ params }: { params: { slug: string } }) {
-  const resolvedParams = await params;
-  const { slug } = resolvedParams;
+export default async function ProductPage({ params: { slug } }: { params: { slug: string } }) {
   const [product, user] = await Promise.all([
     getProductBySlug(slug),
     getUser(),

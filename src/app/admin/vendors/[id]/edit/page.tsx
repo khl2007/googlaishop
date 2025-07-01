@@ -4,9 +4,9 @@ import { VendorForm } from "@/components/admin/vendor-form";
 import { notFound } from "next/navigation";
 import type { Role } from "@/lib/types";
 
-export default async function EditVendorPage({ params }: { params: { id: string } }) {
+export default async function EditVendorPage({ params: { id } }: { params: { id: string } }) {
   const [vendor, roles] = await Promise.all([
-    getAdminUserById(params.id),
+    getAdminUserById(id),
     getRoles()
   ]);
 

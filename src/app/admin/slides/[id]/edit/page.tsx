@@ -1,9 +1,10 @@
+
 import { getSlideById } from "@/lib/data";
 import { SlideForm } from "@/components/admin/slide-form";
 import { notFound } from "next/navigation";
 
-export default async function EditSlidePage({ params }: { params: { id: string } }) {
-  const slide = await getSlideById(params.id);
+export default async function EditSlidePage({ params: { id } }: { params: { id: string } }) {
+  const slide = await getSlideById(id);
 
   if (!slide) {
     notFound();

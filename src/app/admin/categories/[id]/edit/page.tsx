@@ -3,9 +3,9 @@ import { getCategoryById, getAllCategories } from "@/lib/data";
 import { CategoryForm } from "@/components/admin/category-form";
 import { notFound } from "next/navigation";
 
-export default async function EditCategoryPage({ params }: { params: { id: string } }) {
+export default async function EditCategoryPage({ params: { id } }: { params: { id: string } }) {
   const [category, allCategories] = await Promise.all([
-    getCategoryById(params.id),
+    getCategoryById(id),
     getAllCategories(),
   ]);
 

@@ -1,11 +1,12 @@
+
 import { notFound } from "next/navigation";
 import { getCategoryBySlug, getProductsByCategoryId, getSubCategories, getCategoryById } from "@/lib/data";
 import { ProductCard } from "@/components/product-card";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 import { CategoryCard } from "@/components/category-card";
 
-export default async function CategoryProductsPage({ params }: { params: { slug: string } }) {
-  const category = await getCategoryBySlug(params.slug);
+export default async function CategoryProductsPage({ params: { slug } }: { params: { slug: string } }) {
+  const category = await getCategoryBySlug(slug);
   if (!category) {
     notFound();
   }
