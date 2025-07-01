@@ -13,6 +13,7 @@ db.serialize(() => {
   db.run("DROP TABLE IF EXISTS users");
   db.run("DROP TABLE IF EXISTS roles");
   db.run("DROP TABLE IF EXISTS settings");
+  db.run("DROP TABLE IF EXISTS email_settings");
   db.run("DROP TABLE IF EXISTS payment_methods");
   db.run("DROP TABLE IF EXISTS areas");
   db.run("DROP TABLE IF EXISTS cities");
@@ -110,6 +111,7 @@ db.serialize(() => {
   db.run("CREATE TABLE products (id TEXT PRIMARY KEY, name TEXT, slug TEXT UNIQUE, description TEXT, shortDescription TEXT, categoryId TEXT, vendorId INTEGER, optionGroups TEXT, tags TEXT, isFeatured BOOLEAN DEFAULT 0, isOnOffer BOOLEAN DEFAULT 0, weight REAL, dimensions TEXT, images TEXT, mainImage TEXT, FOREIGN KEY(categoryId) REFERENCES categories(id), FOREIGN KEY(vendorId) REFERENCES users(id))");
   db.run("CREATE TABLE product_variants (id TEXT PRIMARY KEY, productId TEXT, name TEXT, price REAL, salePrice REAL, image TEXT, stock INTEGER, options TEXT, FOREIGN KEY(productId) REFERENCES products(id))");
   db.run("CREATE TABLE settings (id INTEGER PRIMARY KEY DEFAULT 1, websiteTitle TEXT, websiteLogo TEXT, timeZone TEXT, country TEXT)");
+  db.run("CREATE TABLE email_settings (id INTEGER PRIMARY KEY DEFAULT 1, provider TEXT DEFAULT 'smtp', host TEXT, port INTEGER, username TEXT, password TEXT, from_email TEXT, from_name TEXT, secure BOOLEAN DEFAULT 1)");
   db.run("CREATE TABLE payment_methods (id INTEGER PRIMARY KEY, provider TEXT UNIQUE NOT NULL, enabled BOOLEAN DEFAULT 0, config TEXT)");
   db.run(`
     CREATE TABLE shipping_methods (

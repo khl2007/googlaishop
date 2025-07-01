@@ -11,7 +11,7 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
-import { Home, ShoppingCart, Users, Package, BarChart3, Tags, Store, Settings, CreditCard, Globe, Truck, Presentation, LayoutGrid } from "lucide-react";
+import { Home, ShoppingCart, Users, Package, BarChart3, Tags, Store, Settings, CreditCard, Globe, Truck, Presentation, LayoutGrid, Mail } from "lucide-react";
 import Link from "next/link";
 import { AdminPageHeader } from "@/components/admin/page-header";
 import { LogoutButton } from "@/components/logout-button";
@@ -140,7 +140,15 @@ export default function AdminLayout({
               <SidebarMenuButton asChild>
                 <Link href="/admin/settings">
                   <Settings />
-                  Settings
+                  General
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+             <SidebarMenuItem>
+              <SidebarMenuButton asChild>
+                <Link href="/admin/settings/email">
+                  <Mail />
+                  Email
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>

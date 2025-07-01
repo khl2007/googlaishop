@@ -41,6 +41,7 @@ function seedDatabase() {
     db.run(`CREATE TABLE IF NOT EXISTS role_permissions (role_id INTEGER, permission_id INTEGER, FOREIGN KEY(role_id) REFERENCES roles(id), FOREIGN KEY(permission_id) REFERENCES permissions(id), UNIQUE(role_id, permission_id))`);
     db.run(`CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT UNIQUE, password TEXT, fullName TEXT, role_id INTEGER, phoneNumber TEXT, country TEXT, city TEXT, logo TEXT, FOREIGN KEY(role_id) REFERENCES roles(id))`);
     db.run(`CREATE TABLE IF NOT EXISTS settings (id INTEGER PRIMARY KEY DEFAULT 1, websiteTitle TEXT, websiteLogo TEXT, timeZone TEXT, country TEXT)`);
+    db.run(`CREATE TABLE IF NOT EXISTS email_settings (id INTEGER PRIMARY KEY DEFAULT 1, provider TEXT DEFAULT 'smtp', host TEXT, port INTEGER, username TEXT, password TEXT, from_email TEXT, from_name TEXT, secure BOOLEAN DEFAULT 1)`);
     db.run(`CREATE TABLE IF NOT EXISTS payment_methods (id INTEGER PRIMARY KEY, provider TEXT UNIQUE NOT NULL, enabled BOOLEAN DEFAULT 0, config TEXT)`);
     db.run(`CREATE TABLE IF NOT EXISTS cities (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, country_name TEXT NOT NULL, UNIQUE(name, country_name))`);
     db.run(`CREATE TABLE IF NOT EXISTS areas (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, city_id INTEGER NOT NULL, UNIQUE(name, city_id), FOREIGN KEY(city_id) REFERENCES cities(id) ON DELETE CASCADE)`);
@@ -63,6 +64,14 @@ function seedDatabase() {
     insertSettingsStmt.finalize();
     console.log('Settings seeded.');
     
+    // Seed Email Settings
+    const insertEmailSettingsStmt = db.prepare('INSERT OR IGNORE INTO email_settings (id, provider, host, port, username, password, from_email, from_name, secure) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
+    insertEmailSettingsStmt.run(1, 'smtp', 'smtp.example.com', 587, 'user@example.com', 'password', 'noreply@example.com', 'Zain Shop', 1, (err) => {
+        if (err) console.error('Error inserting email settings:', err.message);
+    });
+    insertEmailSettingsStmt.finalize();
+    console.log('Email settings seeded.');
+
     // Seed Payment Methods
     const paymentMethods = [
       { provider: 'cash', enabled: 1, config: JSON.stringify({ description: 'Pay with cash upon delivery.' }) },

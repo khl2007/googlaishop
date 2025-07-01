@@ -935,3 +935,50 @@ export async function getProductsForSection(section) {
         return [];
     }
 }
+
+export async function getEmailSettings() {
+    const db = getDatabase();
+    return new Promise((resolve, reject) => {
+        db.get('SELECT * FROM email_settings WHERE id = 1', (err, row) => {
+            if (err) {
+                console.error('Database error in getEmailSettings:', err);
+                return reject(new Error('Failed to fetch email settings.'));
+            }
+            if (row) {
+                row.secure = !!row.secure;
+            }
+            resolve(row);
+        });
+    });
+}
+
+export async function updateEmailSettings(data) {
+    const db = getDatabase();
+    const { provider, host, port, username, password, from_email, from_name, secure } = data;
+    
+    // Fetch the existing settings to decide if we need to keep the old password
+    const existingSettings = await getEmailSettings();
+
+    const finalPassword = password ? password : existingSettings?.password;
+
+    return new Promise((resolve, reject) => {
+        const sql = `
+            UPDATE email_settings 
+            SET provider = ?, host = ?, port = ?, username = ?, password = ?, from_email = ?, from_name = ?, secure = ?
+            WHERE id = 1
+        `;
+        db.run(sql, [provider, host, port, username, finalPassword, from_email, from_name, secure ? 1 : 0], function(err) {
+            if (err) return reject(err);
+            if (this.changes === 0) {
+                // If no row was updated, it might not exist, so we insert it.
+                const insertSql = `INSERT INTO email_settings (id, provider, host, port, username, password, from_email, from_name, secure) VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?)`;
+                db.run(insertSql, [provider, host, port, username, finalPassword, from_email, from_name, secure ? 1 : 0], function(insertErr) {
+                    if (insertErr) return reject(insertErr);
+                    resolve(this);
+                });
+            } else {
+                resolve(this);
+            }
+        });
+    });
+}
