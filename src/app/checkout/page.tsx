@@ -498,7 +498,7 @@ export default function CheckoutPage() {
     </div>
 
     <Dialog open={isAddressDialogOpen} onOpenChange={setIsAddressDialogOpen}>
-      <DialogContent className="h-screen w-screen max-w-full p-0 flex flex-col gap-0 sm:rounded-none">
+      <DialogContent className="h-screen w-screen max-w-full p-0 flex flex-col gap-0 sm:h-auto sm:max-h-[90vh] sm:rounded-lg">
           <Form {...form}>
           <form onSubmit={form.handleSubmit(onSaveAddress)} className="flex h-full flex-col">
             {step === 1 && (
