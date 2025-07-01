@@ -261,7 +261,7 @@ export function DeliveryToolbar({ user }: { user: User | null }) {
                             <DialogHeader className="p-4 border-b shrink-0">
                                 <DialogTitle>Step 2: Confirm Your Details</DialogTitle>
                             </DialogHeader>
-                            <div className="flex-1 space-y-4 overflow-y-auto p-4">
+                            <div className="flex-1 space-y-4 overflow-y-auto p-4 min-h-0">
                                <FormField control={form.control} name="fullName" render={({ field }) => (
                                     <FormItem><FormLabel>Full Name</FormLabel><FormControl><Input placeholder="John Doe" {...field} /></FormControl><FormMessage /></FormItem>
                                 )}/>
