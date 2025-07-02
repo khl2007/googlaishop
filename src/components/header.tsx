@@ -142,7 +142,7 @@ export function Header({ user }: HeaderProps) {
         ? "border-border bg-background/80 backdrop-blur-sm" 
         : "border-transparent bg-[linear-gradient(to_left,#18101a,#431d4f_50%,#2d1d60_60%,#432066)]"
     )}>
-      <div className="container flex h-16 max-w-7xl items-center justify-between gap-4 px-2">
+      <div className="container h-16 max-w-7xl flex items-center justify-between gap-4 px-2">
         <div className="flex items-center gap-4">
           {pathname !== '/' && (
             <Button

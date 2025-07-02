@@ -22,7 +22,7 @@ export function ProductCard({ product, showButton = true }: ProductCardProps) {
   const hasSalePrice = firstVariant.salePrice != null && firstVariant.salePrice > 0;
 
   return (
-    <Card className="flex flex-col overflow-hidden rounded-lg shadow-md transition-shadow hover:shadow-xl">
+    <Card className=" flex flex-col overflow-hidden rounded-lg shadow-md transition-shadow hover:shadow-xl">
       <CardHeader className="p-0">
         <Link href={`/products/${product.slug}`} className="block overflow-hidden aspect-square relative">
           <Image
@@ -34,18 +34,18 @@ export function ProductCard({ product, showButton = true }: ProductCardProps) {
           />
         </Link>
       </CardHeader>
-      <CardContent className="flex-1 p-4">
-        <h4 className=" font-semibold font-headline">
+      <CardContent className=" p-4 h-[120px]">
+        <h3 className="text-base font-semibold">
           <Link href={`/products/${product.slug}`}>{product.name}</Link>
-        </h4>
-        <div className="mt-2 flex items-baseline gap-2">
+        </h3>
+        <div className="mt-2 grid grid-cols-1">
            {hasSalePrice ? (
             <>
-              <p className="text-lg font-bold text-primary">${firstVariant.salePrice?.toFixed(2)}</p>
-              <s className="text-sm text-muted-foreground">${firstVariant.price.toFixed(2)}</s>
+              <p className="font-bold text-primary">${firstVariant.salePrice?.toFixed(2)}</p>
+              <s className="text-xs text-muted-foreground">${firstVariant.price.toFixed(2)}</s>
             </>
           ) : (
-            <p className="text-lg font-bold text-foreground">${firstVariant.price.toFixed(2)}</p>
+            <p className="text-sm font-bold text-foreground">${firstVariant.price.toFixed(2)}</p>
           )}
         </div>
       </CardContent>

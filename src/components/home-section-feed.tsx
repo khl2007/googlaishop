@@ -10,10 +10,10 @@ export async function HomeSectionFeed({ section }: { section: HomeSection }) {
   }
 
   return (
-    <section className="my-12 md:my-16">
-      <h2 className="mb-1 px-4 sm:px-0 font-headline text-3xl font-bold tracking-tight">
+    <section className="mb-10 md:my-16">
+      <h3 className="mb-2 px-4 sm:px-0 font-headline  font-bold tracking-tight">
         {section.title}
-      </h2>
+      </h3>
       <div className="flex gap-4 overflow-x-auto pb-4 px-4 sm:px-0 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
         {products.map((product) => (
           <div key={product.id} className="w-36 sm:w-48 lg:w-64 flex-shrink-0">

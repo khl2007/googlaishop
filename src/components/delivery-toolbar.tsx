@@ -197,7 +197,7 @@ export function DeliveryToolbar({ user }: { user: User | null }) {
 
   return (
     <>
-      <div className="bg-muted/60 border-b">
+      <div className="flex items-center justify-between gap-4 px-2 bg-muted/60 border-b">
         <div className="container mx-auto px-4">
           <Button variant="ghost" className="h-10 text-muted-foreground w-full justify-start px-0 hover:bg-transparent" onClick={handleModalOpen}>
             <MapPin className="h-4 w-4 mr-2" />

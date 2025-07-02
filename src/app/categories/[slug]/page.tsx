@@ -52,13 +52,11 @@ export default async function CategoryProductsPage({ params: { slug } }: { param
         </BreadcrumbList>
       </Breadcrumb>
       
-      <div className="text-center mb-12">
-        <h1 className="text-4xl font-extrabold font-headline tracking-tight lg:text-5xl">{category.name}</h1>
-      </div>
+      
 
       {subCategories.length > 0 && (
         <section className="mb-16">
-          <h2 className="text-3xl font-bold tracking-tight mb-8">Browse Sub-categories</h2>
+         
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-2 lg:grid-cols-4 sm:gap-8">
             {subCategories.map((subCat) => (
               <CategoryCard key={subCat.id} category={subCat} />
